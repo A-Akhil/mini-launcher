@@ -29,4 +29,10 @@ class LockManager(private val appLockDao: AppLockDao) {
     suspend fun clearExpiredLocks() {
         appLockDao.clearExpiredLocks(System.currentTimeMillis())
     }
+
+    private suspend fun scheduleCleanupIfNeeded() {
+        val earliestLock = appLockDao.getEarliestLock()
+        if (earliestLock != null && earliestLock.lockedUntil > System.currentTimeMillis()) {
+        }
+    }
 }
