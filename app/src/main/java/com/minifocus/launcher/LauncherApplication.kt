@@ -44,6 +44,11 @@ class LauncherApplication : Application() {
             applicationScope = appScope
         )
     }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        container.appsManager.cleanup()
+    }
 }
 
 class AppContainer(
