@@ -2,6 +2,7 @@ package com.minifocus.launcher
 
 import android.app.role.RoleManager
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Build
 import android.provider.Settings
@@ -9,9 +10,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.minifocus.launcher.ui.LauncherApp
 import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import com.minifocus.launcher.viewmodel.LauncherViewModel
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySystemBarStyling()
         setContent {
             MinimalistFocusTheme {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -54,12 +57,24 @@ class MainActivity : ComponentActivity() {
                     onSearchQueryChange = viewModel::updateSearchQuery,
                     onSearchVisibilityChange = viewModel::setSearchVisibility,
                     onBottomIconChange = viewModel::setBottomIcon,
-                    onRefreshApps = viewModel::refreshApps,
+                    onSettingsVisibilityChange = viewModel::setSettingsVisibility,
+                    onClockFormatChange = viewModel::setClockFormat,
+                    onThemeChange = viewModel::setTheme,
                     onConsumeMessage = viewModel::consumeMessage,
                     canLaunch = viewModel::canLaunch,
                     onLaunchApp = { packageName -> launchPackage(packageName) }
                 )
             }
+        }
+    }
+
+    private fun applySystemBarStyling() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
         }
     }
 

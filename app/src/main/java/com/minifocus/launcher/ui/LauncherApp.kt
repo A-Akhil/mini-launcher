@@ -31,15 +31,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.minifocus.launcher.model.LauncherTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -55,6 +62,7 @@ import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.viewmodel.LauncherUiState
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun LauncherApp(
@@ -71,7 +79,9 @@ fun LauncherApp(
     onSearchQueryChange: (String) -> Unit,
     onSearchVisibilityChange: (Boolean) -> Unit,
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
-    onRefreshApps: () -> Unit,
+    onSettingsVisibilityChange: (Boolean) -> Unit,
+    onClockFormatChange: (ClockFormat) -> Unit,
+    onThemeChange: (LauncherTheme) -> Unit,
     onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit
@@ -123,7 +133,7 @@ fun LauncherApp(
                         onUnhideApp = onUnhideApp,
                         onLockApp = onLockApp,
                         onUnlockApp = onUnlockApp,
-                        onRefresh = onRefreshApps
+                        onOpenSettings = { onSettingsVisibilityChange(!state.isSettingsVisible) }
                     )
                 }
             }
@@ -160,6 +170,16 @@ fun LauncherApp(
                     bottomIconPickerSlot.value = null
                 }
             )
+
+            if (state.isSettingsVisible) {
+                SettingsDialog(
+                    theme = state.theme,
+                    clockFormat = state.clockFormat,
+                    onThemeChange = onThemeChange,
+                    onClockFormatChange = onClockFormatChange,
+                    onDismiss = { onSettingsVisibilityChange(false) }
+                )
+            }
         }
     }
 }
@@ -399,7 +419,7 @@ private fun AllAppsScreen(
     onUnhideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
     onUnlockApp: (String) -> Unit,
-    onRefresh: () -> Unit
+    onOpenSettings: () -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
     LazyColumn(
@@ -417,11 +437,13 @@ private fun AllAppsScreen(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "Refresh",
-                    color = Color.Gray,
-                    modifier = Modifier.combinedClickable(onClick = onRefresh, onLongClick = onRefresh)
-                )
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -595,6 +617,71 @@ private fun BottomIconPickerDialog(
             }
         },
         confirmButton = {}
+    )
+}
+
+@Composable
+private fun SettingsDialog(
+    theme: LauncherTheme,
+    clockFormat: ClockFormat,
+    onThemeChange: (LauncherTheme) -> Unit,
+    onClockFormatChange: (ClockFormat) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Settings", color = Color.White) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(text = "Theme", color = Color.White, fontWeight = FontWeight.SemiBold)
+                LauncherTheme.values().forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = theme == option,
+                            onClick = { onThemeChange(option) }
+                        )
+                        Text(
+                            text = option.name
+                                .lowercase(Locale.getDefault())
+                                .replaceFirstChar { char ->
+                                    if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+                                },
+                            color = Color.White,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Clock Format", color = Color.White, fontWeight = FontWeight.SemiBold)
+                ClockFormat.values().forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = clockFormat == option,
+                            onClick = { onClockFormatChange(option) }
+                        )
+                        Text(
+                            text = when (option) {
+                                ClockFormat.H24 -> "24-hour"
+                                ClockFormat.H12 -> "12-hour"
+                            },
+                            color = Color.White,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Close")
+            }
+        }
     )
 }
 

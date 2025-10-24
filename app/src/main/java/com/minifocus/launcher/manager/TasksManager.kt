@@ -21,10 +21,11 @@ class TasksManager(private val taskDao: TaskDao) {
         }
     }
 
-    suspend fun addTask(title: String) {
-        if (title.isBlank()) return
-        withContext(Dispatchers.IO) {
-            taskDao.insert(TaskEntity(title = title.trim()))
+    suspend fun addTask(title: String): Boolean {
+        val trimmed = title.trim()
+        if (trimmed.isEmpty()) return false
+        return withContext(Dispatchers.IO) {
+            taskDao.insert(TaskEntity(title = trimmed)) > 0
         }
     }
 
