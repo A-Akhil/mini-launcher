@@ -39,6 +39,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!isDefaultLauncher()) {
+            showDefaultLauncherPromptAndFinish()
+            return
+        }
         applySystemBarStyling()
         setContent {
             MinimalistFocusTheme {
@@ -80,7 +84,25 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        maybePromptForDefaultLauncher()
+        if (!isDefaultLauncher()) {
+            showDefaultLauncherPromptAndFinish()
+        }
+    }
+
+    private fun showDefaultLauncherPromptAndFinish() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
+                requestHomeRoleLauncher.launch(intent)
+            }
+        } else {
+            val intent = Intent(Settings.ACTION_HOME_SETTINGS)
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            }
+        }
+        finish()
     }
 
     private fun launchPackage(packageName: String) {
@@ -91,26 +113,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun maybePromptForDefaultLauncher() {
-        if (isDefaultLauncher() || alreadyPromptedForHomeRole()) {
-            return
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME) && !roleManager.isRoleHeld(RoleManager.ROLE_HOME)) {
-                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
-                requestHomeRoleLauncher.launch(intent)
-                markPromptedForHomeRole()
-            }
-        } else {
-            val intent = Intent(Settings.ACTION_HOME_SETTINGS)
-            if (intent.resolveActivity(packageManager) != null) {
-                startActivity(intent)
-                markPromptedForHomeRole()
-            }
-        }
-    }
-
     private fun isDefaultLauncher(): Boolean {
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
@@ -118,16 +120,6 @@ class MainActivity : ComponentActivity() {
         }
         val resolveInfo = packageManager.resolveActivity(intent, 0) ?: return false
         return resolveInfo.activityInfo?.packageName == packageName
-    }
-
-    private fun alreadyPromptedForHomeRole(): Boolean {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return prefs.getBoolean(KEY_PROMPTED_HOME_ROLE, false)
-    }
-
-    private fun markPromptedForHomeRole() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_PROMPTED_HOME_ROLE, true).apply()
     }
 
     companion object {

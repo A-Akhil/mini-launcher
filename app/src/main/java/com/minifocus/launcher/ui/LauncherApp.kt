@@ -245,10 +245,7 @@ private fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 32.dp, vertical = 48.dp)
-            .pointerInput(Unit) {
-                detectSwipeUp { onSearchVisibilityChange(true) }
-            },
+            .padding(horizontal = 32.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
