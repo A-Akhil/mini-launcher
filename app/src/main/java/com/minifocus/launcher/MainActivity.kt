@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
                     onBottomIconChange = viewModel::setBottomIcon,
                     onSettingsVisibilityChange = viewModel::setSettingsVisibility,
                     onClockFormatChange = viewModel::setClockFormat,
-                    onThemeChange = viewModel::setTheme,
+                    onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                     onConsumeMessage = viewModel::consumeMessage,
                     canLaunch = viewModel::canLaunch,
                     onLaunchApp = { packageName -> launchPackage(packageName) }
