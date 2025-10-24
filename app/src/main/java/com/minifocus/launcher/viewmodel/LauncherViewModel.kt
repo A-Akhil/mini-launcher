@@ -89,9 +89,10 @@ class LauncherViewModel(
         settingsManager.observeTheme(),
         settingsManager.observeClockFormat(),
         settingsManager.observeBottomIcon(BottomIconSlot.LEFT),
-        settingsManager.observeBottomIcon(BottomIconSlot.RIGHT)
-    ) { theme, clockFormat, leftPackage, rightPackage ->
-        PreferencesSnapshot(theme, clockFormat, leftPackage, rightPackage)
+        settingsManager.observeBottomIcon(BottomIconSlot.RIGHT),
+        settingsManager.observeKeyboardSearchOnSwipe()
+    ) { theme, clockFormat, leftPackage, rightPackage, keyboardOnSwipe ->
+        PreferencesSnapshot(theme, clockFormat, leftPackage, rightPackage, keyboardOnSwipe)
     }
 
     private val overlaySnapshot = combine(
@@ -126,6 +127,7 @@ class LauncherViewModel(
             searchResults = overlay.results,
             isSearchVisible = overlay.searchVisible,
             isSettingsVisible = settingsVisible,
+            isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
             message = overlay.message
         )
     }.stateIn(
@@ -219,6 +221,10 @@ class LauncherViewModel(
         viewModelScope.launch { settingsManager.setTheme(theme) }
     }
 
+    fun setKeyboardSearchOnSwipe(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setKeyboardSearchOnSwipe(enabled) }
+    }
+
     suspend fun canLaunch(packageName: String): Boolean = withContext(Dispatchers.IO) {
         !lockManager.isLocked(packageName)
     }
@@ -269,6 +275,8 @@ private data class PreferencesSnapshot(
     val clockFormat: ClockFormat,
     val bottomLeftPackage: String?,
     val bottomRightPackage: String?
+    ,
+    val keyboardSearchOnSwipe: Boolean
 )
 
 private data class OverlaySnapshot(
@@ -292,6 +300,7 @@ data class LauncherUiState(
     val searchQuery: String = "",
     val searchResults: List<SearchResult> = emptyList(),
     val isSearchVisible: Boolean = false,
+    val isKeyboardSearchOnSwipe: Boolean = false,
     val isSettingsVisible: Boolean = false,
     val message: String? = null
 ) {
