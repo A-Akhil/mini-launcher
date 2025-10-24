@@ -29,9 +29,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -44,6 +46,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
@@ -389,71 +392,156 @@ private fun TasksScreen(
     onAddTask: (String) -> Unit,
     onDeleteTask: (Long) -> Unit
 ) {
-    val newTaskTitle = remember { mutableStateOf("") }
-    Column(
+    val showAddDialog = remember { mutableStateOf(false) }
+    val showEditDialog = remember { mutableStateOf<TaskItem?>(null) }
+    val inputText = remember { mutableStateOf("") }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
-        Text(text = "Tasks", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(24.dp))
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(tasks) { task ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = task.isCompleted,
-                        onCheckedChange = { onToggleTask(task.id) }
-                    )
-                    Text(
-                        text = task.title,
-                        color = if (task.isCompleted) Color(0xFF777777) else Color.White,
-                        modifier = Modifier.weight(1f).padding(start = 16.dp)
-                    )
-                    Text(
-                        text = "×",
-                        color = Color(0xFF777777),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 36.dp)
+        ) {
+            Text(
+                text = "Tasks",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(tasks, key = { it.id }) { task ->
+                    Row(
                         modifier = Modifier
-                            .padding(start = 16.dp)
-                            .combinedClickable(onClick = { onDeleteTask(task.id) }, onLongClick = { onDeleteTask(task.id) })
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .combinedClickable(
+                                onClick = { onToggleTask(task.id) },
+                                onLongClick = {
+                                    showEditDialog.value = task
+                                    inputText.value = task.title
+                                }
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = task.isCompleted,
+                            onCheckedChange = { onToggleTask(task.id) }
+                        )
+                        Text(
+                            text = task.title,
+                            color = if (task.isCompleted) Color(0xFF777777) else Color.White,
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = {
+                inputText.value = ""
+                showAddDialog.value = true
+            },
+            containerColor = Color.White,
+            contentColor = Color.Black,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        ) {
+            Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Task")
+        }
+    }
+
+    // Add Task Dialog
+    if (showAddDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog.value = false },
+            title = { Text("Add Task") },
+            text = {
+                OutlinedTextField(
+                    value = inputText.value,
+                    onValueChange = { inputText.value = it },
+                    label = { Text("Task name") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val title = inputText.value.trim()
+                        if (title.isNotEmpty()) {
+                            onAddTask(title)
+                            showAddDialog.value = false
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog.value = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Edit/Delete Task Dialog
+    showEditDialog.value?.let { task ->
+        AlertDialog(
+            onDismissRequest = { showEditDialog.value = null },
+            title = { Text("Edit Task") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = inputText.value,
+                        onValueChange = { inputText.value = it },
+                        label = { Text("Task name") },
+                        singleLine = true
                     )
                 }
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x33FFFFFF))
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                if (newTaskTitle.value.isBlank()) {
-                    Text(text = "New task", color = Color(0x88FFFFFF))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val newTitle = inputText.value.trim()
+                        if (newTitle.isNotEmpty() && newTitle != task.title) {
+                            // Delete old and add new (simple edit simulation)
+                            onDeleteTask(task.id)
+                            onAddTask(newTitle)
+                        }
+                        showEditDialog.value = null
+                    }
+                ) {
+                    Text("Save")
                 }
-                BasicTextField(
-                    value = newTaskTitle.value,
-                    onValueChange = { newTaskTitle.value = it },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Button(onClick = {
-                val title = newTaskTitle.value.trim()
-                if (title.isNotEmpty()) {
-                    onAddTask(title)
-                    newTaskTitle.value = ""
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            onDeleteTask(task.id)
+                            showEditDialog.value = null
+                        }
+                    ) {
+                        Text("Delete", color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showEditDialog.value = null }) {
+                        Text("Cancel")
+                    }
                 }
-            }) {
-                Text(text = "Add")
             }
-        }
+        )
     }
 }
 
