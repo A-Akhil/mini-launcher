@@ -3,6 +3,10 @@
 package com.minifocus.launcher.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -24,6 +28,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -44,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -54,12 +61,14 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -545,6 +554,26 @@ private fun TasksScreen(
     }
 }
 
+// Fuzzy search: matches if all query chars appear in order in the label
+// Ignores non-alphanumeric characters in query for more flexible matching
+private fun fuzzyMatch(label: String, query: String): Boolean {
+    if (query.isEmpty()) return true
+    val lowerLabel = label.lowercase()
+    val lowerQuery = query.lowercase().filter { it.isLetterOrDigit() }
+    
+    if (lowerQuery.isEmpty()) return true
+    
+    var queryIndex = 0
+    
+    for (char in lowerLabel) {
+        if (queryIndex < lowerQuery.length && char == lowerQuery[queryIndex]) {
+            queryIndex++
+        }
+    }
+    
+    return queryIndex == lowerQuery.length
+}
+
 @Composable
 private fun AllAppsScreen(
     apps: List<AppEntry>,
@@ -563,17 +592,19 @@ private fun AllAppsScreen(
     onOpenSettings: () -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
+    val blinkingApp = remember { mutableStateOf<String?>(null) }
+    val appToLaunch = remember { mutableStateOf<AppEntry?>(null) }
     val searchActive = searchQuery.isNotBlank()
     val filteredApps = remember(apps, searchQuery) {
         if (searchActive) {
-            apps.filter { it.label.contains(searchQuery, ignoreCase = true) }
+            apps.filter { fuzzyMatch(it.label, searchQuery) }
         } else {
             apps
         }
     }
     val filteredHiddenApps = remember(hiddenApps, searchQuery) {
         if (searchActive) {
-            hiddenApps.filter { it.label.contains(searchQuery, ignoreCase = true) }
+            hiddenApps.filter { fuzzyMatch(it.label, searchQuery) }
         } else {
             hiddenApps
         }
@@ -639,9 +670,43 @@ private fun AllAppsScreen(
                     onValueChange = onQueryChange,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            val firstApp = filteredApps.firstOrNull()
+                            if (firstApp != null) {
+                                appToLaunch.value = firstApp
+                                blinkingApp.value = firstApp.packageName
+                                keyboardController?.hide()
+                            }
+                        }
+                    ),
                     modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
                 )
             }
+            
+            // Blink effect and launch
+            LaunchedEffect(appToLaunch.value) {
+                appToLaunch.value?.let { app ->
+                    // Blink 3 times
+                    blinkingApp.value = app.packageName
+                    kotlinx.coroutines.delay(150)
+                    blinkingApp.value = null
+                    kotlinx.coroutines.delay(150)
+                    blinkingApp.value = app.packageName
+                    kotlinx.coroutines.delay(150)
+                    blinkingApp.value = null
+                    kotlinx.coroutines.delay(150)
+                    blinkingApp.value = app.packageName
+                    kotlinx.coroutines.delay(150)
+                    blinkingApp.value = null
+                    
+                    // Launch the app
+                    onLaunchApp(app)
+                    appToLaunch.value = null
+                }
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
         }
         if (filteredApps.isEmpty() && filteredHiddenApps.isEmpty()) {
@@ -655,6 +720,7 @@ private fun AllAppsScreen(
             }
         } else {
             items(filteredApps) { app ->
+                val isBlinking = blinkingApp.value == app.packageName
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = app.label,
@@ -662,6 +728,7 @@ private fun AllAppsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
+                            .alpha(if (isBlinking) 0.3f else 1f)
                             .combinedClickable(
                                 onClick = { onLaunchApp(app) },
                                 onLongClick = { expandedApp.value = app.packageName }
