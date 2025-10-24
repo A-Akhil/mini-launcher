@@ -67,15 +67,6 @@ class LauncherViewModel(
         }
     }
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            while (true) {
-                lockManager.clearExpiredLocks()
-                delay(60_000)
-            }
-        }
-    }
-
     private val dataSnapshot = combine(
         appsManager.observePinnedApps(),
         appsManager.observeAllApps(),
@@ -132,7 +123,7 @@ class LauncherViewModel(
         )
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
+        started = SharingStarted.Eagerly,
         initialValue = LauncherUiState()
     )
 
