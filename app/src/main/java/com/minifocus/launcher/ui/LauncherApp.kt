@@ -151,28 +151,37 @@ fun LauncherApp(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                when (page) {
-                    0 -> TasksScreen(
-                        tasks = state.tasks,
-                        onToggleTask = onToggleTask,
-                        onAddTask = onAddTask,
-                        onDeleteTask = onDeleteTask
-                    )
-                    1 -> HomeScreen(
-                        state = state,
-                        onLaunchApp = { entry -> handleAppLaunch(entry, coroutineScope, canLaunch, onLaunchApp, snackbarHostState) },
-                        onSearchVisibilityChange = onSearchVisibilityChange,
-                        bottomIconPickerSlot = bottomIconPickerSlot,
-                        onUnpinApp = onUnpinApp,
-                        onHideApp = onHideApp,
-                        onLockApp = onLockApp,
-                        onUnlockApp = onUnlockApp
-                    )
-                    else -> AllAppsScreen(
-                        apps = state.allApps,
-                        hiddenApps = state.hiddenApps,
-                        keyboardOnSwipe = shouldShowInlineSearch,
+            // Show settings screen when settings is visible
+            if (state.isSettingsVisible) {
+                SettingsScreen(
+                    clockFormat = state.clockFormat,
+                    keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                    onKeyboardToggle = onKeyboardSearchOnSwipeChange,
+                    onClockFormatChange = onClockFormatChange,
+                    onBack = { onSettingsVisibilityChange(false) }
+                )
+            } else {
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                    when (page) {
+                        0 -> TasksScreen(
+                            tasks = state.tasks,
+                            onToggleTask = onToggleTask,
+                            onAddTask = onAddTask,
+                            onDeleteTask = onDeleteTask
+                        )
+                        1 -> HomeScreen(
+                            state = state,
+                            onLaunchApp = { entry -> handleAppLaunch(entry, coroutineScope, canLaunch, onLaunchApp, snackbarHostState) },
+                            bottomIconPickerSlot = bottomIconPickerSlot,
+                            onUnpinApp = onUnpinApp,
+                            onHideApp = onHideApp,
+                            onLockApp = onLockApp,
+                            onUnlockApp = onUnlockApp
+                        )
+                        else -> AllAppsScreen(
+                            apps = state.allApps,
+                            hiddenApps = state.hiddenApps,
+                            keyboardOnSwipe = shouldShowInlineSearch,
                         searchQuery = state.searchQuery,
                         shouldFocusSearch = shouldFocusInlineSearch,
                         onQueryChange = onSearchQueryChange,
@@ -186,6 +195,7 @@ fun LauncherApp(
                         onOpenSettings = { onSettingsVisibilityChange(!state.isSettingsVisible) }
                     )
                 }
+            }
             }
 
             AnimatedVisibility(
@@ -221,16 +231,6 @@ fun LauncherApp(
                     bottomIconPickerSlot.value = null
                 }
             )
-
-            if (state.isSettingsVisible) {
-                SettingsDialog(
-                    clockFormat = state.clockFormat,
-                    keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
-                    onKeyboardToggle = onKeyboardSearchOnSwipeChange,
-                    onClockFormatChange = onClockFormatChange,
-                    onDismiss = { onSettingsVisibilityChange(false) }
-                )
-            }
         }
     }
 }
@@ -255,7 +255,6 @@ private fun handleAppLaunch(
 private fun HomeScreen(
     state: LauncherUiState,
     onLaunchApp: (AppEntry) -> Unit,
-    onSearchVisibilityChange: (Boolean) -> Unit,
     bottomIconPickerSlot: MutableState<BottomIconSlot?>,
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
@@ -910,53 +909,99 @@ private fun BottomIconPickerDialog(
 }
 
 @Composable
-private fun SettingsDialog(
+private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
-    onDismiss: () -> Unit
+    onBack: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Settings", color = Color.White) },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Keyboard on All Apps swipe", color = Color.White, fontWeight = FontWeight.SemiBold)
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                    Text(text = "Open search and keyboard when swiping to All Apps", color = Color.White, modifier = Modifier.weight(1f))
-                    Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(text = "Clock Format", color = Color.White, fontWeight = FontWeight.SemiBold)
-                ClockFormat.values().forEach { option ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                    ) {
-                        RadioButton(
-                            selected = clockFormat == option,
-                            onClick = { onClockFormatChange(option) }
-                        )
-                        Text(
-                            text = when (option) {
-                                ClockFormat.H24 -> "24-hour"
-                                ClockFormat.H12 -> "12-hour"
-                            },
-                            color = Color.White,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = "Close")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(horizontal = 24.dp, vertical = 36.dp)
+    ) {
+        // Header with back button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "←",
+                color = Color.White,
+                fontSize = 32.sp,
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .combinedClickable(onClick = onBack)
+            )
+            Text(
+                text = "Settings",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Keyboard on swipe setting
+        Text(
+            text = "Keyboard on All Apps swipe",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = "Open search and keyboard when swiping to All Apps",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Clock format setting
+        Text(
+            text = "Clock Format",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        ClockFormat.values().forEach { option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .combinedClickable(onClick = { onClockFormatChange(option) })
+            ) {
+                RadioButton(
+                    selected = clockFormat == option,
+                    onClick = { onClockFormatChange(option) }
+                )
+                Text(
+                    text = when (option) {
+                        ClockFormat.H24 -> "24-hour"
+                        ClockFormat.H12 -> "12-hour"
+                    },
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         }
-    )
+    }
 }
 
 private suspend fun PointerInputScope.detectSwipeUp(onSwipeUp: () -> Unit) {
@@ -970,7 +1015,7 @@ private suspend fun PointerInputScope.detectSwipeUp(onSwipeUp: () -> Unit) {
             totalDrag = 0f
         },
         onDragCancel = { totalDrag = 0f }
-    ) { change, dragAmount ->
+    ) { _, dragAmount ->
         totalDrag += dragAmount
     }
 }
