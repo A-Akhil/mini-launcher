@@ -97,6 +97,16 @@ fun LauncherApp(
     val searchVisible = state.isSearchVisible
     val shouldShowInlineSearch = state.isKeyboardSearchOnSwipe
     val shouldFocusInlineSearch = shouldShowInlineSearch && pagerState.currentPage == 2
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage != 2) {
+            keyboardController?.hide()
+            if (state.searchQuery.isNotEmpty()) {
+                onSearchQueryChange("")
+            }
+        }
+    }
 
     LaunchedEffect(shouldShowInlineSearch, searchVisible, pagerState.currentPage) {
         if (shouldShowInlineSearch && pagerState.currentPage == 2 && searchVisible) {

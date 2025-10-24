@@ -1,6 +1,9 @@
 package com.minifocus.launcher.manager
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import com.minifocus.launcher.data.dao.PinnedAppDao
@@ -17,7 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class AppsManager(
-    context: Context,
+    private val context: Context,
     private val pinnedAppDao: PinnedAppDao,
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
@@ -27,9 +30,41 @@ class AppsManager(
     private val packageManager: PackageManager = context.packageManager
     private val selfPackage = context.packageName
     private val installedApps = MutableStateFlow<List<AppEntry>>(emptyList())
+    private var isRefreshed = false
+
+    private val packageChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_PACKAGE_ADDED,
+                Intent.ACTION_PACKAGE_REMOVED,
+                Intent.ACTION_PACKAGE_CHANGED -> {
+                    scope.launch(Dispatchers.IO) {
+                        isRefreshed = false
+                        refreshInstalledApps()
+                    }
+                }
+            }
+        }
+    }
 
     init {
-        scope.launch { refreshInstalledApps() }
+        // Initial load
+        scope.launch(Dispatchers.IO) { 
+            refreshInstalledApps()
+        }
+
+        // Register package change listener
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addDataScheme("package")
+        }
+        context.registerReceiver(packageChangeReceiver, filter)
+    }
+
+    fun cleanup() {
+        context.unregisterReceiver(packageChangeReceiver)
     }
 
     fun observeAllApps(): Flow<List<AppEntry>> = combine(
@@ -96,23 +131,31 @@ class AppsManager(
     }
 
     suspend fun refreshInstalledApps() {
+        if (isRefreshed) return
+
+        val pm = packageManager
+        val self = selfPackage
+
         val apps = withContext(Dispatchers.IO) {
-            val installed = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                packageManager.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
+            val installedApps = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                pm.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+                pm.getInstalledApplications(PackageManager.GET_META_DATA)
             }
-            installed
-                .filter { app ->
-                    packageManager.getLaunchIntentForPackage(app.packageName) != null &&
-                        app.packageName != selfPackage
+
+            buildList {
+                for (app in installedApps) {
+                    if (app.packageName == self) continue
+                    if (pm.getLaunchIntentForPackage(app.packageName) == null) continue
+
+                    val label = pm.getApplicationLabel(app).toString()
+                    add(AppEntry(packageName = app.packageName, label = label))
                 }
-                .map { appInfo ->
-                    val label = packageManager.getApplicationLabel(appInfo).toString()
-                    AppEntry(packageName = appInfo.packageName, label = label)
-                }
+            }.sortedBy { it.label.lowercase() }
         }
+
         installedApps.value = apps
+        isRefreshed = true
     }
 }
