@@ -468,15 +468,15 @@ private fun AllAppsScreen(
     onOpenSettings: () -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
-    val searchActive = keyboardOnSwipe && searchQuery.isNotBlank()
-    val filteredApps = remember(apps, keyboardOnSwipe, searchQuery) {
+    val searchActive = searchQuery.isNotBlank()
+    val filteredApps = remember(apps, searchQuery) {
         if (searchActive) {
             apps.filter { it.label.contains(searchQuery, ignoreCase = true) }
         } else {
             apps
         }
     }
-    val filteredHiddenApps = remember(hiddenApps, keyboardOnSwipe, searchQuery) {
+    val filteredHiddenApps = remember(hiddenApps, searchQuery) {
         if (searchActive) {
             hiddenApps.filter { it.label.contains(searchQuery, ignoreCase = true) }
         } else {
@@ -525,29 +525,27 @@ private fun AllAppsScreen(
                     )
                 }
             }
-            if (keyboardOnSwipe) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x33FFFFFF))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    if (searchQuery.isBlank()) {
-                        Text(
-                            text = "Search apps",
-                            color = Color(0x88FFFFFF)
-                        )
-                    }
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = onQueryChange,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x33FFFFFF))
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                if (searchQuery.isBlank()) {
+                    Text(
+                        text = "Search apps",
+                        color = Color(0x88FFFFFF)
                     )
                 }
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onQueryChange,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
