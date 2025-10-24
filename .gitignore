@@ -1,0 +1,45 @@
+# Gradle build output
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Android specific
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin / JVM
+.kotlinc/
+
+# Log files
+*.log
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Keep Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+api_spec.md
+architecture.md
+changelog.md
+rough_note.md
+wireframe.md
+todo.md
+plan.md
+performance_guide.md
+security_policy.md
+test_plan.md
+metrics.md
+decision_log.md
