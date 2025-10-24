@@ -23,4 +23,7 @@ interface AppLockDao {
 
     @Query("DELETE FROM app_locks WHERE locked_until < :currentTime")
     suspend fun clearExpiredLocks(currentTime: Long)
+
+    @Query("SELECT * FROM app_locks ORDER BY locked_until ASC LIMIT 1")
+    suspend fun getEarliestLock(): AppLockEntity?
 }
