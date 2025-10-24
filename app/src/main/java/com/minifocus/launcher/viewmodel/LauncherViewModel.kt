@@ -55,6 +55,7 @@ class LauncherViewModel(
     private val searchQuery = MutableStateFlow("")
     private val isSearchVisible = MutableStateFlow(false)
     private val snackbarMessage = MutableStateFlow<String?>(null)
+    private val isSettingsVisible = MutableStateFlow(false)
 
     private val searchResults: Flow<List<SearchResult>> = searchQuery.flatMapLatest { query ->
         if (query.isBlank()) {
@@ -106,10 +107,11 @@ class LauncherViewModel(
     val uiState = combine(
         dataSnapshot,
         preferencesSnapshot,
-        overlaySnapshot
-    ) { data, prefs, overlay ->
-    val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
-    val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
+        overlaySnapshot,
+        isSettingsVisible
+    ) { data, prefs, overlay, settingsVisible ->
+        val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
+        val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
         LauncherUiState(
             time = overlay.time,
             clockFormat = prefs.clockFormat,
@@ -123,6 +125,7 @@ class LauncherViewModel(
             searchQuery = overlay.query,
             searchResults = overlay.results,
             isSearchVisible = overlay.searchVisible,
+            isSettingsVisible = settingsVisible,
             message = overlay.message
         )
     }.stateIn(
@@ -132,7 +135,12 @@ class LauncherViewModel(
     )
 
     fun addTask(title: String) {
-        viewModelScope.launch { tasksManager.addTask(title) }
+        viewModelScope.launch {
+            val added = tasksManager.addTask(title)
+            if (added) {
+                snackbarMessage.update { "Task added" }
+            }
+        }
     }
 
     fun toggleTask(taskId: Long) {
@@ -174,18 +182,24 @@ class LauncherViewModel(
         }
     }
 
-    fun refreshApps() {
-        viewModelScope.launch { appsManager.refreshInstalledApps() }
-    }
-
     fun updateSearchQuery(query: String) {
         searchQuery.value = query
     }
 
     fun setSearchVisibility(visible: Boolean) {
         isSearchVisible.value = visible
+        if (visible) {
+            isSettingsVisible.value = false
+        }
         if (!visible) {
             searchQuery.value = ""
+        }
+    }
+
+    fun setSettingsVisibility(visible: Boolean) {
+        isSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
         }
     }
 
@@ -278,6 +292,7 @@ data class LauncherUiState(
     val searchQuery: String = "",
     val searchResults: List<SearchResult> = emptyList(),
     val isSearchVisible: Boolean = false,
+    val isSettingsVisible: Boolean = false,
     val message: String? = null
 ) {
     val timeFormatted: String
