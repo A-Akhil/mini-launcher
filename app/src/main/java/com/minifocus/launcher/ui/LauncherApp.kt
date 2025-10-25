@@ -40,8 +40,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -50,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
@@ -69,6 +73,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -262,6 +267,8 @@ private fun HomeScreen(
     onUnlockApp: (String) -> Unit
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
+    val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -325,9 +332,9 @@ private fun HomeScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Lock 30m") },
+                            text = { Text("Lock") },
                             onClick = {
-                                onLockApp(app.packageName, 30)
+                                lockDialogApp.value = app
                                 expandedPinned.value = null
                             }
                         )
@@ -350,6 +357,18 @@ private fun HomeScreen(
             right = state.bottomRight,
             onLaunch = onLaunchApp,
             onLongPress = { slot -> bottomIconPickerSlot.value = slot }
+        )
+    }
+    
+    // Lock duration dialog
+    lockDialogApp.value?.let { app ->
+        LockDurationDialog(
+            appName = app.label,
+            onDismiss = { lockDialogApp.value = null },
+            onLock = { minutes ->
+                onLockApp(app.packageName, minutes)
+                lockDialogApp.value = null
+            }
         )
     }
 }
@@ -591,6 +610,7 @@ private fun AllAppsScreen(
     onOpenSettings: () -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
+    val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
     val blinkingApp = remember { mutableStateOf<String?>(null) }
     val appToLaunch = remember { mutableStateOf<AppEntry?>(null) }
     val searchActive = searchQuery.isNotBlank()
@@ -752,9 +772,9 @@ private fun AllAppsScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Lock 30m") },
+                            text = { Text("Lock") },
                             onClick = {
-                                onLockApp(app.packageName, 30)
+                                lockDialogApp.value = app
                                 expandedApp.value = null
                             }
                         )
@@ -811,6 +831,18 @@ private fun AllAppsScreen(
                 }
             }
         }
+    }
+    
+    // Lock duration dialog
+    lockDialogApp.value?.let { app ->
+        LockDurationDialog(
+            appName = app.label,
+            onDismiss = { lockDialogApp.value = null },
+            onLock = { minutes ->
+                onLockApp(app.packageName, minutes)
+                lockDialogApp.value = null
+            }
+        )
     }
 }
 
@@ -1018,4 +1050,123 @@ private suspend fun PointerInputScope.detectSwipeUp(onSwipeUp: () -> Unit) {
     ) { _, dragAmount ->
         totalDrag += dragAmount
     }
+}
+
+@Composable
+private fun LockDurationDialog(
+    appName: String,
+    onDismiss: () -> Unit,
+    onLock: (Long) -> Unit
+) {
+    val predefinedDurations = listOf(
+        "30min" to 30L,
+        "1hr" to 60L,
+        "2hr" to 120L,
+        "4hr" to 240L,
+        "8hr" to 480L,
+        "10hr" to 600L,
+        "12hr" to 720L,
+        "24hr" to 1440L,
+        "48hr" to 2880L,
+        "5days" to 7200L,
+        "10days" to 14400L,
+        "14days" to 20160L,
+        "20days" to 28800L,
+        "25days" to 36000L,
+        "31days" to 44640L
+    )
+    
+    val sliderPosition = remember { mutableFloatStateOf(0f) }
+    val customHours = remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.Black,
+        title = {
+            Text(
+                text = "Lock $appName",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = predefinedDurations[sliderPosition.floatValue.toInt()].first,
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                Slider(
+                    value = sliderPosition.floatValue,
+                    onValueChange = { sliderPosition.floatValue = it },
+                    valueRange = 0f..(predefinedDurations.size - 1).toFloat(),
+                    steps = predefinedDurations.size - 2,
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = Color.White,
+                        inactiveTrackColor = Color(0xFF333333)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Text(
+                    text = "Or enter custom hours:",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                OutlinedTextField(
+                    value = customHours.value,
+                    onValueChange = { 
+                        if (it.isEmpty() || it.all { char -> char.isDigit() }) {
+                            customHours.value = it
+                        }
+                    },
+                    placeholder = { Text("Enter hours", color = Color(0xFF555555)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color(0xFF555555),
+                        cursorColor = Color.White
+                    ),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val minutes = if (customHours.value.isNotEmpty()) {
+                        customHours.value.toLongOrNull()?.times(60) ?: 0L
+                    } else {
+                        predefinedDurations[sliderPosition.floatValue.toInt()].second
+                    }
+                    if (minutes > 0) {
+                        onLock(minutes)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text("Lock", color = Color.White, fontSize = 16.sp)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color(0xFFAAAAAA), fontSize = 16.sp)
+            }
+        }
+    )
 }
