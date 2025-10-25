@@ -39,10 +39,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Enforce default launcher requirement - app cannot be used otherwise
         if (!isDefaultLauncher()) {
-            showDefaultLauncherPromptAndFinish()
+            showDefaultLauncherPrompt()
             return
         }
+        
         applySystemBarStyling()
         setContent {
             MinimalistFocusTheme {
@@ -84,12 +87,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Re-check default launcher status to prevent bypass
+        // Note: This may cause issues after phone calls - monitor behavior
         if (!isDefaultLauncher()) {
-            showDefaultLauncherPromptAndFinish()
+            showDefaultLauncherPrompt()
         }
     }
 
-    private fun showDefaultLauncherPromptAndFinish() {
+    private fun showDefaultLauncherPrompt() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
             if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
