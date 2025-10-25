@@ -61,6 +61,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -116,9 +117,11 @@ fun LauncherApp(
     val shouldShowInlineSearch = state.isKeyboardSearchOnSwipe
     val shouldFocusInlineSearch = shouldShowInlineSearch && pagerState.currentPage == 2
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(pagerState.currentPage) {
         if (pagerState.currentPage != 2) {
+            focusManager.clearFocus(force = true)
             keyboardController?.hide()
             if (state.searchQuery.isNotEmpty()) {
                 onSearchQueryChange("")
@@ -177,7 +180,16 @@ fun LauncherApp(
                         )
                         1 -> HomeScreen(
                             state = state,
-                            onLaunchApp = { entry -> handleAppLaunch(entry, coroutineScope, canLaunch, onLaunchApp, snackbarHostState) },
+                            onLaunchApp = { entry -> 
+                                handleAppLaunch(
+                                    entry, 
+                                    coroutineScope, 
+                                    canLaunch, 
+                                    onLaunchApp, 
+                                    snackbarHostState,
+                                    navigateToHome = { /* Already on home */ }
+                                ) 
+                            },
                             bottomIconPickerSlot = bottomIconPickerSlot,
                             onUnpinApp = onUnpinApp,
                             onHideApp = onHideApp,
@@ -192,7 +204,20 @@ fun LauncherApp(
                         searchQuery = state.searchQuery,
                         shouldFocusSearch = shouldFocusInlineSearch,
                         onQueryChange = onSearchQueryChange,
-                        onLaunchApp = { entry -> handleAppLaunch(entry, coroutineScope, canLaunch, onLaunchApp, snackbarHostState) },
+                        onLaunchApp = { entry -> 
+                            handleAppLaunch(
+                                entry, 
+                                coroutineScope, 
+                                canLaunch, 
+                                onLaunchApp, 
+                                snackbarHostState,
+                                navigateToHome = { 
+                                    coroutineScope.launch {
+                                        pagerState.scrollToPage(1)  // Navigate to home (page 1)
+                                    }
+                                }
+                            ) 
+                        },
                         onPinApp = onPinApp,
                         onUnpinApp = onUnpinApp,
                         onHideApp = onHideApp,
@@ -247,11 +272,15 @@ private fun handleAppLaunch(
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    navigateToHome: () -> Unit
 ) {
     coroutineScope.launch {
         if (canLaunch(entry.packageName)) {
             onLaunchApp(entry.packageName)
+            // Small delay to allow UI to settle before navigation
+            kotlinx.coroutines.delay(50)
+            navigateToHome()  // Navigate back to home after launching app
         } else {
             snackbarHostState.showSnackbar("App locked")
         }
@@ -637,6 +666,7 @@ private fun AllAppsScreen(
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(keyboardOnSwipe) {
         if (!keyboardOnSwipe) {
@@ -727,6 +757,9 @@ private fun AllAppsScreen(
                     blinkingApp.value = null
                     
                     // Launch the app
+                    focusManager.clearFocus(force = true)
+                    keyboardController?.hide()
+                    onQueryChange("")
                     onLaunchApp(app)
                     appToLaunch.value = null
                 }
