@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
                     onSearchVisibilityChange = viewModel::setSearchVisibility,
                     onBottomIconChange = viewModel::setBottomIcon,
                     onSettingsVisibilityChange = viewModel::setSettingsVisibility,
+                    onHistoryVisibilityChange = viewModel::setHistoryVisibility,
                     onClockFormatChange = viewModel::setClockFormat,
                     onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                     onConsumeMessage = viewModel::consumeMessage,

@@ -20,7 +20,7 @@ import com.minifocus.launcher.data.entity.TaskEntity
         HiddenAppEntity::class,
         AppLockEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

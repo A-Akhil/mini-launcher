@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -73,7 +74,23 @@ class LauncherViewModel(
         appsManager.observeHiddenApps(),
         tasksManager.observeTasks()
     ) { pinned, allApps, hiddenApps, tasks ->
-        DataSnapshot(pinned, allApps, hiddenApps, tasks)
+        val now = System.currentTimeMillis()
+        val gracePeroid = 3000L // 3 seconds to allow undo
+        
+        // Active tasks: not completed OR completed less than 3 seconds ago
+        val activeTasks = tasks.filter { task ->
+            !task.isCompleted || 
+            (task.completedAt != null && (now - task.completedAt) < gracePeroid)
+        }
+        
+        // History: completed and past grace period
+        val historyTasks = tasks.filter { task ->
+            task.isCompleted && 
+            task.completedAt != null && 
+            (now - task.completedAt) >= gracePeroid
+        }
+        
+        DataSnapshot(pinned, allApps, hiddenApps, activeTasks, historyTasks)
     }
 
     private val preferencesSnapshot = combine(
@@ -91,17 +108,27 @@ class LauncherViewModel(
         searchQuery,
         searchResults,
         isSearchVisible,
+        isSettingsVisible,
         snackbarMessage
-    ) { time, query, results, searchVisible, message ->
-        OverlaySnapshot(time, query, results, searchVisible, message)
+    ) { flows: Array<Any?> ->
+        OverlaySnapshot(
+            time = flows[0] as LocalDateTime,
+            query = flows[1] as String,
+            results = flows[2] as List<SearchResult>,
+            searchVisible = flows[3] as Boolean,
+            settingsVisible = flows[4] as Boolean,
+            message = flows[5] as String?
+        )
     }
+
+    private val isHistoryVisible = MutableStateFlow(false)
 
     val uiState = combine(
         dataSnapshot,
         preferencesSnapshot,
         overlaySnapshot,
-        isSettingsVisible
-    ) { data, prefs, overlay, settingsVisible ->
+        isHistoryVisible
+    ) { data, prefs, overlay, historyVisible ->
         val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
         val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
         LauncherUiState(
@@ -111,13 +138,15 @@ class LauncherViewModel(
             allApps = data.all,
             hiddenApps = data.hidden,
             tasks = data.tasks,
+            historyTasks = data.historyTasks,
             theme = prefs.theme,
             bottomLeft = bottomLeft,
             bottomRight = bottomRight,
             searchQuery = overlay.query,
             searchResults = overlay.results,
             isSearchVisible = overlay.searchVisible,
-            isSettingsVisible = settingsVisible,
+            isSettingsVisible = overlay.settingsVisible,
+            isHistoryVisible = historyVisible,
             isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
             message = overlay.message
         )
@@ -127,9 +156,9 @@ class LauncherViewModel(
         initialValue = LauncherUiState()
     )
 
-    fun addTask(title: String) {
+    fun addTask(title: String, scheduledFor: Long? = null) {
         viewModelScope.launch {
-            val added = tasksManager.addTask(title)
+            val added = tasksManager.addTask(title, scheduledFor)
             if (added) {
                 snackbarMessage.update { "Task added" }
             }
@@ -137,7 +166,14 @@ class LauncherViewModel(
     }
 
     fun toggleTask(taskId: Long) {
-        viewModelScope.launch { tasksManager.toggleTask(taskId) }
+        viewModelScope.launch { 
+            tasksManager.toggleTask(taskId)
+            
+            // Schedule a delayed refresh to move completed tasks to history after grace period
+            delay(3100L) // Slightly longer than grace period
+            // Trigger re-evaluation by updating a dummy flow
+            tasksManager.observeTasks().first() // Force re-collect
+        }
     }
 
     fun deleteTask(taskId: Long) {
@@ -193,6 +229,15 @@ class LauncherViewModel(
         isSettingsVisible.value = visible
         if (visible) {
             isSearchVisible.value = false
+            isHistoryVisible.value = false
+        }
+    }
+
+    fun setHistoryVisibility(visible: Boolean) {
+        isHistoryVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
         }
     }
 
@@ -258,7 +303,8 @@ private data class DataSnapshot(
     val pinned: List<AppEntry>,
     val all: List<AppEntry>,
     val hidden: List<AppEntry>,
-    val tasks: List<TaskItem>
+    val tasks: List<TaskItem>,
+    val historyTasks: List<TaskItem>
 )
 
 private data class PreferencesSnapshot(
@@ -275,6 +321,7 @@ private data class OverlaySnapshot(
     val query: String,
     val results: List<SearchResult>,
     val searchVisible: Boolean,
+    val settingsVisible: Boolean,
     val message: String?
 )
 
@@ -285,6 +332,7 @@ data class LauncherUiState(
     val allApps: List<AppEntry> = emptyList(),
     val hiddenApps: List<AppEntry> = emptyList(),
     val tasks: List<TaskItem> = emptyList(),
+    val historyTasks: List<TaskItem> = emptyList(),
     val theme: LauncherTheme = LauncherTheme.AMOLED,
     val bottomLeft: AppEntry? = null,
     val bottomRight: AppEntry? = null,
@@ -293,6 +341,7 @@ data class LauncherUiState(
     val isSearchVisible: Boolean = false,
     val isKeyboardSearchOnSwipe: Boolean = false,
     val isSettingsVisible: Boolean = false,
+    val isHistoryVisible: Boolean = false,
     val message: String? = null
 ) {
     val timeFormatted: String
