@@ -58,6 +58,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
@@ -90,7 +92,7 @@ import kotlinx.coroutines.launch
 fun LauncherApp(
     state: LauncherUiState,
     onToggleTask: (Long) -> Unit,
-    onAddTask: (String) -> Unit,
+    onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
     onPinApp: (String) -> Unit,
     onUnpinApp: (String) -> Unit,
@@ -102,6 +104,7 @@ fun LauncherApp(
     onSearchVisibilityChange: (Boolean) -> Unit,
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
     onSettingsVisibilityChange: (Boolean) -> Unit,
+    onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onConsumeMessage: () -> Unit,
@@ -169,6 +172,12 @@ fun LauncherApp(
                     onClockFormatChange = onClockFormatChange,
                     onBack = { onSettingsVisibilityChange(false) }
                 )
+            } else if (state.isHistoryVisible) {
+                HistoryScreen(
+                    historyTasks = state.historyTasks,
+                    onBack = { onHistoryVisibilityChange(false) },
+                    onDeleteTask = onDeleteTask
+                )
             } else {
                 HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                     when (page) {
@@ -176,7 +185,8 @@ fun LauncherApp(
                             tasks = state.tasks,
                             onToggleTask = onToggleTask,
                             onAddTask = onAddTask,
-                            onDeleteTask = onDeleteTask
+                            onDeleteTask = onDeleteTask,
+                            onOpenHistory = { onHistoryVisibilityChange(true) }
                         )
                         1 -> HomeScreen(
                             state = state,
@@ -451,12 +461,12 @@ private fun BottomIconButton(
 private fun TasksScreen(
     tasks: List<TaskItem>,
     onToggleTask: (Long) -> Unit,
-    onAddTask: (String) -> Unit,
-    onDeleteTask: (Long) -> Unit
+    onAddTask: (String, Long?) -> Unit,
+    onDeleteTask: (Long) -> Unit,
+    onOpenHistory: () -> Unit
 ) {
     val showAddDialog = remember { mutableStateOf(false) }
     val showEditDialog = remember { mutableStateOf<TaskItem?>(null) }
-    val inputText = remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -468,12 +478,25 @@ private fun TasksScreen(
                 .fillMaxSize()
                 .padding(horizontal = 24.dp, vertical = 36.dp)
         ) {
-            Text(
-                text = "Tasks",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Tasks",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                IconButton(onClick = onOpenHistory) {
+                    Icon(
+                        imageVector = Icons.Filled.History,
+                        contentDescription = "History",
+                        tint = Color.White
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -486,7 +509,6 @@ private fun TasksScreen(
                                 onClick = { onToggleTask(task.id) },
                                 onLongClick = {
                                     showEditDialog.value = task
-                                    inputText.value = task.title
                                 }
                             ),
                         verticalAlignment = Alignment.CenterVertically
@@ -509,10 +531,7 @@ private fun TasksScreen(
         }
 
         FloatingActionButton(
-            onClick = {
-                inputText.value = ""
-                showAddDialog.value = true
-            },
+            onClick = { showAddDialog.value = true },
             containerColor = Color.White,
             contentColor = Color.Black,
             modifier = Modifier
@@ -523,85 +542,30 @@ private fun TasksScreen(
         }
     }
 
-    // Add Task Dialog
+    // Fancy Add Task Dialog
     if (showAddDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog.value = false },
-            title = { Text("Add Task") },
-            text = {
-                OutlinedTextField(
-                    value = inputText.value,
-                    onValueChange = { inputText.value = it },
-                    label = { Text("Task name") },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val title = inputText.value.trim()
-                        if (title.isNotEmpty()) {
-                            onAddTask(title)
-                            showAddDialog.value = false
-                        }
-                    }
-                ) {
-                    Text("Add")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddDialog.value = false }) {
-                    Text("Cancel")
-                }
+        FancyAddTaskDialog(
+            onDismiss = { showAddDialog.value = false },
+            onAdd = { title, scheduledTime ->
+                onAddTask(title, scheduledTime)
+                showAddDialog.value = false
             }
         )
     }
 
     // Edit/Delete Task Dialog
     showEditDialog.value?.let { task ->
-        AlertDialog(
-            onDismissRequest = { showEditDialog.value = null },
-            title = { Text("Edit Task") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = inputText.value,
-                        onValueChange = { inputText.value = it },
-                        label = { Text("Task name") },
-                        singleLine = true
-                    )
-                }
+        EditTaskDialog(
+            task = task,
+            onDismiss = { showEditDialog.value = null },
+            onSave = { newTitle ->
+                onDeleteTask(task.id)
+                onAddTask(newTitle, null)
+                showEditDialog.value = null
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val newTitle = inputText.value.trim()
-                        if (newTitle.isNotEmpty() && newTitle != task.title) {
-                            // Delete old and add new (simple edit simulation)
-                            onDeleteTask(task.id)
-                            onAddTask(newTitle)
-                        }
-                        showEditDialog.value = null
-                    }
-                ) {
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(
-                        onClick = {
-                            onDeleteTask(task.id)
-                            showEditDialog.value = null
-                        }
-                    ) {
-                        Text("Delete", color = Color.White)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = { showEditDialog.value = null }) {
-                        Text("Cancel")
-                    }
-                }
+            onDelete = {
+                onDeleteTask(task.id)
+                showEditDialog.value = null
             }
         )
     }
