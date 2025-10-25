@@ -5,7 +5,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Build
+import android.provider.AlarmClock
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -69,7 +71,8 @@ class MainActivity : ComponentActivity() {
                     onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                     onConsumeMessage = viewModel::consumeMessage,
                     canLaunch = viewModel::canLaunch,
-                    onLaunchApp = { packageName -> launchPackage(packageName) }
+                    onLaunchApp = { packageName -> launchPackage(packageName) },
+                    onOpenClock = { openClockApp() }
                 )
             }
         }
@@ -116,6 +119,109 @@ class MainActivity : ComponentActivity() {
             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(launchIntent)
         }
+    }
+
+    private fun openClockApp() {
+        val pm = packageManager
+
+        // Level 1: The "Official" Intent (Best Method)
+        val standardIntent = Intent(AlarmClock.ACTION_SHOW_ALARMS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        if (standardIntent.resolveActivity(pm) != null) {
+            try {
+                startActivity(standardIntent)
+                return
+            } catch (e: Exception) {
+                // Could still fail on some devices
+            }
+        }
+
+        // Level 2: Hardcoded List (Good Fallback)
+        val knownClockPackages = listOf(
+            // Google Pixel / AOSP
+            "com.google.android.deskclock",
+            "com.android.deskclock",
+
+            // Samsung
+            "com.samsung.android.app.clockpackage",
+            "com.sec.android.app.clockpackage",
+
+            // OnePlus
+            "com.oneplus.deskclock",
+
+            // Oppo (ColorOS)
+            "com.coloros.alarmclock",
+
+            // Vivo (Funtouch OS / OriginOS)
+            "com.vivo.alarmclock",
+            "com.bbk.alarmclock",
+
+            // Huawei (EMUI / HarmonyOS)
+            "com.huawei.android.deskclock",
+            "com.android.util",
+
+            // LG
+            "com.lge.clock",
+            "com.lge.alarmclock",
+
+            // Motorola
+            "com.motorola.blur.alarmclock",
+            "com.motorola.timeweatherwidget",
+
+            // Sony
+            "com.sonyericsson.organizer",
+            "com.sonymobile.tocca.clock",
+
+            // Asus
+            "com.asus.deskclock",
+
+            // HTC
+            "com.htc.android.worldclock"
+        )
+
+        for (pkg in knownClockPackages) {
+            val launchIntent = pm.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                try {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(launchIntent)
+                    return
+                } catch (e: Exception) {
+                    // Ignore and try next package
+                }
+            }
+        }
+
+        // Level 3: The "Best-Guess" Dynamic Search (Last Resort)
+        try {
+            val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            }
+            
+            val appList = pm.queryIntentActivities(mainIntent, 0)
+
+            for (info in appList) {
+                val pkgName = info.activityInfo.packageName.lowercase()
+                val appLabel = info.loadLabel(pm).toString().lowercase()
+
+                if (pkgName.contains("clock") || appLabel.contains("clock") ||
+                    pkgName.contains("alarm") || appLabel.contains("alarm")) {
+                    
+                    val launchIntent = pm.getLaunchIntentForPackage(info.activityInfo.packageName)
+                    if (launchIntent != null) {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launchIntent)
+                        return
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Level 4: Failed
+        Toast.makeText(this, "Could not find clock app", Toast.LENGTH_SHORT).show()
     }
 
     private fun isDefaultLauncher(): Boolean {

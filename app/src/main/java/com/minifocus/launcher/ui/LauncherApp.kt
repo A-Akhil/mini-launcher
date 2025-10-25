@@ -105,7 +105,8 @@ fun LauncherApp(
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
-    onLaunchApp: (String) -> Unit
+    onLaunchApp: (String) -> Unit,
+    onOpenClock: () -> Unit
 ) {
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
     val snackbarHostState = remember { SnackbarHostState() }
@@ -181,7 +182,8 @@ fun LauncherApp(
                             onUnpinApp = onUnpinApp,
                             onHideApp = onHideApp,
                             onLockApp = onLockApp,
-                            onUnlockApp = onUnlockApp
+                            onUnlockApp = onUnlockApp,
+                            onOpenClock = onOpenClock
                         )
                         else -> AllAppsScreen(
                             apps = state.allApps,
@@ -264,7 +266,8 @@ private fun HomeScreen(
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
-    onUnlockApp: (String) -> Unit
+    onUnlockApp: (String) -> Unit,
+    onOpenClock: () -> Unit
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
@@ -283,7 +286,10 @@ private fun HomeScreen(
                 fontSize = 72.sp,
                 fontWeight = FontWeight.Light,
                 color = Color.White,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.combinedClickable(
+                    onClick = { onOpenClock() }
+                )
             )
             Text(
                 text = state.dateFormatted,
