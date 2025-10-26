@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -300,38 +301,100 @@ fun TimePickerDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskDialog(
     task: TaskItem,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
+    onSave: (String, Long?) -> Unit,
     onDelete: () -> Unit
 ) {
     val inputText = remember { mutableStateOf(task.title) }
+    val enableReminder = remember { mutableStateOf(task.scheduledFor != null) }
+    val selectedDate = remember { 
+        mutableStateOf<LocalDateTime?>(
+            task.scheduledFor?.let { 
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault())
+            }
+        )
+    }
+    val showDatePicker = remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Task", color = Color.White) },
         text = {
-            OutlinedTextField(
-                value = inputText.value,
-                onValueChange = { inputText.value = it },
-                label = { Text("Task name", color = Color(0xFFAAAAAA)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color(0xFF555555)
-                ),
-                singleLine = true
-            )
+            Column {
+                OutlinedTextField(
+                    value = inputText.value,
+                    onValueChange = { inputText.value = it },
+                    label = { Text("Task name", color = Color(0xFFAAAAAA)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color(0xFF555555)
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Reminder",
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Switch(
+                        checked = enableReminder.value,
+                        onCheckedChange = { 
+                            enableReminder.value = it
+                            if (!it) selectedDate.value = null
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF444444),
+                            uncheckedThumbColor = Color(0xFF777777),
+                            uncheckedTrackColor = Color(0xFF222222)
+                        )
+                    )
+                }
+                
+                if (enableReminder.value) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    OutlinedButton(
+                        onClick = { showDatePicker.value = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = selectedDate.value?.let {
+                                it.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))
+                            } ?: "Select Date & Time",
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
                 onClick = {
                     val newTitle = inputText.value.trim()
-                    if (newTitle.isNotEmpty() && newTitle != task.title) {
-                        onSave(newTitle)
+                    if (newTitle.isNotEmpty()) {
+                        val scheduledTime = if (enableReminder.value && selectedDate.value != null) {
+                            selectedDate.value!!.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        } else null
+                        onSave(newTitle, scheduledTime)
                     } else {
                         onDismiss()
                     }
@@ -343,7 +406,7 @@ fun EditTaskDialog(
         dismissButton = {
             Row {
                 TextButton(onClick = onDelete) {
-                    Text("Delete", color = Color(0xFFFF4444))
+                    Text("Delete", color = Color(0xFFFFFFFF))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = onDismiss) {
@@ -353,12 +416,23 @@ fun EditTaskDialog(
         },
         containerColor = Color(0xFF1A1A1A)
     )
+    
+    if (showDatePicker.value) {
+        DateTimePickerDialog(
+            onDismiss = { showDatePicker.value = false },
+            onConfirm = { dateTime ->
+                selectedDate.value = dateTime
+                showDatePicker.value = false
+            }
+        )
+    }
 }
 
 @Composable
 fun HistoryScreen(
     historyTasks: List<TaskItem>,
     onBack: () -> Unit,
+    onToggleTask: (Long) -> Unit,
     onDeleteTask: (Long) -> Unit
 ) {
     Column(
@@ -412,9 +486,18 @@ fun HistoryScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Checkbox(
+                            checked = task.isCompleted,
+                            onCheckedChange = { onToggleTask(task.id) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color.White,
+                                uncheckedColor = Color(0xFF555555),
+                                checkmarkColor = Color.Black
+                            )
+                        )
+                        Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(
                                 text = task.title,
                                 color = Color.White,
@@ -429,8 +512,12 @@ fun HistoryScreen(
                                 )
                             }
                         }
-                        TextButton(onClick = { onDeleteTask(task.id) }) {
-                            Text("Remove", color = Color.White, fontSize = 14.sp)
+                        IconButton(onClick = { onDeleteTask(task.id) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Delete",
+                                tint = Color.White
+                            )
                         }
                     }
                     Divider(color = Color(0xFF222222), thickness = 1.dp)
