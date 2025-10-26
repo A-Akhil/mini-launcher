@@ -22,7 +22,7 @@ class LauncherApplication : Application() {
         super.onCreate()
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val database = AppDatabase.build(this)
-        val tasksManager = TasksManager(database.taskDao())
+        val tasksManager = TasksManager(database.taskDao(), this)
         val hiddenManager = HiddenAppsManager(database.hiddenAppDao())
         val lockManager = LockManager(database.appLockDao())
         val appsManager = AppsManager(

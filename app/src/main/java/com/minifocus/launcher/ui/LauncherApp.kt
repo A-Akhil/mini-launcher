@@ -176,6 +176,7 @@ fun LauncherApp(
                 HistoryScreen(
                     historyTasks = state.historyTasks,
                     onBack = { onHistoryVisibilityChange(false) },
+                    onToggleTask = onToggleTask,
                     onDeleteTask = onDeleteTask
                 )
             } else {
@@ -517,14 +518,25 @@ private fun TasksScreen(
                             checked = task.isCompleted,
                             onCheckedChange = { onToggleTask(task.id) }
                         )
-                        Text(
-                            text = task.title,
-                            color = if (task.isCompleted) Color(0xFF777777) else Color.White,
-                            fontSize = 16.sp,
+                        Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(start = 16.dp)
-                        )
+                        ) {
+                            Text(
+                                text = task.title,
+                                color = if (task.isCompleted) Color(0xFF777777) else Color.White,
+                                fontSize = 16.sp
+                            )
+                            task.scheduledFor?.let { timestamp ->
+                                Text(
+                                    text = formatScheduledTime(timestamp),
+                                    color = Color(0xFF888888),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -558,9 +570,9 @@ private fun TasksScreen(
         EditTaskDialog(
             task = task,
             onDismiss = { showEditDialog.value = null },
-            onSave = { newTitle ->
+            onSave = { newTitle, scheduledTime ->
                 onDeleteTask(task.id)
-                onAddTask(newTitle, null)
+                onAddTask(newTitle, scheduledTime)
                 showEditDialog.value = null
             },
             onDelete = {
@@ -568,6 +580,23 @@ private fun TasksScreen(
                 showEditDialog.value = null
             }
         )
+    }
+}
+
+private fun formatScheduledTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val dateTime = java.time.LocalDateTime.ofInstant(
+        java.time.Instant.ofEpochMilli(timestamp), 
+        java.time.ZoneId.systemDefault()
+    )
+    val today = java.time.LocalDate.now()
+    val taskDate = dateTime.toLocalDate()
+    
+    return when {
+        taskDate == today -> "Today at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
+        taskDate == today.plusDays(1) -> "Tomorrow at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
+        timestamp < now -> "⚠ ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))}"
+        else -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
     }
 }
 

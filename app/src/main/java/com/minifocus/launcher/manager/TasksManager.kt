@@ -1,5 +1,6 @@
 package com.minifocus.launcher.manager
 
+import android.content.Context
 import com.minifocus.launcher.data.dao.TaskDao
 import com.minifocus.launcher.data.entity.TaskEntity
 import com.minifocus.launcher.model.TaskItem
@@ -8,7 +9,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class TasksManager(private val taskDao: TaskDao) {
+class TasksManager(
+    private val taskDao: TaskDao,
+    private val context: Context
+) {
+    private val notificationScheduler = NotificationScheduler(context)
 
     fun observeTasks(): Flow<List<TaskItem>> = taskDao.observeTasks().map { entities ->
         entities.map { entity ->
@@ -28,12 +33,19 @@ class TasksManager(private val taskDao: TaskDao) {
         val trimmed = title.trim()
         if (trimmed.isEmpty()) return false
         return withContext(Dispatchers.IO) {
-            taskDao.insert(
+            val taskId = taskDao.insert(
                 TaskEntity(
                     title = trimmed,
                     scheduledFor = scheduledFor
                 )
-            ) > 0
+            )
+            
+            // Schedule notification if there's a scheduled time
+            if (taskId > 0 && scheduledFor != null) {
+                notificationScheduler.scheduleNotification(taskId, trimmed, scheduledFor)
+            }
+            
+            taskId > 0
         }
     }
 
@@ -41,6 +53,12 @@ class TasksManager(private val taskDao: TaskDao) {
         withContext(Dispatchers.IO) {
             val existing = taskDao.getTask(taskId) ?: return@withContext
             val newCompletedState = !existing.isCompleted
+            
+            // Cancel notification if task is being completed
+            if (newCompletedState && existing.scheduledFor != null) {
+                notificationScheduler.cancelNotification(taskId)
+            }
+            
             taskDao.update(
                 existing.copy(
                     isCompleted = newCompletedState,
@@ -68,6 +86,8 @@ class TasksManager(private val taskDao: TaskDao) {
 
     suspend fun delete(taskId: Long) {
         withContext(Dispatchers.IO) {
+            // Cancel notification before deleting
+            notificationScheduler.cancelNotification(taskId)
             taskDao.delete(taskId)
         }
     }
