@@ -6,6 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
 import com.minifocus.launcher.data.dao.PinnedAppDao
 import com.minifocus.launcher.data.entity.PinnedAppEntity
 import com.minifocus.launcher.model.AppEntry
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.LazyThreadSafetyMode
 
 class AppsManager(
     private val context: Context,
@@ -31,6 +36,7 @@ class AppsManager(
     private val selfPackage = context.packageName
     private val installedApps = MutableStateFlow<List<AppEntry>>(emptyList())
     private var isRefreshed = false
+    private val essentialSystemPackages: Set<String> by lazy(LazyThreadSafetyMode.NONE) { discoverEssentialSystemPackages() }
 
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -150,6 +156,7 @@ class AppsManager(
                     if (pm.getLaunchIntentForPackage(app.packageName) == null) continue
 
                     val label = pm.getApplicationLabel(app).toString()
+                    if (!shouldIncludeApp(app)) continue
                     add(AppEntry(packageName = app.packageName, label = label))
                 }
             }.sortedBy { it.label.lowercase() }
@@ -157,5 +164,49 @@ class AppsManager(
 
         installedApps.value = apps
         isRefreshed = true
+    }
+
+    private fun shouldIncludeApp(appInfo: ApplicationInfo): Boolean {
+        val isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+        if (!isSystemApp) {
+            return true
+        }
+
+        if ((appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0) {
+            return true
+        }
+
+        if (appInfo.packageName in essentialSystemPackages) {
+            return true
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val category = appInfo.category
+            if (category != ApplicationInfo.CATEGORY_UNDEFINED) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun discoverEssentialSystemPackages(): Set<String> {
+        val pm = packageManager
+        val intents = listOf(
+            Intent(Intent.ACTION_DIAL),
+            Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:")),
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA),
+            Intent(AlarmClock.ACTION_SHOW_ALARMS),
+            Intent(Settings.ACTION_SETTINGS)
+        )
+
+        return buildSet {
+            for (intent in intents) {
+                pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+                    ?.activityInfo
+                    ?.packageName
+                    ?.let { add(it) }
+            }
+        }
     }
 }
