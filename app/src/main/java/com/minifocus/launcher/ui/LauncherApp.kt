@@ -600,8 +600,11 @@ private fun formatScheduledTime(timestamp: Long): String {
     }
 }
 
-// Fuzzy search: matches if all query chars appear in order in the label
-// Ignores non-alphanumeric characters in query for more flexible matching
+// Smart search: prioritizes better matches
+// 1. Starts with query (highest priority)
+// 2. Word boundary match (query starts a word)
+// 3. Contains as substring
+// 4. Fuzzy match (scattered chars)
 private fun fuzzyMatch(label: String, query: String): Boolean {
     if (query.isEmpty()) return true
     val lowerLabel = label.lowercase()
@@ -609,8 +612,18 @@ private fun fuzzyMatch(label: String, query: String): Boolean {
     
     if (lowerQuery.isEmpty()) return true
     
-    var queryIndex = 0
+    // 1. Exact prefix match
+    if (lowerLabel.startsWith(lowerQuery)) return true
     
+    // 2. Word boundary match (query starts a word)
+    val words = lowerLabel.split(" ", "-", "_", ".", "&")
+    if (words.any { it.startsWith(lowerQuery) }) return true
+    
+    // 3. Substring match
+    if (lowerLabel.contains(lowerQuery)) return true
+    
+    // 4. Fuzzy scattered match (last resort)
+    var queryIndex = 0
     for (char in lowerLabel) {
         if (queryIndex < lowerQuery.length && char == lowerQuery[queryIndex]) {
             queryIndex++
@@ -618,6 +631,31 @@ private fun fuzzyMatch(label: String, query: String): Boolean {
     }
     
     return queryIndex == lowerQuery.length
+}
+
+// Calculate match score (lower is better)
+// Used to sort search results by relevance
+private fun matchScore(label: String, query: String): Int {
+    val lowerLabel = label.lowercase()
+    val lowerQuery = query.lowercase().filter { it.isLetterOrDigit() }
+    
+    if (lowerQuery.isEmpty()) return 999
+    
+    // 1. Exact match (score 0)
+    if (lowerLabel == lowerQuery) return 0
+    
+    // 2. Starts with query (score 1)
+    if (lowerLabel.startsWith(lowerQuery)) return 1
+    
+    // 3. Word boundary match (score 2)
+    val words = lowerLabel.split(" ", "-", "_", ".", "&")
+    if (words.any { it.startsWith(lowerQuery) }) return 2
+    
+    // 4. Contains as substring (score 3)
+    if (lowerLabel.contains(lowerQuery)) return 3
+    
+    // 5. Fuzzy match (score 4)
+    return 4
 }
 
 @Composable
@@ -645,6 +683,10 @@ private fun AllAppsScreen(
     val filteredApps = remember(apps, searchQuery) {
         if (searchActive) {
             apps.filter { fuzzyMatch(it.label, searchQuery) }
+                .sortedWith(compareBy(
+                    { matchScore(it.label, searchQuery) },
+                    { it.label.lowercase() }
+                ))
         } else {
             apps
         }
@@ -652,6 +694,10 @@ private fun AllAppsScreen(
     val filteredHiddenApps = remember(hiddenApps, searchQuery) {
         if (searchActive) {
             hiddenApps.filter { fuzzyMatch(it.label, searchQuery) }
+                .sortedWith(compareBy(
+                    { matchScore(it.label, searchQuery) },
+                    { it.label.lowercase() }
+                ))
         } else {
             hiddenApps
         }
