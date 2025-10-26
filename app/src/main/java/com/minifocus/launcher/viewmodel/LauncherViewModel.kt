@@ -81,7 +81,13 @@ class LauncherViewModel(
         val activeTasks = tasks.filter { task ->
             !task.isCompleted || 
             (task.completedAt != null && (now - task.completedAt) < gracePeroid)
-        }
+        }.sortedWith(compareBy<TaskItem> { 
+            // Sort by scheduled time (nearest first), nulls last
+            it.scheduledFor ?: Long.MAX_VALUE
+        }.thenBy { 
+            // Then by creation time
+            it.createdAt 
+        })
         
         // History: completed and past grace period
         val historyTasks = tasks.filter { task ->
