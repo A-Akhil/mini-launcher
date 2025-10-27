@@ -107,6 +107,7 @@ fun LauncherApp(
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
+    onShowSecondsChange: (Boolean) -> Unit,
     onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
@@ -168,8 +169,10 @@ fun LauncherApp(
                 SettingsScreen(
                     clockFormat = state.clockFormat,
                     keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                    showSeconds = state.showSeconds,
                     onKeyboardToggle = onKeyboardSearchOnSwipeChange,
                     onClockFormatChange = onClockFormatChange,
+                    onShowSecondsToggle = onShowSecondsChange,
                     onBack = { onSettingsVisibilityChange(false) }
                 )
             } else if (state.isHistoryVisible) {
@@ -1022,8 +1025,10 @@ private fun BottomIconPickerDialog(
 private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
+    showSeconds: Boolean,
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
+    onShowSecondsToggle: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1076,6 +1081,31 @@ private fun SettingsScreen(
                 modifier = Modifier.weight(1f)
             )
             Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Show seconds setting
+        Text(
+            text = "Show seconds in clock",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = "Display seconds on home screen clock",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(checked = showSeconds, onCheckedChange = onShowSecondsToggle)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
