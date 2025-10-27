@@ -32,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -86,6 +85,7 @@ import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.viewmodel.LauncherUiState
+import com.minifocus.launcher.ui.components.MinimalCheckbox
 import kotlinx.coroutines.launch
 
 @Composable
@@ -519,7 +519,7 @@ private fun TasksScreen(
                             ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
+                        MinimalCheckbox(
                             checked = task.isCompleted,
                             onCheckedChange = { onToggleTask(task.id) }
                         )

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Minimalist Focus</string>
+    <string name="device_admin_explanation">Minimalist Focus needs device admin access to lock the screen when you double-tap the home page.</string>
 </resources>

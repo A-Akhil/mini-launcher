@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.minifocus.launcher.model.TaskItem
+import com.minifocus.launcher.ui.components.MinimalCheckbox
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -487,14 +488,9 @@ fun HistoryScreen(
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Checkbox(
+                        MinimalCheckbox(
                             checked = task.isCompleted,
-                            onCheckedChange = { onToggleTask(task.id) },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = Color.White,
-                                uncheckedColor = Color(0xFF555555),
-                                checkmarkColor = Color.Black
-                            )
+                            onCheckedChange = { onToggleTask(task.id) }
                         )
                         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(

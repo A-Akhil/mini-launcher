@@ -1,13 +1,19 @@
 package com.minifocus.launcher
 
+import android.Manifest
+import android.app.AlarmManager
+import android.app.admin.DevicePolicyManager
 import android.app.role.RoleManager
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import android.provider.AlarmClock
 import android.provider.Settings
 import android.widget.Toast
+import android.service.notification.NotificationListenerService
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -16,16 +22,51 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.LauncherApp
+import com.minifocus.launcher.ui.PermissionScreen
 import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import com.minifocus.launcher.viewmodel.LauncherViewModel
 import com.minifocus.launcher.viewmodel.LauncherViewModelFactory
+import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
+import com.minifocus.launcher.permissions.PermissionsEvaluator
+import com.minifocus.launcher.permissions.PermissionsState
+import com.minifocus.launcher.permissions.NotificationInboxListenerService
 
 class MainActivity : ComponentActivity() {
 
     private val requestHomeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         // No-op; user choice handled by system UI.
     }
+
+    private val requestPostNotificationsLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        updatePermissionsState()
+    }
+
+    private val notificationAccessLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updatePermissionsState()
+    }
+
+    private val deviceAdminLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updatePermissionsState()
+    }
+
+    private val exactAlarmLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updatePermissionsState()
+    }
+
+    private val permissionsState = MutableStateFlow(
+        PermissionsState(
+            notificationsGranted = false,
+            notificationListenerGranted = false,
+            deviceAdminGranted = false,
+            exactAlarmsGranted = false
+        )
+    )
+
+    private val notificationRestrictionHint = MutableStateFlow(false)
+    private var notificationAccessRequested = false
 
     private val viewModel: LauncherViewModel by viewModels {
         val app = application as LauncherApplication
@@ -49,33 +90,119 @@ class MainActivity : ComponentActivity() {
         }
         
         applySystemBarStyling()
+        notificationRestrictionHint.value = !isFromTrustedStore()
+        updatePermissionsState()
         setContent {
             MinimalistFocusTheme {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
-                LauncherApp(
-                    state = state,
-                    onToggleTask = viewModel::toggleTask,
-                    onAddTask = viewModel::addTask,
-                    onDeleteTask = viewModel::deleteTask,
-                    onPinApp = viewModel::pinApp,
-                    onUnpinApp = viewModel::unpinApp,
-                    onHideApp = viewModel::hideApp,
-                    onUnhideApp = viewModel::unhideApp,
-                    onLockApp = viewModel::lockApp,
-                    onUnlockApp = viewModel::unlockApp,
-                    onSearchQueryChange = viewModel::updateSearchQuery,
-                    onSearchVisibilityChange = viewModel::setSearchVisibility,
-                    onBottomIconChange = viewModel::setBottomIcon,
-                    onSettingsVisibilityChange = viewModel::setSettingsVisibility,
-                    onHistoryVisibilityChange = viewModel::setHistoryVisibility,
-                    onClockFormatChange = viewModel::setClockFormat,
-                    onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
-                    onShowSecondsChange = viewModel::setShowSeconds,
-                    onConsumeMessage = viewModel::consumeMessage,
-                    canLaunch = viewModel::canLaunch,
-                    onLaunchApp = { packageName -> launchPackage(packageName) },
-                    onOpenClock = { openClockApp() }
+                val permissions by permissionsState.collectAsStateWithLifecycle()
+                val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
+                if (permissions.allGranted) {
+                    LauncherApp(
+                        state = state,
+                        onToggleTask = viewModel::toggleTask,
+                        onAddTask = viewModel::addTask,
+                        onDeleteTask = viewModel::deleteTask,
+                        onPinApp = viewModel::pinApp,
+                        onUnpinApp = viewModel::unpinApp,
+                        onHideApp = viewModel::hideApp,
+                        onUnhideApp = viewModel::unhideApp,
+                        onLockApp = viewModel::lockApp,
+                        onUnlockApp = viewModel::unlockApp,
+                        onSearchQueryChange = viewModel::updateSearchQuery,
+                        onSearchVisibilityChange = viewModel::setSearchVisibility,
+                        onBottomIconChange = viewModel::setBottomIcon,
+                        onSettingsVisibilityChange = viewModel::setSettingsVisibility,
+                        onHistoryVisibilityChange = viewModel::setHistoryVisibility,
+                        onClockFormatChange = viewModel::setClockFormat,
+                        onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
+                        onShowSecondsChange = viewModel::setShowSeconds,
+                        onConsumeMessage = viewModel::consumeMessage,
+                        canLaunch = viewModel::canLaunch,
+                        onLaunchApp = { packageName -> launchPackage(packageName) },
+                        onOpenClock = { openClockApp() }
+                    )
+                } else {
+                    PermissionScreen(
+                        state = permissions,
+                        onRequestNotifications = ::requestPostNotificationsPermission,
+                        onRequestNotificationListener = ::requestNotificationAccess,
+                        onRequestExactAlarms = ::requestExactAlarmPermission,
+                        onRequestDeviceAdmin = ::requestDeviceAdmin,
+                        showRestrictedNotificationHint = restrictedHint,
+                        onOpenRestrictedSettings = ::openRestrictedSettings
+                    )
+                }
+            }
+        }
+    }
+
+    private fun requestPostNotificationsPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!permissionsState.value.notificationsGranted) {
+                requestPostNotificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            updatePermissionsState()
+        }
+    }
+
+    private fun requestNotificationAccess() {
+        if (permissionsState.value.notificationListenerGranted) {
+            updatePermissionsState()
+            return
+        }
+        notificationAccessRequested = true
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        notificationAccessLauncher.launch(intent)
+    }
+
+    private fun requestDeviceAdmin() {
+        if (permissionsState.value.deviceAdminGranted) {
+            updatePermissionsState()
+            return
+        }
+        val component = ComponentName(this, LauncherDeviceAdminReceiver::class.java)
+        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+            putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+            putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.device_admin_explanation))
+        }
+        deviceAdminLauncher.launch(intent)
+    }
+
+    private fun requestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            updatePermissionsState()
+            return
+        }
+
+        if (permissionsState.value.exactAlarmsGranted) {
+            updatePermissionsState()
+            return
+        }
+
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+        if (intent.resolveActivity(packageManager) != null) {
+            exactAlarmLauncher.launch(intent)
+        } else {
+            openRestrictedSettings()
+        }
+    }
+
+    private fun updatePermissionsState() {
+        val state = PermissionsEvaluator.currentState(this)
+        permissionsState.value = state
+        if (notificationAccessRequested && !state.notificationListenerGranted) {
+            notificationRestrictionHint.value = !isFromTrustedStore()
+        } else if (state.notificationListenerGranted) {
+            notificationAccessRequested = false
+            notificationRestrictionHint.value = false
+            try {
+                NotificationListenerService.requestRebind(
+                    ComponentName(this, NotificationInboxListenerService::class.java)
                 )
+            } catch (_: Exception) {
+                // Ignore; system will bind when possible.
             }
         }
     }
@@ -96,6 +223,30 @@ class MainActivity : ComponentActivity() {
         // Note: This may cause issues after phone calls - monitor behavior
         if (!isDefaultLauncher()) {
             showDefaultLauncherPrompt()
+            return
+        }
+        updatePermissionsState()
+    }
+
+    private fun openRestrictedSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+
+    private fun isFromTrustedStore(): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                packageManager.getInstallSourceInfo(packageName).installingPackageName == "com.android.vending"
+            } else {
+                @Suppress("DEPRECATION")
+                val installer = packageManager.getInstallerPackageName(packageName)
+                installer == "com.android.vending"
+            }
+        } catch (_: Exception) {
+            false
         }
     }
 

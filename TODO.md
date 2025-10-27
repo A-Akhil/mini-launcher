@@ -10,6 +10,8 @@ Implement double-tap gesture on home screen to turn off the device screen.
 - **Permission Issues:** Turning off the screen requires special permissions
   - `DEVICE_ADMIN` permission or Device Administrator policy
   - May require user to grant Device Admin privileges in Settings
+  - Global permission onboarding flow (2025-10-27) now surfaces the device admin request at app launch; gesture logic still pending.
+  - Exact alarm capability has been added to onboarding to support timely reminders once gesture-triggered locks interact with scheduling.
 
 ### Technical Approach
 1. Implement device admin receiver for screen-off capability
@@ -72,6 +74,40 @@ Ensure the system Overview (Recents) screen shows the launcher's intended pure b
 - Desired behavior: maintain minimalist solid black aesthetic across launcher and system overview.
 - May require adjustments to window/task snapshot configuration in `MainActivity` or theme.
 
+
+---
+
+Here is the new feature added to your backlog as item #5:
+
+---
+
+## 5. Notification Filter & Inbox
+**Status:** Not Started
+
+### Description
+Implement a notification filtering system that blocks all incoming system notifications. All intercepted notifications will be stored in a notification history/inbox within the launcher, which the user must manually open to view.
+
+### Known Challenges
+- **Permission Issues:** This feature requires "Notification Access" (`NotificationListenerService`), which is a sensitive permission. The user must grant this manually through a specific system settings page.
+- **Service Reliability:** The `NotificationListenerService` can be stopped by the system and needs to be robust.
+- **Data Storage:** Storing a history of all notifications can lead to a large database. A data retention and purging strategy will be needed.
+  - Permission onboarding (2025-10-27) already directs users to enable notification access; service implementation must leverage the granted access when delivered.
+  - Permission screen informs sideload users how to enable "Allow restricted settings" and links to App Info for convenience.
+  - Exact alarm privilege is now requested alongside other permissions so scheduled reminders can alert at precise times.
+
+### Technical Approach
+1. Create a class that extends `NotificationListenerService`.
+2. In the `onNotificationPosted(StatusBarNotification sbn)` method:
+   - Extract relevant data (app icon, app name, title, text, time) from the `sbn` object.
+   - Store this data in a local database (e.g., Room).
+   - Call `cancelNotification(sbn.getKey())` to immediately dismiss the notification so the user doesn't see it.
+3. Create a new UI ("Notification Inbox") in the launcher to display the stored notification history from the database.
+4. On first use, check for permission. If not granted, provide a clear explanation and a button that sends an `Intent` for `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS` to guide the user to the correct settings page.
+
+### Dependencies
+- `NotificationListenerService` API
+- `android.permission.BIND_NOTIFICATION_LISTENER_SERVICE` manifest declaration
+- Room Database for storing notification history
 
 ---
 
