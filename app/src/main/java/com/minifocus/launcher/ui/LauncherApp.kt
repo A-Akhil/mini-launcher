@@ -170,9 +170,12 @@ fun LauncherApp(
                     clockFormat = state.clockFormat,
                     keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                     showSeconds = state.showSeconds,
+                    bottomLeftApp = state.bottomLeft,
+                    bottomRightApp = state.bottomRight,
                     onKeyboardToggle = onKeyboardSearchOnSwipeChange,
                     onClockFormatChange = onClockFormatChange,
                     onShowSecondsToggle = onShowSecondsChange,
+                    onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                     onBack = { onSettingsVisibilityChange(false) }
                 )
             } else if (state.isHistoryVisible) {
@@ -253,7 +256,6 @@ fun LauncherApp(
                     query = state.searchQuery,
                     results = state.searchResults,
                     onQueryChange = onSearchQueryChange,
-                    onDismiss = { onSearchVisibilityChange(false) },
                     autoFocus = state.isSearchVisible,
                     onResultClick = { entry ->
                         coroutineScope.launch {
@@ -932,7 +934,6 @@ private fun SearchOverlay(
     query: String,
     results: List<SearchResult>,
     onQueryChange: (String) -> Unit,
-    onDismiss: () -> Unit,
     autoFocus: Boolean = false,
     onResultClick: (AppEntry) -> Unit
 ) {
@@ -1026,9 +1027,12 @@ private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
     showSeconds: Boolean,
+    bottomLeftApp: AppEntry?,
+    bottomRightApp: AppEntry?,
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onShowSecondsToggle: (Boolean) -> Unit,
+    onBottomIconClick: (BottomIconSlot) -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1106,6 +1110,71 @@ private fun SettingsScreen(
                 modifier = Modifier.weight(1f)
             )
             Switch(checked = showSeconds, onCheckedChange = onShowSecondsToggle)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Bottom icons customization
+        Text(
+            text = "Bottom Quick Launch Icons",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Left bottom icon
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .combinedClickable(onClick = { onBottomIconClick(BottomIconSlot.LEFT) })
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Left Icon",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = bottomLeftApp?.label ?: "None",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp
+                )
+            }
+            Text(
+                text = "→",
+                color = Color(0xFFAAAAAA),
+                fontSize = 20.sp
+            )
+        }
+        
+        // Right bottom icon
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .combinedClickable(onClick = { onBottomIconClick(BottomIconSlot.RIGHT) })
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Right Icon",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = bottomRightApp?.label ?: "None",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp
+                )
+            }
+            Text(
+                text = "→",
+                color = Color(0xFFAAAAAA),
+                fontSize = 20.sp
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

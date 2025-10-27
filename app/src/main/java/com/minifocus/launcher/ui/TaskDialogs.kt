@@ -33,7 +33,6 @@ fun FancyAddTaskDialog(
     val enableReminder = remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf<LocalDateTime?>(null) }
     val showDatePicker = remember { mutableStateOf(false) }
-    val showTimePicker = remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
