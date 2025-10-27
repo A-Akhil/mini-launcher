@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
                     onHistoryVisibilityChange = viewModel::setHistoryVisibility,
                     onClockFormatChange = viewModel::setClockFormat,
                     onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
+                    onShowSecondsChange = viewModel::setShowSeconds,
                     onConsumeMessage = viewModel::consumeMessage,
                     canLaunch = viewModel::canLaunch,
                     onLaunchApp = { packageName -> launchPackage(packageName) },

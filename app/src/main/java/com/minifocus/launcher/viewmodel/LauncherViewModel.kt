@@ -104,9 +104,17 @@ class LauncherViewModel(
         settingsManager.observeClockFormat(),
         settingsManager.observeBottomIcon(BottomIconSlot.LEFT),
         settingsManager.observeBottomIcon(BottomIconSlot.RIGHT),
-        settingsManager.observeKeyboardSearchOnSwipe()
-    ) { theme, clockFormat, leftPackage, rightPackage, keyboardOnSwipe ->
-        PreferencesSnapshot(theme, clockFormat, leftPackage, rightPackage, keyboardOnSwipe)
+        settingsManager.observeKeyboardSearchOnSwipe(),
+        settingsManager.observeShowSeconds()
+    ) { flows: Array<Any?> ->
+        PreferencesSnapshot(
+            theme = flows[0] as LauncherTheme,
+            clockFormat = flows[1] as ClockFormat,
+            bottomLeftPackage = flows[2] as String?,
+            bottomRightPackage = flows[3] as String?,
+            keyboardSearchOnSwipe = flows[4] as Boolean,
+            showSeconds = flows[5] as Boolean
+        )
     }
 
     private val overlaySnapshot = combine(
@@ -154,6 +162,7 @@ class LauncherViewModel(
             isSettingsVisible = overlay.settingsVisible,
             isHistoryVisible = historyVisible,
             isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
+            showSeconds = prefs.showSeconds,
             message = overlay.message
         )
     }.stateIn(
@@ -267,6 +276,10 @@ class LauncherViewModel(
         viewModelScope.launch { settingsManager.setKeyboardSearchOnSwipe(enabled) }
     }
 
+    fun setShowSeconds(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setShowSeconds(enabled) }
+    }
+
     suspend fun canLaunch(packageName: String): Boolean = withContext(Dispatchers.IO) {
         !lockManager.isLocked(packageName)
     }
@@ -317,9 +330,9 @@ private data class PreferencesSnapshot(
     val theme: LauncherTheme,
     val clockFormat: ClockFormat,
     val bottomLeftPackage: String?,
-    val bottomRightPackage: String?
-    ,
-    val keyboardSearchOnSwipe: Boolean
+    val bottomRightPackage: String?,
+    val keyboardSearchOnSwipe: Boolean,
+    val showSeconds: Boolean
 )
 
 private data class OverlaySnapshot(
@@ -348,13 +361,14 @@ data class LauncherUiState(
     val isKeyboardSearchOnSwipe: Boolean = false,
     val isSettingsVisible: Boolean = false,
     val isHistoryVisible: Boolean = false,
+    val showSeconds: Boolean = false,
     val message: String? = null
 ) {
     val timeFormatted: String
         get() = DateTimeFormatter.ofPattern(
             when (clockFormat) {
-                ClockFormat.H24 -> "HH:mm"
-                ClockFormat.H12 -> "hh:mm"
+                ClockFormat.H24 -> if (showSeconds) "HH:mm:ss" else "HH:mm"
+                ClockFormat.H12 -> if (showSeconds) "hh:mm:ss" else "hh:mm"
             }
         ).format(time)
 
