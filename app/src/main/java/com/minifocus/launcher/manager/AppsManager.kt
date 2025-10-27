@@ -100,7 +100,6 @@ class AppsManager(
     ) { installed, pinned, locks, hidden ->
         val lockMap = locks.associateBy { it.packageName }
         val hiddenPackages = hidden.map { it.packageName }.toSet()
-        val pinnedMap = pinned.associateBy { it.packageName }
         pinned.sortedBy { it.position }.mapNotNull { pinnedEntity ->
             installed.firstOrNull { it.packageName == pinnedEntity.packageName }?.copy(
                 isPinned = true,
