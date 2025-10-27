@@ -49,7 +49,7 @@ Settings page → "Text Size" option with preview
 ---
 
 ## 3. Customizable Home Screen Bottom Icons
-**Status:** Not Started
+**Status:** Completed
 
 ### Description
 Allow users to customize both left and right bottom icons on home screen (currently Phone and Camera).
@@ -59,22 +59,6 @@ Allow users to customize both left and right bottom icons on home screen (curren
 - Let user pick any installed app for right icon
 - Provide clear UI to change assignments
 - Persist selections in database
-
-### Technical Approach
-1. Extend Room schema with `bottom_left_app` and `bottom_right_app` fields (or new table)
-2. Add two new options in Settings page: "Left Bottom Icon" and "Right Bottom Icon"
-3. Tapping each option opens app picker dialog showing all installed apps
-4. Update ViewModel to expose bottom icon state
-5. Render selected apps' icons and labels dynamically on home screen
-
-### UI Flow
-- Settings page → "Left Bottom Icon" option → Shows current app (default: Phone)
-- Tap option → Opens app picker dialog (similar to All Apps list)
-- User selects new app → Dialog closes, selection saved
-- Settings page → "Right Bottom Icon" option → Shows current app (default: Camera)
-- Tap option → Opens app picker dialog
-- User selects new app → Dialog closes, selection saved
-- Changes reflected immediately on home screen and persist across restarts
 
 ---
 
