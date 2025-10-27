@@ -20,6 +20,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val bottomLeft = stringPreferencesKey("bottom_left_package")
         val bottomRight = stringPreferencesKey("bottom_right_package")
         val keyboardSearchOnSwipe = intPreferencesKey("keyboard_search_on_swipe")
+        val showSeconds = intPreferencesKey("show_seconds")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -39,6 +40,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeKeyboardSearchOnSwipe(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.keyboardSearchOnSwipe]?.let { it == 1 } ?: false
+    }
+
+    fun observeShowSeconds(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.showSeconds]?.let { it == 1 } ?: false
     }
 
     suspend fun setTheme(theme: LauncherTheme) {
@@ -61,6 +66,12 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setKeyboardSearchOnSwipe(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.keyboardSearchOnSwipe] = if (enabled) 1 else 0
+        }
+    }
+
+    suspend fun setShowSeconds(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.showSeconds] = if (enabled) 1 else 0
         }
     }
 }
