@@ -59,6 +59,19 @@ Allow users to customize both left and right bottom icons on home screen (curren
 - Let user pick any installed app for right icon
 - Provide clear UI to change assignments
 - Persist selections in database
+---
+
+## 4. Overview/Recents Black Background
+**Status:** Not Started
+
+### Description
+Ensure the system Overview (Recents) screen shows the launcher's intended pure black background instead of the device's default wallpaper.
+
+### Considerations
+- Current behavior: overview preview displays system wallpaper when multitasking.
+- Desired behavior: maintain minimalist solid black aesthetic across launcher and system overview.
+- May require adjustments to window/task snapshot configuration in `MainActivity` or theme.
+
 
 ---
 
