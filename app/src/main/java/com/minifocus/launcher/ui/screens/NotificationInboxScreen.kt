@@ -6,6 +6,7 @@
 package com.minifocus.launcher.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,29 +62,11 @@ fun NotificationInboxScreen(
     state: NotificationInboxUiState,
     snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
-    onOpenRetention: () -> Unit,
-    onOpenLogRetention: () -> Unit,
-    onOpenFilters: () -> Unit,
     onMarkAllRead: () -> Unit,
     onDelete: (Long) -> Unit,
     onUndoDelete: () -> Unit,
     onDismissUndo: () -> Unit
 ) {
-    LaunchedEffect(state.lastDeleted?.id) {
-        val deleted = state.lastDeleted
-        if (deleted != null) {
-            val result = snackbarHostState.showSnackbar(
-                message = "Notification removed",
-                actionLabel = "Undo"
-            )
-            if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                onUndoDelete()
-            } else {
-                onDismissUndo()
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -113,30 +99,6 @@ fun NotificationInboxScreen(
                     )
                 }
             }
-            IconButton(onClick = onOpenFilters) {
-                Icon(
-                    imageVector = Icons.Filled.FilterList,
-                    contentDescription = "Filters",
-                    tint = Color.White
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RetentionChip(
-                label = "Auto-clears in ${state.notificationRetentionDays} days",
-                onClick = onOpenRetention
-            )
-            RetentionChip(
-                label = "Logs kept ${state.logRetentionDays} days",
-                onClick = onOpenLogRetention
-            )
-            Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onMarkAllRead) {
                 Icon(
                     imageVector = Icons.Filled.MarkEmailRead,
@@ -146,14 +108,14 @@ fun NotificationInboxScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (state.notifications.isEmpty()) {
-            EmptyInboxState(onOpenFilters)
+            EmptyInboxState()
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(state.notifications, key = NotificationItem::id) { item ->
                     NotificationRow(
@@ -175,34 +137,44 @@ private fun NotificationRow(
         confirmStateChange = { value ->
             if (value == DismissValue.DismissedToEnd || value == DismissValue.DismissedToStart) {
                 onDelete()
+                true
+            } else {
+                false
             }
-            true
         }
     )
 
     SwipeToDismiss(
         state = dismissState,
         background = {
-            val color = when (dismissState.targetValue) {
-                DismissValue.DismissedToEnd, DismissValue.DismissedToStart -> Color(0xFF880000)
-                else -> Color(0xFF222222)
+            val color = when (dismissState.dismissDirection) {
+                DismissDirection.EndToStart, DismissDirection.StartToEnd -> Color(0xFF660000)
+                else -> Color.Transparent
             }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color)
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 16.dp),
+                contentAlignment = when (dismissState.dismissDirection) {
+                    DismissDirection.StartToEnd -> Alignment.CenterStart
+                    else -> Alignment.CenterEnd
+                }
             ) {
-                Icon(
-                    imageVector = Icons.Filled.DeleteSweep,
-                    contentDescription = null,
-                    tint = Color.White
-                )
+                if (dismissState.dismissDirection != null) {
+                    Icon(
+                        imageVector = Icons.Filled.DeleteSweep,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.8f)
+                    )
+                }
             }
         },
         dismissContent = {
             NotificationCard(item = item)
+        },
+        dismissThresholds = { direction ->
+            androidx.compose.material.FractionalThreshold(0.7f)
         },
         directions = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd)
     )
@@ -212,53 +184,62 @@ private fun NotificationRow(
 private fun NotificationCard(
     item: NotificationItem
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
     val formattedTimestamp = remember(item.timestamp) {
         formatTimestamp(item.timestamp)
     }
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .clip(MaterialTheme.shapes.small)
             .background(Color(0xFF111111))
-            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .clickable { isExpanded = !isExpanded }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = item.appName,
                     color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = formattedTimestamp,
                     color = Color(0xFF777777),
-                    fontSize = 12.sp
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
-        }
-        if (!item.title.isNullOrBlank()) {
-            Text(
-                text = item.title,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 8.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        if (!item.text.isNullOrBlank()) {
-            Text(
-                text = item.text,
-                color = Color(0xFFCCCCCC),
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            if (!item.title.isNullOrBlank()) {
+                Text(
+                    text = item.title,
+                    color = Color(0xFFDDDDDD),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 4.dp),
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (!item.text.isNullOrBlank()) {
+                Text(
+                    text = item.text,
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 2.dp),
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -277,7 +258,7 @@ private fun RetentionChip(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun EmptyInboxState(onOpenFilters: () -> Unit) {
+private fun EmptyInboxState() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,9 +277,6 @@ private fun EmptyInboxState(onOpenFilters: () -> Unit) {
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)
         )
-        TextButton(onClick = onOpenFilters, modifier = Modifier.padding(top = 24.dp)) {
-            Text("Adjust filters", color = Color.White)
-        }
     }
 }
 

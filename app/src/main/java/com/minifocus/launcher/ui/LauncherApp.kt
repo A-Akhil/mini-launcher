@@ -94,6 +94,7 @@ import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationI
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
 import com.minifocus.launcher.ui.screens.NotificationInboxScreen
+import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -119,6 +120,7 @@ fun LauncherApp(
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
+    onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
     onNotificationRetentionSelected: (Int) -> Unit,
     onLogRetentionSelected: (Int) -> Unit,
@@ -146,6 +148,7 @@ fun LauncherApp(
     val showLogRetentionDialog = remember { mutableStateOf(false) }
     val filterBackTarget = remember { mutableStateOf(FilterBackTarget.None) }
     val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
+    val notifSettingsBackTarget = remember { mutableStateOf(NotifSettingsBackTarget.None) }
 
     fun openInbox(from: InboxBackTarget) {
         inboxBackTarget.value = from
@@ -164,11 +167,29 @@ fun LauncherApp(
         inboxBackTarget.value = InboxBackTarget.None
     }
 
+    fun openNotifSettings(from: NotifSettingsBackTarget) {
+        notifSettingsBackTarget.value = from
+        if (from == NotifSettingsBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onNotificationSettingsVisibilityChange(true)
+    }
+
+    fun closeNotifSettings() {
+        onNotificationSettingsVisibilityChange(false)
+        when (notifSettingsBackTarget.value) {
+            NotifSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            NotifSettingsBackTarget.None -> Unit
+        }
+        notifSettingsBackTarget.value = NotifSettingsBackTarget.None
+    }
+
     fun openFilters(from: FilterBackTarget) {
         filterBackTarget.value = from
         when (from) {
             FilterBackTarget.Settings -> onSettingsVisibilityChange(false)
             FilterBackTarget.Inbox -> onNotificationInboxVisibilityChange(false)
+            FilterBackTarget.NotifSettings -> onNotificationSettingsVisibilityChange(false)
             FilterBackTarget.None -> Unit
         }
         onNotificationFilterVisibilityChange(true)
@@ -179,6 +200,7 @@ fun LauncherApp(
         when (filterBackTarget.value) {
             FilterBackTarget.Settings -> onSettingsVisibilityChange(true)
             FilterBackTarget.Inbox -> onNotificationInboxVisibilityChange(true)
+            FilterBackTarget.NotifSettings -> onNotificationSettingsVisibilityChange(true)
             FilterBackTarget.None -> Unit
         }
         filterBackTarget.value = FilterBackTarget.None
@@ -247,11 +269,18 @@ fun LauncherApp(
                         onClockFormatChange = onClockFormatChange,
                         onShowSecondsToggle = onShowSecondsChange,
                         onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
-                        onOpenNotificationInbox = { openInbox(InboxBackTarget.Settings) },
-                        onOpenNotificationFilters = { openFilters(FilterBackTarget.Settings) },
-                        onOpenNotificationRetention = { showNotificationRetentionDialog.value = true },
-                        onOpenLogRetention = { showLogRetentionDialog.value = true },
+                        onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
                         onBack = { onSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isNotificationSettingsVisible -> {
+                    NotificationSettingsScreen(
+                        notificationRetentionDays = state.notificationRetentionDays,
+                        logRetentionDays = state.logRetentionDays,
+                        onBack = { closeNotifSettings() },
+                        onOpenAppFilters = { openFilters(FilterBackTarget.NotifSettings) },
+                        onOpenNotificationRetention = { showNotificationRetentionDialog.value = true },
+                        onOpenLogRetention = { showLogRetentionDialog.value = true }
                     )
                 }
                 state.isNotificationInboxVisible -> {
@@ -259,11 +288,8 @@ fun LauncherApp(
                         state = notificationInboxState,
                         snackbarHostState = snackbarHostState,
                         onBack = { closeInbox() },
-                        onOpenRetention = { showNotificationRetentionDialog.value = true },
-                        onOpenLogRetention = { showLogRetentionDialog.value = true },
-                        onOpenFilters = { openFilters(FilterBackTarget.Inbox) },
                         onMarkAllRead = onNotificationMarkAllRead,
-                            onDelete = onNotificationDelete,
+                        onDelete = onNotificationDelete,
                         onUndoDelete = onNotificationUndoDelete,
                         onDismissUndo = onNotificationUndoConsumed
                     )
@@ -462,8 +488,9 @@ private fun SettingsRow(
 
 private fun pluralizeDays(days: Int): String = if (days == 1) "1 day" else "$days days"
 
-private enum class FilterBackTarget { None, Settings, Inbox }
+private enum class FilterBackTarget { None, Settings, Inbox, NotifSettings }
 private enum class InboxBackTarget { None, Settings }
+private enum class NotifSettingsBackTarget { None, Settings }
 
 @Composable
 private fun RetentionPickerDialog(
@@ -1277,10 +1304,7 @@ private fun SettingsScreen(
     onClockFormatChange: (ClockFormat) -> Unit,
     onShowSecondsToggle: (Boolean) -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
-    onOpenNotificationInbox: () -> Unit,
-    onOpenNotificationFilters: () -> Unit,
-    onOpenNotificationRetention: () -> Unit,
-    onOpenLogRetention: () -> Unit,
+    onOpenNotificationSettings: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1362,9 +1386,9 @@ private fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Notification inbox settings
+        // Notification settings
         Text(
-            text = "Notification Inbox",
+            text = "Notifications",
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -1372,27 +1396,9 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsRow(
-            title = "Open Inbox",
-            subtitle = "View intercepted notifications",
-            onClick = onOpenNotificationInbox
-        )
-
-        SettingsRow(
-            title = "Filters",
-            subtitle = "Choose which apps are intercepted",
-            onClick = onOpenNotificationFilters
-        )
-
-        SettingsRow(
-            title = "Notification Retention",
-            subtitle = pluralizeDays(notificationRetentionDays),
-            onClick = onOpenNotificationRetention
-        )
-
-        SettingsRow(
-            title = "Log Retention",
-            subtitle = pluralizeDays(logRetentionDays),
-            onClick = onOpenLogRetention
+            title = "Notification Settings",
+            subtitle = "Inbox, filters, and retention",
+            onClick = onOpenNotificationSettings
         )
 
         Spacer(modifier = Modifier.height(24.dp))

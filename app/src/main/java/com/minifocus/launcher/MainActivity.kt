@@ -142,6 +142,7 @@ class MainActivity : ComponentActivity() {
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
+                        onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
                         onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
                         onNotificationRetentionSelected = notificationInboxViewModel::setNotificationRetentionDays,
                         onLogRetentionSelected = notificationInboxViewModel::setLogRetentionDays,
