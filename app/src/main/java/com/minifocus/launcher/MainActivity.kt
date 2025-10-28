@@ -29,6 +29,10 @@ import com.minifocus.launcher.ui.PermissionScreen
 import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import com.minifocus.launcher.viewmodel.LauncherViewModel
 import com.minifocus.launcher.viewmodel.LauncherViewModelFactory
+import com.minifocus.launcher.viewmodel.NotificationFilterViewModel
+import com.minifocus.launcher.viewmodel.NotificationFilterViewModelFactory
+import com.minifocus.launcher.viewmodel.NotificationInboxViewModel
+import com.minifocus.launcher.viewmodel.NotificationInboxViewModelFactory
 import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
 import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.PermissionsState
@@ -80,6 +84,22 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val notificationInboxViewModel: NotificationInboxViewModel by viewModels {
+        val app = application as LauncherApplication
+        NotificationInboxViewModelFactory(
+            inboxManager = app.container.notificationInboxManager,
+            settingsManager = app.container.settingsManager
+        )
+    }
+
+    private val notificationFilterViewModel: NotificationFilterViewModel by viewModels {
+        val app = application as LauncherApplication
+        NotificationFilterViewModelFactory(
+            notificationInboxManager = app.container.notificationInboxManager,
+            appsManager = app.container.appsManager
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -95,11 +115,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             MinimalistFocusTheme {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
+                val inboxState by notificationInboxViewModel.uiState.collectAsStateWithLifecycle()
+                val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
                 if (permissions.allGranted) {
                     LauncherApp(
                         state = state,
+                        notificationInboxState = inboxState,
+                        notificationFilterState = filterState,
                         onToggleTask = viewModel::toggleTask,
                         onAddTask = viewModel::addTask,
                         onDeleteTask = viewModel::deleteTask,
@@ -117,6 +141,16 @@ class MainActivity : ComponentActivity() {
                         onClockFormatChange = viewModel::setClockFormat,
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
+                        onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
+                        onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
+                        onNotificationRetentionSelected = notificationInboxViewModel::setNotificationRetentionDays,
+                        onLogRetentionSelected = notificationInboxViewModel::setLogRetentionDays,
+                        onNotificationDelete = notificationInboxViewModel::deleteNotification,
+                        onNotificationMarkAllRead = notificationInboxViewModel::markAllAsRead,
+                        onNotificationUndoDelete = notificationInboxViewModel::undoDelete,
+                        onNotificationUndoConsumed = notificationInboxViewModel::dismissUndo,
+                        onNotificationFilterQueryChange = notificationFilterViewModel::updateSearchQuery,
+                        onNotificationFilterToggle = notificationFilterViewModel::toggle,
                         onConsumeMessage = viewModel::consumeMessage,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
@@ -134,6 +168,11 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+
+        if (intent?.action == ACTION_OPEN_INBOX) {
+            viewModel.setNotificationInboxVisibility(true)
+            intent.action = Intent.ACTION_MAIN
         }
     }
 
@@ -386,8 +425,18 @@ class MainActivity : ComponentActivity() {
         return resolveInfo.activityInfo?.packageName == packageName
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == ACTION_OPEN_INBOX) {
+            viewModel.setNotificationInboxVisibility(true)
+            intent.action = Intent.ACTION_MAIN
+        }
+    }
+
     companion object {
         private const val PREFS_NAME = "launcher_preferences"
         private const val KEY_PROMPTED_HOME_ROLE = "prompted_home_role"
+        const val ACTION_OPEN_INBOX = "com.minifocus.launcher.action.OPEN_INBOX"
     }
 }

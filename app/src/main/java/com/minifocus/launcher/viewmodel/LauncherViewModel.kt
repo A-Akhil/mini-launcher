@@ -75,101 +75,138 @@ class LauncherViewModel(
         tasksManager.observeTasks()
     ) { pinned, allApps, hiddenApps, tasks ->
         val now = System.currentTimeMillis()
-        val gracePeroid = 3000L // 3 seconds to allow undo
-        
-        // Active tasks: not completed OR completed less than 3 seconds ago
+        val gracePeriod = 3000L
+
         val activeTasks = tasks.filter { task ->
-            !task.isCompleted || 
-            (task.completedAt != null && (now - task.completedAt) < gracePeroid)
-        }.sortedWith(compareBy<TaskItem> { 
-            // Sort by scheduled time (nearest first), nulls last
-            it.scheduledFor ?: Long.MAX_VALUE
-        }.thenBy { 
-            // Then by creation time
-            it.createdAt 
-        })
-        
-        // History: completed and past grace period
+            !task.isCompleted ||
+                (task.completedAt != null && (now - task.completedAt) < gracePeriod)
+        }.sortedWith(
+            compareBy<TaskItem> { it.scheduledFor ?: Long.MAX_VALUE }
+                .thenBy { it.createdAt }
+        )
+
         val historyTasks = tasks.filter { task ->
-            task.isCompleted && 
-            task.completedAt != null && 
-            (now - task.completedAt) >= gracePeroid
+            task.isCompleted &&
+                task.completedAt != null &&
+                (now - task.completedAt) >= gracePeriod
         }
-        
+
         DataSnapshot(pinned, allApps, hiddenApps, activeTasks, historyTasks)
     }
 
-    private val preferencesSnapshot = combine(
-        settingsManager.observeTheme(),
-        settingsManager.observeClockFormat(),
-        settingsManager.observeBottomIcon(BottomIconSlot.LEFT),
-        settingsManager.observeBottomIcon(BottomIconSlot.RIGHT),
-        settingsManager.observeKeyboardSearchOnSwipe(),
-        settingsManager.observeShowSeconds()
-    ) { flows: Array<Any?> ->
-        PreferencesSnapshot(
-            theme = flows[0] as LauncherTheme,
-            clockFormat = flows[1] as ClockFormat,
-            bottomLeftPackage = flows[2] as String?,
-            bottomRightPackage = flows[3] as String?,
-            keyboardSearchOnSwipe = flows[4] as Boolean,
-            showSeconds = flows[5] as Boolean
-        )
-    }
+    private val preferencesSnapshot = settingsManager.observeTheme()
+        .combine(settingsManager.observeClockFormat()) { theme, clockFormat ->
+            PreferencesSnapshot(
+                theme = theme,
+                clockFormat = clockFormat,
+                bottomLeftPackage = null,
+                bottomRightPackage = null,
+                keyboardSearchOnSwipe = false,
+                showSeconds = false,
+                notificationRetentionDays = 0,
+                logRetentionDays = 0
+            )
+        }
+        .combine(settingsManager.observeBottomIcon(BottomIconSlot.LEFT)) { snapshot, bottomLeft ->
+            snapshot.copy(bottomLeftPackage = bottomLeft)
+        }
+        .combine(settingsManager.observeBottomIcon(BottomIconSlot.RIGHT)) { snapshot, bottomRight ->
+            snapshot.copy(bottomRightPackage = bottomRight)
+        }
+        .combine(settingsManager.observeKeyboardSearchOnSwipe()) { snapshot, keyboardSearch ->
+            snapshot.copy(keyboardSearchOnSwipe = keyboardSearch)
+        }
+        .combine(settingsManager.observeShowSeconds()) { snapshot, showSeconds ->
+            snapshot.copy(showSeconds = showSeconds)
+        }
+        .combine(settingsManager.observeNotificationRetentionDays()) { snapshot, retention ->
+            snapshot.copy(notificationRetentionDays = retention)
+        }
+        .combine(settingsManager.observeLogRetentionDays()) { snapshot, retention ->
+            snapshot.copy(logRetentionDays = retention)
+        }
 
-    private val overlaySnapshot = combine(
-        timeFlow,
-        searchQuery,
-        searchResults,
-        isSearchVisible,
-        isSettingsVisible,
-        snackbarMessage
-    ) { flows: Array<Any?> ->
-        OverlaySnapshot(
-            time = flows[0] as LocalDateTime,
-            query = flows[1] as String,
-            results = flows[2] as List<SearchResult>,
-            searchVisible = flows[3] as Boolean,
-            settingsVisible = flows[4] as Boolean,
-            message = flows[5] as String?
-        )
-    }
+    private val overlaySnapshot = timeFlow
+        .combine(searchQuery) { time, query ->
+            OverlaySnapshot(
+                time = time,
+                query = query,
+                results = emptyList(),
+                searchVisible = false,
+                settingsVisible = false,
+                message = null
+            )
+        }
+        .combine(searchResults) { snapshot, results ->
+            snapshot.copy(results = results)
+        }
+        .combine(isSearchVisible) { snapshot, searchVisible ->
+            snapshot.copy(searchVisible = searchVisible)
+        }
+        .combine(isSettingsVisible) { snapshot, settingsVisible ->
+            snapshot.copy(settingsVisible = settingsVisible)
+        }
+        .combine(snackbarMessage) { snapshot, message ->
+            snapshot.copy(message = message)
+        }
 
     private val isHistoryVisible = MutableStateFlow(false)
+    private val isNotificationInboxVisible = MutableStateFlow(false)
+    private val isNotificationFilterVisible = MutableStateFlow(false)
 
-    val uiState = combine(
-        dataSnapshot,
-        preferencesSnapshot,
-        overlaySnapshot,
-        isHistoryVisible
-    ) { data, prefs, overlay, historyVisible ->
-        val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
-        val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
-        LauncherUiState(
-            time = overlay.time,
-            clockFormat = prefs.clockFormat,
-            pinnedApps = data.pinned,
-            allApps = data.all,
-            hiddenApps = data.hidden,
-            tasks = data.tasks,
-            historyTasks = data.historyTasks,
-            theme = prefs.theme,
-            bottomLeft = bottomLeft,
-            bottomRight = bottomRight,
-            searchQuery = overlay.query,
-            searchResults = overlay.results,
-            isSearchVisible = overlay.searchVisible,
-            isSettingsVisible = overlay.settingsVisible,
-            isHistoryVisible = historyVisible,
-            isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
-            showSeconds = prefs.showSeconds,
-            message = overlay.message
+    val uiState = dataSnapshot
+        .combine(preferencesSnapshot) { data, prefs ->
+            val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
+            val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
+            LauncherUiState(
+                time = LocalDateTime.now(),
+                clockFormat = prefs.clockFormat,
+                pinnedApps = data.pinned,
+                allApps = data.all,
+                hiddenApps = data.hidden,
+                tasks = data.tasks,
+                historyTasks = data.historyTasks,
+                theme = prefs.theme,
+                bottomLeft = bottomLeft,
+                bottomRight = bottomRight,
+                searchQuery = "",
+                searchResults = emptyList(),
+                isSearchVisible = false,
+                isSettingsVisible = false,
+                isHistoryVisible = false,
+                isNotificationInboxVisible = false,
+                isNotificationFilterVisible = false,
+                isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
+                showSeconds = prefs.showSeconds,
+                notificationRetentionDays = prefs.notificationRetentionDays,
+                logRetentionDays = prefs.logRetentionDays,
+                message = null
+            )
+        }
+        .combine(overlaySnapshot) { state, overlay ->
+            state.copy(
+                time = overlay.time,
+                searchQuery = overlay.query,
+                searchResults = overlay.results,
+                isSearchVisible = overlay.searchVisible,
+                isSettingsVisible = overlay.settingsVisible,
+                message = overlay.message
+            )
+        }
+        .combine(isHistoryVisible) { state, historyVisible ->
+            state.copy(isHistoryVisible = historyVisible)
+        }
+        .combine(isNotificationInboxVisible) { state, inboxVisible ->
+            state.copy(isNotificationInboxVisible = inboxVisible)
+        }
+        .combine(isNotificationFilterVisible) { state, filterVisible ->
+            state.copy(isNotificationFilterVisible = filterVisible)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = LauncherUiState()
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = LauncherUiState()
-    )
 
     fun addTask(title: String, scheduledFor: Long? = null) {
         viewModelScope.launch {
@@ -181,13 +218,10 @@ class LauncherViewModel(
     }
 
     fun toggleTask(taskId: Long) {
-        viewModelScope.launch { 
+        viewModelScope.launch {
             tasksManager.toggleTask(taskId)
-            
-            // Schedule a delayed refresh to move completed tasks to history after grace period
-            delay(3100L) // Slightly longer than grace period
-            // Trigger re-evaluation by updating a dummy flow
-            tasksManager.observeTasks().first() // Force re-collect
+            delay(3100L)
+            tasksManager.observeTasks().first()
         }
     }
 
@@ -245,6 +279,8 @@ class LauncherViewModel(
         if (visible) {
             isSearchVisible.value = false
             isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
         }
     }
 
@@ -253,6 +289,28 @@ class LauncherViewModel(
         if (visible) {
             isSearchVisible.value = false
             isSettingsVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+        }
+    }
+
+    fun setNotificationInboxVisibility(visible: Boolean) {
+        isNotificationInboxVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationFilterVisible.value = false
+        }
+    }
+
+    fun setNotificationFilterVisibility(visible: Boolean) {
+        isNotificationFilterVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
         }
     }
 
@@ -278,6 +336,14 @@ class LauncherViewModel(
 
     fun setShowSeconds(enabled: Boolean) {
         viewModelScope.launch { settingsManager.setShowSeconds(enabled) }
+    }
+
+    fun setNotificationRetentionDays(days: Int) {
+        viewModelScope.launch { settingsManager.setNotificationRetentionDays(days) }
+    }
+
+    fun setLogRetentionDays(days: Int) {
+        viewModelScope.launch { settingsManager.setLogRetentionDays(days) }
     }
 
     suspend fun canLaunch(packageName: String): Boolean = withContext(Dispatchers.IO) {
@@ -332,7 +398,9 @@ private data class PreferencesSnapshot(
     val bottomLeftPackage: String?,
     val bottomRightPackage: String?,
     val keyboardSearchOnSwipe: Boolean,
-    val showSeconds: Boolean
+    val showSeconds: Boolean,
+    val notificationRetentionDays: Int,
+    val logRetentionDays: Int
 )
 
 private data class OverlaySnapshot(
@@ -361,7 +429,11 @@ data class LauncherUiState(
     val isKeyboardSearchOnSwipe: Boolean = false,
     val isSettingsVisible: Boolean = false,
     val isHistoryVisible: Boolean = false,
+    val isNotificationInboxVisible: Boolean = false,
+    val isNotificationFilterVisible: Boolean = false,
     val showSeconds: Boolean = false,
+    val notificationRetentionDays: Int = 2,
+    val logRetentionDays: Int = 30,
     val message: String? = null
 ) {
     val timeFormatted: String
