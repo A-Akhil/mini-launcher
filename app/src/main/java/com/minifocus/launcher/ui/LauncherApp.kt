@@ -31,7 +31,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -59,6 +61,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
@@ -85,12 +88,19 @@ import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.viewmodel.LauncherUiState
+import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
+import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
+import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import com.minifocus.launcher.ui.components.MinimalCheckbox
+import com.minifocus.launcher.ui.screens.NotificationFilterScreen
+import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import kotlinx.coroutines.launch
 
 @Composable
 fun LauncherApp(
     state: LauncherUiState,
+    notificationInboxState: NotificationInboxUiState,
+    notificationFilterState: FilterUiState,
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
@@ -108,6 +118,16 @@ fun LauncherApp(
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
+    onNotificationInboxVisibilityChange: (Boolean) -> Unit,
+    onNotificationFilterVisibilityChange: (Boolean) -> Unit,
+    onNotificationRetentionSelected: (Int) -> Unit,
+    onLogRetentionSelected: (Int) -> Unit,
+    onNotificationDelete: (Long) -> Unit,
+    onNotificationMarkAllRead: () -> Unit,
+    onNotificationUndoDelete: () -> Unit,
+    onNotificationUndoConsumed: () -> Unit,
+    onNotificationFilterQueryChange: (String) -> Unit,
+    onNotificationFilterToggle: (NotificationFilterItem) -> Unit,
     onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
@@ -122,6 +142,47 @@ fun LauncherApp(
     val shouldFocusInlineSearch = shouldShowInlineSearch && pagerState.currentPage == 2
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val showNotificationRetentionDialog = remember { mutableStateOf(false) }
+    val showLogRetentionDialog = remember { mutableStateOf(false) }
+    val filterBackTarget = remember { mutableStateOf(FilterBackTarget.None) }
+    val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
+
+    fun openInbox(from: InboxBackTarget) {
+        inboxBackTarget.value = from
+        if (from == InboxBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onNotificationInboxVisibilityChange(true)
+    }
+
+    fun closeInbox() {
+        onNotificationInboxVisibilityChange(false)
+        when (inboxBackTarget.value) {
+            InboxBackTarget.Settings -> onSettingsVisibilityChange(true)
+            InboxBackTarget.None -> Unit
+        }
+        inboxBackTarget.value = InboxBackTarget.None
+    }
+
+    fun openFilters(from: FilterBackTarget) {
+        filterBackTarget.value = from
+        when (from) {
+            FilterBackTarget.Settings -> onSettingsVisibilityChange(false)
+            FilterBackTarget.Inbox -> onNotificationInboxVisibilityChange(false)
+            FilterBackTarget.None -> Unit
+        }
+        onNotificationFilterVisibilityChange(true)
+    }
+
+    fun closeFilters() {
+        onNotificationFilterVisibilityChange(false)
+        when (filterBackTarget.value) {
+            FilterBackTarget.Settings -> onSettingsVisibilityChange(true)
+            FilterBackTarget.Inbox -> onNotificationInboxVisibilityChange(true)
+            FilterBackTarget.None -> Unit
+        }
+        filterBackTarget.value = FilterBackTarget.None
+    }
 
     LaunchedEffect(pagerState.currentPage) {
         if (pagerState.currentPage != 2) {
@@ -164,87 +225,120 @@ fun LauncherApp(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Show settings screen when settings is visible
-            if (state.isSettingsVisible) {
-                SettingsScreen(
-                    clockFormat = state.clockFormat,
-                    keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
-                    showSeconds = state.showSeconds,
-                    bottomLeftApp = state.bottomLeft,
-                    bottomRightApp = state.bottomRight,
-                    onKeyboardToggle = onKeyboardSearchOnSwipeChange,
-                    onClockFormatChange = onClockFormatChange,
-                    onShowSecondsToggle = onShowSecondsChange,
-                    onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
-                    onBack = { onSettingsVisibilityChange(false) }
-                )
-            } else if (state.isHistoryVisible) {
-                HistoryScreen(
-                    historyTasks = state.historyTasks,
-                    onBack = { onHistoryVisibilityChange(false) },
-                    onToggleTask = onToggleTask,
-                    onDeleteTask = onDeleteTask
-                )
-            } else {
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                    when (page) {
-                        0 -> TasksScreen(
-                            tasks = state.tasks,
-                            onToggleTask = onToggleTask,
-                            onAddTask = onAddTask,
-                            onDeleteTask = onDeleteTask,
-                            onOpenHistory = { onHistoryVisibilityChange(true) }
-                        )
-                        1 -> HomeScreen(
-                            state = state,
-                            onLaunchApp = { entry -> 
-                                handleAppLaunch(
-                                    entry, 
-                                    coroutineScope, 
-                                    canLaunch, 
-                                    onLaunchApp, 
-                                    snackbarHostState,
-                                    navigateToHome = { /* Already on home */ }
-                                ) 
-                            },
-                            bottomIconPickerSlot = bottomIconPickerSlot,
-                            onUnpinApp = onUnpinApp,
-                            onHideApp = onHideApp,
-                            onLockApp = onLockApp,
-                            onUnlockApp = onUnlockApp,
-                            onOpenClock = onOpenClock
-                        )
-                        else -> AllAppsScreen(
-                            apps = state.allApps,
-                            hiddenApps = state.hiddenApps,
-                            keyboardOnSwipe = shouldShowInlineSearch,
-                        searchQuery = state.searchQuery,
-                        shouldFocusSearch = shouldFocusInlineSearch,
-                        onQueryChange = onSearchQueryChange,
-                        onLaunchApp = { entry -> 
-                            handleAppLaunch(
-                                entry, 
-                                coroutineScope, 
-                                canLaunch, 
-                                onLaunchApp, 
-                                snackbarHostState,
-                                navigateToHome = { 
-                                    coroutineScope.launch {
-                                        pagerState.scrollToPage(1)  // Navigate to home (page 1)
-                                    }
-                                }
-                            ) 
-                        },
-                        onPinApp = onPinApp,
-                        onUnpinApp = onUnpinApp,
-                        onHideApp = onHideApp,
-                        onUnhideApp = onUnhideApp,
-                        onLockApp = onLockApp,
-                        onUnlockApp = onUnlockApp,
-                        onOpenSettings = { onSettingsVisibilityChange(!state.isSettingsVisible) }
+            when {
+                state.isNotificationFilterVisible -> {
+                    NotificationFilterScreen(
+                        state = notificationFilterState,
+                        onBack = { closeFilters() },
+                        onQueryChange = onNotificationFilterQueryChange,
+                        onToggle = onNotificationFilterToggle
                     )
                 }
-            }
+                state.isSettingsVisible -> {
+                    SettingsScreen(
+                        clockFormat = state.clockFormat,
+                        keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                        showSeconds = state.showSeconds,
+                        notificationRetentionDays = state.notificationRetentionDays,
+                        logRetentionDays = state.logRetentionDays,
+                        bottomLeftApp = state.bottomLeft,
+                        bottomRightApp = state.bottomRight,
+                        onKeyboardToggle = onKeyboardSearchOnSwipeChange,
+                        onClockFormatChange = onClockFormatChange,
+                        onShowSecondsToggle = onShowSecondsChange,
+                        onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
+                        onOpenNotificationInbox = { openInbox(InboxBackTarget.Settings) },
+                        onOpenNotificationFilters = { openFilters(FilterBackTarget.Settings) },
+                        onOpenNotificationRetention = { showNotificationRetentionDialog.value = true },
+                        onOpenLogRetention = { showLogRetentionDialog.value = true },
+                        onBack = { onSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isNotificationInboxVisible -> {
+                    NotificationInboxScreen(
+                        state = notificationInboxState,
+                        snackbarHostState = snackbarHostState,
+                        onBack = { closeInbox() },
+                        onOpenRetention = { showNotificationRetentionDialog.value = true },
+                        onOpenLogRetention = { showLogRetentionDialog.value = true },
+                        onOpenFilters = { openFilters(FilterBackTarget.Inbox) },
+                        onMarkAllRead = onNotificationMarkAllRead,
+                            onDelete = onNotificationDelete,
+                        onUndoDelete = onNotificationUndoDelete,
+                        onDismissUndo = onNotificationUndoConsumed
+                    )
+                }
+                state.isHistoryVisible -> {
+                    HistoryScreen(
+                        historyTasks = state.historyTasks,
+                        onBack = { onHistoryVisibilityChange(false) },
+                        onToggleTask = onToggleTask,
+                        onDeleteTask = onDeleteTask
+                    )
+                }
+                else -> {
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                        when (page) {
+                            0 -> TasksScreen(
+                                tasks = state.tasks,
+                                onToggleTask = onToggleTask,
+                                onAddTask = onAddTask,
+                                onDeleteTask = onDeleteTask,
+                                onOpenHistory = { onHistoryVisibilityChange(true) }
+                            )
+                            1 -> HomeScreen(
+                                state = state,
+                                onLaunchApp = { entry ->
+                                    handleAppLaunch(
+                                        entry,
+                                        coroutineScope,
+                                        canLaunch,
+                                        onLaunchApp,
+                                        snackbarHostState,
+                                        navigateToHome = { /* Already on home */ }
+                                    )
+                                },
+                                bottomIconPickerSlot = bottomIconPickerSlot,
+                                onUnpinApp = onUnpinApp,
+                                onHideApp = onHideApp,
+                                onLockApp = onLockApp,
+                                onUnlockApp = onUnlockApp,
+                                onOpenClock = onOpenClock
+                            )
+                            else -> AllAppsScreen(
+                                apps = state.allApps,
+                                hiddenApps = state.hiddenApps,
+                                keyboardOnSwipe = shouldShowInlineSearch,
+                                searchQuery = state.searchQuery,
+                                shouldFocusSearch = shouldFocusInlineSearch,
+                                unreadCount = notificationInboxState.unreadCount,
+                                onQueryChange = onSearchQueryChange,
+                                onLaunchApp = { entry ->
+                                    handleAppLaunch(
+                                        entry,
+                                        coroutineScope,
+                                        canLaunch,
+                                        onLaunchApp,
+                                        snackbarHostState,
+                                        navigateToHome = {
+                                            coroutineScope.launch {
+                                                pagerState.scrollToPage(1)
+                                            }
+                                        }
+                                    )
+                                },
+                                onPinApp = onPinApp,
+                                onUnpinApp = onUnpinApp,
+                                onHideApp = onHideApp,
+                                onUnhideApp = onUnhideApp,
+                                onLockApp = onLockApp,
+                                onUnlockApp = onUnlockApp,
+                                onOpenNotificationInbox = { openInbox(InboxBackTarget.None) },
+                                onOpenSettings = { onSettingsVisibilityChange(true) }
+                            )
+                        }
+                    }
+                }
             }
 
             AnimatedVisibility(
@@ -267,6 +361,32 @@ fun LauncherApp(
                             }
                         }
                     }
+                )
+            }
+
+            if (showNotificationRetentionDialog.value) {
+                RetentionPickerDialog(
+                    title = "Notification retention",
+                    options = listOf(1, 2, 7, 14, 30),
+                    selected = state.notificationRetentionDays,
+                    onSelect = { days ->
+                        onNotificationRetentionSelected(days)
+                        showNotificationRetentionDialog.value = false
+                    },
+                    onDismiss = { showNotificationRetentionDialog.value = false }
+                )
+            }
+
+            if (showLogRetentionDialog.value) {
+                RetentionPickerDialog(
+                    title = "Log retention",
+                    options = listOf(7, 30, 60, 90),
+                    selected = state.logRetentionDays,
+                    onSelect = { days ->
+                        onLogRetentionSelected(days)
+                        showLogRetentionDialog.value = false
+                    },
+                    onDismiss = { showLogRetentionDialog.value = false }
                 )
             }
 
@@ -301,6 +421,101 @@ private fun handleAppLaunch(
             snackbarHostState.showSnackbar("App locked")
         }
     }
+}
+
+private fun unreadCountLabel(count: Int): String = if (count > 99) "99+" else count.toString()
+
+@Composable
+private fun SettingsRow(
+    title: String,
+    subtitle: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .combinedClickable(onClick = onClick)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 16.sp
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp
+                )
+            }
+        }
+        Text(
+            text = "→",
+            color = Color(0xFFAAAAAA),
+            fontSize = 20.sp
+        )
+    }
+}
+
+private fun pluralizeDays(days: Int): String = if (days == 1) "1 day" else "$days days"
+
+private enum class FilterBackTarget { None, Settings, Inbox }
+private enum class InboxBackTarget { None, Settings }
+
+@Composable
+private fun RetentionPickerDialog(
+    title: String,
+    options: List<Int>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.Black,
+        title = {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                options.forEach { option ->
+                    val isSelected = option == selected
+                    TextButton(
+                        onClick = { onSelect(option) },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = if (isSelected) Color.Black else Color.White
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) Color.White else Color(0x22FFFFFF))
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = pluralizeDays(option),
+                            fontSize = 16.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Cancel", color = Color(0xFFAAAAAA))
+            }
+        }
+    )
 }
 
 @Composable
@@ -670,6 +885,7 @@ private fun AllAppsScreen(
     keyboardOnSwipe: Boolean,
     searchQuery: String,
     shouldFocusSearch: Boolean,
+    unreadCount: Int,
     onQueryChange: (String) -> Unit,
     onLaunchApp: (AppEntry) -> Unit,
     onPinApp: (String) -> Unit,
@@ -678,6 +894,7 @@ private fun AllAppsScreen(
     onUnhideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
     onUnlockApp: (String) -> Unit,
+    onOpenNotificationInbox: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
@@ -742,6 +959,31 @@ private fun AllAppsScreen(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
+                IconButton(onClick = onOpenNotificationInbox) {
+                    if (unreadCount > 0) {
+                        BadgedBox(badge = {
+                            Badge {
+                                Text(
+                                    text = unreadCountLabel(unreadCount),
+                                    color = Color.Black,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Notifications,
+                                contentDescription = "Notification inbox",
+                                tint = Color.White
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Notifications,
+                            contentDescription = "Notification inbox",
+                            tint = Color.White
+                        )
+                    }
+                }
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
@@ -1027,12 +1269,18 @@ private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
     showSeconds: Boolean,
+    notificationRetentionDays: Int,
+    logRetentionDays: Int,
     bottomLeftApp: AppEntry?,
     bottomRightApp: AppEntry?,
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onShowSecondsToggle: (Boolean) -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
+    onOpenNotificationInbox: () -> Unit,
+    onOpenNotificationFilters: () -> Unit,
+    onOpenNotificationRetention: () -> Unit,
+    onOpenLogRetention: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1111,6 +1359,41 @@ private fun SettingsScreen(
             )
             Switch(checked = showSeconds, onCheckedChange = onShowSecondsToggle)
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Notification inbox settings
+        Text(
+            text = "Notification Inbox",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsRow(
+            title = "Open Inbox",
+            subtitle = "View intercepted notifications",
+            onClick = onOpenNotificationInbox
+        )
+
+        SettingsRow(
+            title = "Filters",
+            subtitle = "Choose which apps are intercepted",
+            onClick = onOpenNotificationFilters
+        )
+
+        SettingsRow(
+            title = "Notification Retention",
+            subtitle = pluralizeDays(notificationRetentionDays),
+            onClick = onOpenNotificationRetention
+        )
+
+        SettingsRow(
+            title = "Log Retention",
+            subtitle = pluralizeDays(logRetentionDays),
+            onClick = onOpenLogRetention
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 

@@ -3,6 +3,7 @@ package com.minifocus.launcher.model
 data class AppEntry(
     val packageName: String,
     val label: String,
+    val isSystemApp: Boolean = false,
     val isPinned: Boolean = false,
     val isHidden: Boolean = false,
     val lockedUntil: Long? = null

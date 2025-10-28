@@ -156,7 +156,14 @@ class AppsManager(
 
                     val label = pm.getApplicationLabel(app).toString()
                     if (!shouldIncludeApp(app)) continue
-                    add(AppEntry(packageName = app.packageName, label = label))
+                    val isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    add(
+                        AppEntry(
+                            packageName = app.packageName,
+                            label = label,
+                            isSystemApp = isSystemApp
+                        )
+                    )
                 }
             }.sortedBy { it.label.lowercase() }
         }
