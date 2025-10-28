@@ -153,6 +153,7 @@ class LauncherViewModel(
     private val isHistoryVisible = MutableStateFlow(false)
     private val isNotificationInboxVisible = MutableStateFlow(false)
     private val isNotificationFilterVisible = MutableStateFlow(false)
+    private val isNotificationSettingsVisible = MutableStateFlow(false)
 
     val uiState = dataSnapshot
         .combine(preferencesSnapshot) { data, prefs ->
@@ -201,6 +202,9 @@ class LauncherViewModel(
         }
         .combine(isNotificationFilterVisible) { state, filterVisible ->
             state.copy(isNotificationFilterVisible = filterVisible)
+        }
+        .combine(isNotificationSettingsVisible) { state, notifSettingsVisible ->
+            state.copy(isNotificationSettingsVisible = notifSettingsVisible)
         }
         .stateIn(
             scope = viewModelScope,
@@ -311,6 +315,18 @@ class LauncherViewModel(
             isSettingsVisible.value = false
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
+            isNotificationSettingsVisible.value = false
+        }
+    }
+
+    fun setNotificationSettingsVisibility(visible: Boolean) {
+        isNotificationSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
         }
     }
 
@@ -431,6 +447,7 @@ data class LauncherUiState(
     val isHistoryVisible: Boolean = false,
     val isNotificationInboxVisible: Boolean = false,
     val isNotificationFilterVisible: Boolean = false,
+    val isNotificationSettingsVisible: Boolean = false,
     val showSeconds: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
