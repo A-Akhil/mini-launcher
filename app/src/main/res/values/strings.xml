@@ -2,4 +2,15 @@
 <resources>
     <string name="app_name">Minimalist Focus</string>
     <string name="device_admin_explanation">Minimalist Focus needs device admin access to lock the screen when you double-tap the home page.</string>
+    <plurals name="notification_summary_title">
+        <item quantity="one">%d notification</item>
+        <item quantity="other">%d notifications</item>
+    </plurals>
+    <string name="notification_summary_subtitle">Tap to view inbox</string>
+    <plurals name="notification_summary_subtitle_unread">
+        <item quantity="one">Tap to view inbox • %d unread</item>
+        <item quantity="other">Tap to view inbox • %d unread</item>
+    </plurals>
+    <string name="notification_inbox_channel_name">Launcher Inbox</string>
+    <string name="notification_inbox_channel_description">Summary of intercepted notifications</string>
 </resources>
