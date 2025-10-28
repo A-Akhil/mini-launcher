@@ -21,18 +21,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -46,8 +46,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -136,7 +134,6 @@ fun LauncherApp(
     onOpenClock: () -> Unit
 ) {
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
-    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val bottomIconPickerSlot = remember { mutableStateOf<BottomIconSlot?>(null) }
     val searchVisible = state.isSearchVisible
@@ -234,17 +231,8 @@ fun LauncherApp(
         }
     }
 
-    LaunchedEffect(state.message) {
-        val message = state.message
-        if (message != null) {
-            snackbarHostState.showSnackbar(message)
-            onConsumeMessage()
-        }
-    }
-
     Scaffold(
-        modifier = Modifier.fillMaxSize().background(Color.Black),
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        modifier = Modifier.fillMaxSize().background(Color.Black)
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -286,12 +274,9 @@ fun LauncherApp(
                 state.isNotificationInboxVisible -> {
                     NotificationInboxScreen(
                         state = notificationInboxState,
-                        snackbarHostState = snackbarHostState,
                         onBack = { closeInbox() },
                         onMarkAllRead = onNotificationMarkAllRead,
-                        onDelete = onNotificationDelete,
-                        onUndoDelete = onNotificationUndoDelete,
-                        onDismissUndo = onNotificationUndoConsumed
+                        onDelete = onNotificationDelete
                     )
                 }
                 state.isHistoryVisible -> {
@@ -320,7 +305,6 @@ fun LauncherApp(
                                         coroutineScope,
                                         canLaunch,
                                         onLaunchApp,
-                                        snackbarHostState,
                                         navigateToHome = { /* Already on home */ }
                                     )
                                 },
@@ -345,7 +329,6 @@ fun LauncherApp(
                                         coroutineScope,
                                         canLaunch,
                                         onLaunchApp,
-                                        snackbarHostState,
                                         navigateToHome = {
                                             coroutineScope.launch {
                                                 pagerState.scrollToPage(1)
@@ -382,9 +365,8 @@ fun LauncherApp(
                             if (canLaunch(entry.packageName)) {
                                 onSearchVisibilityChange(false)
                                 onLaunchApp(entry.packageName)
-                            } else {
-                                snackbarHostState.showSnackbar("App locked")
                             }
+                            // If app is locked, simply don't launch (no snackbar message)
                         }
                     }
                 )
@@ -434,7 +416,6 @@ private fun handleAppLaunch(
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
-    snackbarHostState: SnackbarHostState,
     navigateToHome: () -> Unit
 ) {
     coroutineScope.launch {
@@ -443,9 +424,8 @@ private fun handleAppLaunch(
             // Small delay to allow UI to settle before navigation
             kotlinx.coroutines.delay(50)
             navigateToHome()  // Navigate back to home after launching app
-        } else {
-            snackbarHostState.showSnackbar("App locked")
         }
+        // If app is locked, simply don't launch (no snackbar message)
     }
 }
 
@@ -987,28 +967,37 @@ private fun AllAppsScreen(
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = onOpenNotificationInbox) {
-                    if (unreadCount > 0) {
-                        BadgedBox(badge = {
-                            Badge {
-                                Text(
-                                    text = unreadCountLabel(unreadCount),
-                                    color = Color.Black,
-                                    fontSize = 10.sp
-                                )
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = "Notification inbox",
-                                tint = Color.White
-                            )
-                        }
-                    } else {
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Notifications,
                             contentDescription = "Notification inbox",
                             tint = Color.White
                         )
+                        if (unreadCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 3.dp, end = 3.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color.Red, CircleShape)
+                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = unreadCountLabel(unreadCount),
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 IconButton(onClick = onOpenSettings) {

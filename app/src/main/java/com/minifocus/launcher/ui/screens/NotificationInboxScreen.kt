@@ -32,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,12 +59,9 @@ import java.util.Locale
 @Composable
 fun NotificationInboxScreen(
     state: NotificationInboxUiState,
-    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onMarkAllRead: () -> Unit,
-    onDelete: (Long) -> Unit,
-    onUndoDelete: () -> Unit,
-    onDismissUndo: () -> Unit
+    onDelete: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier
