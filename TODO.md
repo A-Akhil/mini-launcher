@@ -111,6 +111,20 @@ Implement a notification filtering system that blocks all incoming system notifi
 
 ---
 
+## 6. Fix Notification Badge Clipping in All Apps Header
+**Status:** Not Started  
+**Priority:** High
+
+### Description
+The red notification badge (unread count indicator) on the notification bell icon in the All Apps header appears clipped or invisible. Multiple layout approaches have been attempted (BadgedBox, Box with offset, Box with padding), but the badge consistently renders with its boundary cut off.
+
+### Known Issues
+- Badge rendering issue persists across different Compose layout strategies
+- Problem may be device/density-specific or related to parent Box constraints
+- Current implementation uses inner Box with padding (3.dp top/end) but user reports badge still not fully visible
+
+---
+
 ## Future Enhancements
 - [ ] Widget support on home screen (But the thing is we need in black and white theme)
 - [ ] Gesture customization (swipe actions)
