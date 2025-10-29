@@ -122,6 +122,62 @@ The red notification badge (unread count indicator) on the notification bell ico
 - Badge rendering issue persists across different Compose layout strategies
 - Problem may be device/density-specific or related to parent Box constraints
 - Current implementation uses inner Box with padding (3.dp top/end) but user reports badge still not fully visible
+---
+
+## 7. Long Click to Uninstall in App Options
+**Status:** Not Started
+
+### Description
+Add "Uninstall" as a long-click option alongside existing actions (e.g., lock, hide, pin) in the app options menu for each app in the launcher.
+
+### Technical Approach
+1. Add "Uninstall" to the long-press menu for app entries.
+2. Use the standard uninstall intent for the selected package.
+3. Handle uninstall result to refresh app list and update UI.
+
+---
+
+## 8. Enhanced App Lock (Persistent Overlay)
+**Status:** Not Started
+
+### Description
+App lock should prevent launching a locked app until the unlock time, even if the user switches to another launcher and returns. When a locked app is attempted to be opened, show a persistent overlay with a motivational message and unlock time.
+
+### Requirements
+- Overlay must appear when launching a locked app from our launcher.
+- Overlay must also appear if the user tries to open the locked app from another launcher (as long as our launcher is still installed).
+- Overlay screen should display:
+  - App name (e.g., "App X is locked for 30 min")
+  - Motivational message (static, e.g., "This app is locked for your focus. You're doing great! Stay on track until the timer ends.")
+  - Blocked until: [unlock time]
+- Overlay must block interaction with the app until the lock expires.
+- Overlay must be dismissible only after the unlock time.
+
+### Technical Approach
+1. Use a foreground service or accessibility service to monitor app launches and overlay the lock screen when needed.
+2. Ensure overlay is shown regardless of which launcher is active, as long as our launcher is installed.
+3. Design a minimalist, motivational overlay UI.
+4. Persist lock state and unlock time securely.
+5. Handle edge cases (e.g., device reboot, app reinstall, time change).
+
+---
+
+## 9. Consistent Back Button & Header Behavior
+**Status:** Not Started
+
+### Description
+Unify the back button and header UI across all screens. The back button should always return to the previous screen (not always home), and header styling should be consistent (icon, placement, text size, etc.).
+
+### Known Issues
+- Some screens (e.g., Notification Filter) have inconsistent header/back button behavior.
+- Back button sometimes returns to home instead of the previous screen.
+
+### Technical Approach
+1. Refactor navigation logic to use a consistent back stack.
+2. Standardize header composable across all screens.
+3. Ensure back button always pops the previous screen, not just returns home.
+4. Test navigation flow for all screens (inbox, filters, settings, etc.).
+
 
 ---
 
