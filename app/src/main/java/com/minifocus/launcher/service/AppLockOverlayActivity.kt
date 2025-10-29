@@ -133,36 +133,26 @@ fun AppLockOverlayScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier
-                .padding(32.dp)
-                .fillMaxSize(),
+            modifier = Modifier.padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "🔒",
-                fontSize = 64.sp,
-                color = Color.White
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "$appName is locked",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                text = appName,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Light,
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
             Text(
-                text = "Time remaining:",
+                text = "Locked",
                 fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color.White.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 text = when {
@@ -170,29 +160,30 @@ fun AppLockOverlayScreen(
                     minutes > 0 -> String.format("%dm %02ds", minutes, seconds)
                     else -> String.format("%ds", seconds)
                 },
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Light,
                 color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Unlocks at $unlockTimeText",
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
             )
             
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
-                text = "This app is locked for your focus.\n\nYou're doing great! Stay on track until the timer ends.",
+                text = "You chose to focus\nRespect your decision",
                 fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Light,
+                color = Color.White.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
                 lineHeight = 24.sp
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = "Unlocks at: $unlockTimeText",
-                fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
             )
         }
     }
