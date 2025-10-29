@@ -441,7 +441,6 @@ fun HistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
@@ -464,7 +463,9 @@ fun HistoryScreen(
                 )
             }
         } else {
-            androidx.compose.foundation.lazy.LazyColumn {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
                 items(
                     count = historyTasks.size,
                     key = { index -> historyTasks[index].id }
