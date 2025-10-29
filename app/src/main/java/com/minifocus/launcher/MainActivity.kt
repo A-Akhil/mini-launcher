@@ -149,6 +149,7 @@ class MainActivity : ComponentActivity() {
                         onBottomIconChange = viewModel::setBottomIcon,
                         onSettingsVisibilityChange = viewModel::setSettingsVisibility,
                         onHistoryVisibilityChange = viewModel::setHistoryVisibility,
+                        onAboutVisibilityChange = viewModel::setAboutVisibility,
                         onClockFormatChange = viewModel::setClockFormat,
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
