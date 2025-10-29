@@ -11,6 +11,7 @@ import com.minifocus.launcher.manager.NotificationInboxManager
 import com.minifocus.launcher.manager.SearchManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
+import com.minifocus.launcher.service.AppLockMonitorService
 import com.minifocus.launcher.worker.NotificationMaintenanceWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -77,6 +78,18 @@ class LauncherApplication : Application() {
 
         appScope.launch {
             notificationInboxManager.trimExpired()
+        }
+
+        // Monitor lock state and start/stop monitoring service
+        appScope.launch {
+            lockManager.observeLocks().collectLatest { locks ->
+                val hasActiveLocks = locks.any { it.lockedUntil > System.currentTimeMillis() }
+                if (hasActiveLocks) {
+                    AppLockMonitorService.start(this@LauncherApplication)
+                } else {
+                    AppLockMonitorService.stop(this@LauncherApplication)
+                }
+            }
         }
 
         NotificationMaintenanceWorker.schedule(this)

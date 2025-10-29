@@ -8,11 +8,15 @@ data class PermissionsState(
     val notificationsGranted: Boolean,
     val notificationListenerGranted: Boolean,
     val deviceAdminGranted: Boolean,
-    val exactAlarmsGranted: Boolean
+    val exactAlarmsGranted: Boolean,
+    val usageStatsGranted: Boolean,
+    val overlayGranted: Boolean
 ) {
     val allGranted: Boolean
         get() = notificationsGranted &&
             notificationListenerGranted &&
             deviceAdminGranted &&
-            exactAlarmsGranted
+            exactAlarmsGranted &&
+            usageStatsGranted &&
+            overlayGranted
 }
