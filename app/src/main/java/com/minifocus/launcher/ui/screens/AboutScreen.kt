@@ -19,6 +19,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,8 +32,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen(
+    onBack: () -> Unit,
+    onNavigateToEmergencyUnlock: () -> Unit
+) {
     val context = LocalContext.current
+    var clickCount by remember { mutableStateOf(0) }
     
     Column(
         modifier = Modifier
@@ -90,7 +98,14 @@ fun AboutScreen(onBack: () -> Unit) {
         Text(
             text = "A Akhil",
             color = Color.White,
-            fontSize= 16.sp
+            fontSize= 16.sp,
+            modifier = Modifier.clickable {
+                clickCount++
+                if (clickCount >= 20) {
+                    clickCount = 0
+                    onNavigateToEmergencyUnlock()
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))

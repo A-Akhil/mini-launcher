@@ -65,11 +65,7 @@ class AppLockOverlayActivity : ComponentActivity() {
             MinimalistFocusTheme {
                 AppLockOverlayScreen(
                     appName = appName,
-                    lockedUntil = lockedUntil,
-                    onGoHome = {
-                        navigateToHome()
-                        finish()
-                    }
+                    lockedUntil = lockedUntil
                 )
             }
         }
@@ -102,8 +98,7 @@ class AppLockOverlayActivity : ComponentActivity() {
 @Composable
 fun AppLockOverlayScreen(
     appName: String,
-    lockedUntil: Long,
-    onGoHome: () -> Unit
+    lockedUntil: Long
 ) {
     var currentTime by remember { mutableStateOf(System.currentTimeMillis()) }
     
@@ -111,10 +106,6 @@ fun AppLockOverlayScreen(
         while (true) {
             delay(1000)
             currentTime = System.currentTimeMillis()
-            if (currentTime >= lockedUntil) {
-                onGoHome()
-                break
-            }
         }
     }
     
