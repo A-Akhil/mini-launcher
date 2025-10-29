@@ -57,6 +57,7 @@ class LauncherViewModel(
     private val isSearchVisible = MutableStateFlow(false)
     private val snackbarMessage = MutableStateFlow<String?>(null)
     private val isSettingsVisible = MutableStateFlow(false)
+    private val homeResetTick = MutableStateFlow(0)
 
     private val searchResults: Flow<List<SearchResult>> = searchQuery.flatMapLatest { query ->
         if (query.isBlank()) {
@@ -217,6 +218,9 @@ class LauncherViewModel(
         .combine(isEmergencyUnlockVisible) { state, emergencyUnlockVisible ->
             state.copy(isEmergencyUnlockVisible = emergencyUnlockVisible)
         }
+        .combine(homeResetTick) { state, resetTick ->
+            state.copy(homeResetTick = resetTick)
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
@@ -368,6 +372,19 @@ class LauncherViewModel(
         }
     }
 
+    fun resetToHome() {
+        isSettingsVisible.value = false
+        isHistoryVisible.value = false
+        isNotificationInboxVisible.value = false
+        isNotificationFilterVisible.value = false
+        isNotificationSettingsVisible.value = false
+        isAboutVisible.value = false
+        isEmergencyUnlockVisible.value = false
+        isSearchVisible.value = false
+        searchQuery.value = ""
+        homeResetTick.update { it + 1 }
+    }
+
     fun consumeMessage() {
         snackbarMessage.update { null }
     }
@@ -491,7 +508,8 @@ data class LauncherUiState(
     val showSeconds: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
-    val message: String? = null
+    val message: String? = null,
+    val homeResetTick: Int = 0
 ) {
     val timeFormatted: String
         get() = DateTimeFormatter.ofPattern(

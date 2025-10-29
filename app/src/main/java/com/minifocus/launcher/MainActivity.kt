@@ -501,10 +501,17 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.action == ACTION_OPEN_INBOX) {
-            viewModel.setNotificationInboxVisibility(true)
-            intent.action = Intent.ACTION_MAIN
+        when (intent.action) {
+            ACTION_OPEN_INBOX -> {
+                viewModel.setNotificationInboxVisibility(true)
+            }
+            Intent.ACTION_MAIN -> {
+                if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+                    viewModel.resetToHome()
+                }
+            }
         }
+        intent.action = Intent.ACTION_MAIN
     }
 
     companion object {
