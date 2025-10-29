@@ -138,7 +138,7 @@ Add "Uninstall" as a long-click option alongside existing actions (e.g., lock, h
 ---
 
 ## 8. Enhanced App Lock (Persistent Overlay)
-**Status:** Not Started
+**Status:** In Progress
 
 ### Description
 App lock should prevent launching a locked app until the unlock time, even if the user switches to another launcher and returns. When a locked app is attempted to be opened, show a persistent overlay with a motivational message and unlock time.
@@ -153,12 +153,24 @@ App lock should prevent launching a locked app until the unlock time, even if th
 - Overlay must block interaction with the app until the lock expires.
 - Overlay must be dismissible only after the unlock time.
 
-### Technical Approach
-1. Use a foreground service or accessibility service to monitor app launches and overlay the lock screen when needed.
-2. Ensure overlay is shown regardless of which launcher is active, as long as our launcher is installed.
-3. Design a minimalist, motivational overlay UI.
-4. Persist lock state and unlock time securely.
-5. Handle edge cases (e.g., device reboot, app reinstall, time change).
+### Implementation Status
+✅ Created `AppLockMonitorService` - Foreground service using `UsageStatsManager` to detect app launches
+✅ Created `AppLockOverlayActivity` - Black screen with motivational message, countdown timer, and unlock time
+✅ Added `PACKAGE_USAGE_STATS` permission to manifest
+✅ Added `SYSTEM_ALERT_WINDOW` (overlay) permission to permission flow
+✅ Added usage stats permission to `PermissionScreen` and permission flow
+✅ Added overlay permission to `PermissionScreen` and permission flow
+✅ Service automatically starts/stops based on active lock state
+✅ Monitoring uses Handler.postDelayed (no infinite loop, checks every 1 second)
+✅ Works across launchers - intercepts app launches system-wide when our launcher is installed
+✅ **Removed "Go to Home" button - overlay auto-dismisses when timer expires**
+✅ **Back button completely blocked - user cannot escape the lock screen**
+
+### Remaining Work
+- ⚠️ **Grant "Display over other apps" permission** in Settings → Apps → mini-launcher → Display over other apps
+- Test overlay appears when launching locked app
+- Verify back button is blocked
+- Test service persistence across device reboots
 
 ---
 

@@ -33,10 +33,11 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModelFactory
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModelFactory
-import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
-import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.PermissionsState
+import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.NotificationInboxListenerService
+import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -60,12 +61,22 @@ class MainActivity : ComponentActivity() {
         updatePermissionsState()
     }
 
+    private val usageStatsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updatePermissionsState()
+    }
+
+    private val overlayLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        updatePermissionsState()
+    }
+
     private val permissionsState = MutableStateFlow(
         PermissionsState(
             notificationsGranted = false,
             notificationListenerGranted = false,
             deviceAdminGranted = false,
-            exactAlarmsGranted = false
+            exactAlarmsGranted = false,
+            usageStatsGranted = false,
+            overlayGranted = false
         )
     )
 
@@ -164,6 +175,8 @@ class MainActivity : ComponentActivity() {
                         onRequestNotificationListener = ::requestNotificationAccess,
                         onRequestExactAlarms = ::requestExactAlarmPermission,
                         onRequestDeviceAdmin = ::requestDeviceAdmin,
+                        onRequestUsageStats = ::requestUsageStatsPermission,
+                        onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
                         onOpenRestrictedSettings = ::openRestrictedSettings
                     )
@@ -229,6 +242,29 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun requestUsageStatsPermission() {
+        if (permissionsState.value.usageStatsGranted) {
+            updatePermissionsState()
+            return
+        }
+        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        usageStatsLauncher.launch(intent)
+    }
+
+    private fun requestOverlayPermission() {
+        if (permissionsState.value.overlayGranted) {
+            updatePermissionsState()
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            overlayLauncher.launch(intent)
+        }
+    }
+
     private fun updatePermissionsState() {
         val state = PermissionsEvaluator.currentState(this)
         permissionsState.value = state
@@ -244,6 +280,23 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {
                 // Ignore; system will bind when possible.
             }
+        }
+        
+        if (state.allGranted) {
+            startAppLockMonitorService()
+        }
+    }
+
+    private fun startAppLockMonitorService() {
+        try {
+            val serviceIntent = Intent(this, com.minifocus.launcher.service.AppLockMonitorService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -307,6 +360,22 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launchPackage(packageName: String) {
+        // Check if app is locked first (using runBlocking since we need to check before launching)
+        val container = (application as LauncherApplication).container
+        val lockInfo = runBlocking { container.lockManager.getLockInfo(packageName) }
+        
+        if (lockInfo != null && lockInfo.lockedUntil > System.currentTimeMillis()) {
+            // App is locked - show overlay instead of launching
+            val overlayIntent = Intent(this, com.minifocus.launcher.service.AppLockOverlayActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(com.minifocus.launcher.service.AppLockMonitorService.EXTRA_PACKAGE_NAME, packageName)
+                putExtra(com.minifocus.launcher.service.AppLockMonitorService.EXTRA_LOCKED_UNTIL, lockInfo.lockedUntil)
+            }
+            startActivity(overlayIntent)
+            return
+        }
+        
+        // App is not locked, launch normally
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         if (launchIntent != null) {
             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
