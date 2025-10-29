@@ -93,6 +93,7 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.Notification
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.screens.AboutScreen
+import com.minifocus.launcher.ui.screens.EmergencyUnlockScreen
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
 import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
@@ -117,6 +118,7 @@ fun LauncherApp(
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
     onSettingsVisibilityChange: (Boolean) -> Unit,
     onAboutVisibilityChange: (Boolean) -> Unit,
+    onEmergencyUnlockVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
@@ -135,7 +137,8 @@ fun LauncherApp(
     onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
-    onOpenClock: () -> Unit
+    onOpenClock: () -> Unit,
+    lockManager: com.minifocus.launcher.manager.LockManager
 ) {
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -294,7 +297,17 @@ fun LauncherApp(
                 }
                 state.isAboutVisible -> {
                     AboutScreen(
-                        onBack = { onAboutVisibilityChange(false) }
+                        onBack = { onAboutVisibilityChange(false) },
+                        onNavigateToEmergencyUnlock = { onEmergencyUnlockVisibilityChange(true) }
+                    )
+                }
+                state.isEmergencyUnlockVisible -> {
+                    EmergencyUnlockScreen(
+                        lockManager = lockManager,
+                        onBack = { onEmergencyUnlockVisibilityChange(false) },
+                        onUnlockApp = { packageName ->
+                            lockManager.unlockApp(packageName)
+                        }
                     )
                 }
                 else -> {
@@ -623,15 +636,6 @@ private fun HomeScreen(
                                 expandedPinned.value = null
                             }
                         )
-                        if (app.isLocked) {
-                            DropdownMenuItem(
-                                text = { Text("Unlock") },
-                                onClick = {
-                                    onUnlockApp(app.packageName)
-                                    expandedPinned.value = null
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -1131,15 +1135,6 @@ private fun AllAppsScreen(
                                 expandedApp.value = null
                             }
                         )
-                        if (app.isLocked) {
-                            DropdownMenuItem(
-                                text = { Text("Unlock") },
-                                onClick = {
-                                    onUnlockApp(app.packageName)
-                                    expandedApp.value = null
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -1169,13 +1164,6 @@ private fun AllAppsScreen(
                                 text = { Text("Unhide") },
                                 onClick = {
                                     onUnhideApp(app.packageName)
-                                    expandedApp.value = null
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Unlock") },
-                                onClick = {
-                                    onUnlockApp(app.packageName)
                                     expandedApp.value = null
                                 }
                             )
