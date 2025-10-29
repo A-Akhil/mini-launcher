@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +38,8 @@ fun PermissionScreen(
     onRequestNotificationListener: () -> Unit,
     onRequestExactAlarms: () -> Unit,
     onRequestDeviceAdmin: () -> Unit,
+    onRequestUsageStats: () -> Unit,
+    onRequestOverlay: () -> Unit,
     showRestrictedNotificationHint: Boolean,
     onOpenRestrictedSettings: () -> Unit
 ) {
@@ -43,6 +47,7 @@ fun PermissionScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -90,7 +95,21 @@ fun PermissionScreen(
             onClick = onRequestDeviceAdmin
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        PermissionCard(
+            title = "Usage stats access",
+            description = "Monitor app launches to enforce app locks even when using other launchers.",
+            granted = state.usageStatsGranted,
+            onClick = onRequestUsageStats
+        )
+
+        PermissionCard(
+            title = "Display over other apps",
+            description = "Show lock screen overlay when you try to open locked apps.",
+            granted = state.overlayGranted,
+            onClick = onRequestOverlay
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         if (showRestrictedNotificationHint && !state.notificationListenerGranted) {
             Text(

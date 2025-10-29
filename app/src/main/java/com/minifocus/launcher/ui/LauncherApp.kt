@@ -27,11 +27,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -419,13 +421,11 @@ private fun handleAppLaunch(
     navigateToHome: () -> Unit
 ) {
     coroutineScope.launch {
-        if (canLaunch(entry.packageName)) {
-            onLaunchApp(entry.packageName)
-            // Small delay to allow UI to settle before navigation
-            kotlinx.coroutines.delay(50)
-            navigateToHome()  // Navigate back to home after launching app
-        }
-        // If app is locked, simply don't launch (no snackbar message)
+        // Always call onLaunchApp - it will handle locked apps by showing overlay
+        onLaunchApp(entry.packageName)
+        // Small delay to allow UI to settle before navigation
+        kotlinx.coroutines.delay(50)
+        navigateToHome()  // Navigate back to home after launching app
     }
 }
 
@@ -492,7 +492,11 @@ private fun RetentionPickerDialog(
             )
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
                 options.forEach { option ->
                     val isSelected = option == selected
                     TextButton(
@@ -1300,6 +1304,7 @@ private fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         // Header with back button
@@ -1547,7 +1552,9 @@ private fun LockDurationDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(

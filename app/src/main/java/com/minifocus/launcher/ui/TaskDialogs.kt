@@ -2,7 +2,9 @@ package com.minifocus.launcher.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -324,7 +326,7 @@ fun EditTaskDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Task", color = Color.White) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = inputText.value,
                     onValueChange = { inputText.value = it },
@@ -439,6 +441,7 @@ fun HistoryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         Row(
