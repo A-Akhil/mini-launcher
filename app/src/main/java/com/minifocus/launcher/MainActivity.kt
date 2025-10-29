@@ -150,6 +150,7 @@ class MainActivity : ComponentActivity() {
                         onSettingsVisibilityChange = viewModel::setSettingsVisibility,
                         onHistoryVisibilityChange = viewModel::setHistoryVisibility,
                         onAboutVisibilityChange = viewModel::setAboutVisibility,
+                        onEmergencyUnlockVisibilityChange = viewModel::setEmergencyUnlockVisibility,
                         onClockFormatChange = viewModel::setClockFormat,
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
@@ -167,7 +168,8 @@ class MainActivity : ComponentActivity() {
                         onConsumeMessage = viewModel::consumeMessage,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
-                        onOpenClock = { openClockApp() }
+                        onOpenClock = { openClockApp() },
+                        lockManager = (application as LauncherApplication).container.lockManager
                     )
                 } else {
                     PermissionScreen(

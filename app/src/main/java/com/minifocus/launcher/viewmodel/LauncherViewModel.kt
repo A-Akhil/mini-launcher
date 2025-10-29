@@ -155,6 +155,7 @@ class LauncherViewModel(
     private val isNotificationFilterVisible = MutableStateFlow(false)
     private val isNotificationSettingsVisible = MutableStateFlow(false)
     private val isAboutVisible = MutableStateFlow(false)
+    private val isEmergencyUnlockVisible = MutableStateFlow(false)
 
     val uiState = dataSnapshot
         .combine(preferencesSnapshot) { data, prefs ->
@@ -178,6 +179,9 @@ class LauncherViewModel(
                 isHistoryVisible = false,
                 isNotificationInboxVisible = false,
                 isNotificationFilterVisible = false,
+                isNotificationSettingsVisible = false,
+                isAboutVisible = false,
+                isEmergencyUnlockVisible = false,
                 isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
                 showSeconds = prefs.showSeconds,
                 notificationRetentionDays = prefs.notificationRetentionDays,
@@ -209,6 +213,9 @@ class LauncherViewModel(
         }
         .combine(isAboutVisible) { state, aboutVisible ->
             state.copy(isAboutVisible = aboutVisible)
+        }
+        .combine(isEmergencyUnlockVisible) { state, emergencyUnlockVisible ->
+            state.copy(isEmergencyUnlockVisible = emergencyUnlockVisible)
         }
         .stateIn(
             scope = viewModelScope,
@@ -344,6 +351,20 @@ class LauncherViewModel(
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
             isNotificationSettingsVisible.value = false
+            isEmergencyUnlockVisible.value = false
+        }
+    }
+
+    fun setEmergencyUnlockVisibility(visible: Boolean) {
+        isEmergencyUnlockVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
         }
     }
 
@@ -466,6 +487,7 @@ data class LauncherUiState(
     val isNotificationFilterVisible: Boolean = false,
     val isNotificationSettingsVisible: Boolean = false,
     val isAboutVisible: Boolean = false,
+    val isEmergencyUnlockVisible: Boolean = false,
     val showSeconds: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
