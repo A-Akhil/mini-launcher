@@ -54,4 +54,7 @@ interface NotificationDao {
 
     @Query("UPDATE notifications SET expires_at = :expiresAt WHERE id = :id")
     suspend fun updateExpiry(id: Long, expiresAt: Long?)
+
+    @Query("DELETE FROM notifications WHERE package_name = :packageName")
+    suspend fun deleteByPackage(packageName: String)
 }
