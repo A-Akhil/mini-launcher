@@ -92,6 +92,7 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiStat
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import com.minifocus.launcher.ui.components.MinimalCheckbox
+import com.minifocus.launcher.ui.screens.AboutScreen
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
 import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
@@ -115,6 +116,7 @@ fun LauncherApp(
     onSearchVisibilityChange: (Boolean) -> Unit,
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
     onSettingsVisibilityChange: (Boolean) -> Unit,
+    onAboutVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
@@ -260,6 +262,7 @@ fun LauncherApp(
                         onShowSecondsToggle = onShowSecondsChange,
                         onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
+                        onOpenAbout = { onAboutVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
                     )
                 }
@@ -287,6 +290,11 @@ fun LauncherApp(
                         onBack = { onHistoryVisibilityChange(false) },
                         onToggleTask = onToggleTask,
                         onDeleteTask = onDeleteTask
+                    )
+                }
+                state.isAboutVisible -> {
+                    AboutScreen(
+                        onBack = { onAboutVisibilityChange(false) }
                     )
                 }
                 else -> {
@@ -1298,6 +1306,7 @@ private fun SettingsScreen(
     onShowSecondsToggle: (Boolean) -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1493,6 +1502,23 @@ private fun SettingsScreen(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // About section
+        Text(
+            text = "About",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsRow(
+            title = "About",
+            subtitle = "Developer info and feedback",
+            onClick = onOpenAbout
+        )
     }
 }
 
