@@ -92,6 +92,7 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiStat
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import com.minifocus.launcher.ui.components.MinimalCheckbox
+import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
 import com.minifocus.launcher.ui.screens.EmergencyUnlockScreen
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
@@ -1304,26 +1305,10 @@ private fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
-        // Header with back button
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "←",
-                color = Color.White,
-                fontSize = 32.sp,
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .combinedClickable(onClick = onBack)
-            )
-            Text(
-                text = "Settings",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        ScreenHeader(
+            title = "Settings",
+            onBack = onBack
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
