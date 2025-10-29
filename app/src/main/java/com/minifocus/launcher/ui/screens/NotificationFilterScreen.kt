@@ -73,7 +73,9 @@ fun NotificationFilterScreen(
         if (state.items.isEmpty()) {
             EmptyFiltersState()
         } else {
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
                 items(state.items) { item ->
                     FilterRow(item = item, onToggle = onToggle)
                 }
