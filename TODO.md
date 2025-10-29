@@ -138,7 +138,7 @@ Add "Uninstall" as a long-click option alongside existing actions (e.g., lock, h
 ---
 
 ## 8. Enhanced App Lock (Persistent Overlay)
-**Status:** In Progress
+**Status:** Completed
 
 ### Description
 App lock should prevent launching a locked app until the unlock time, even if the user switches to another launcher and returns. When a locked app is attempted to be opened, show a persistent overlay with a motivational message and unlock time.
@@ -148,30 +148,28 @@ App lock should prevent launching a locked app until the unlock time, even if th
 - Overlay must also appear if the user tries to open the locked app from another launcher (as long as our launcher is still installed).
 - Overlay screen should display:
   - App name (e.g., "App X is locked for 30 min")
-  - Motivational message (static, e.g., "This app is locked for your focus. You're doing great! Stay on track until the timer ends.")
-  - Blocked until: [unlock time]
+  - Motivational message (static, e.g., "You chose to focus / Respect your decision")
+  - Countdown timer showing remaining time
+  - Unlock time
 - Overlay must block interaction with the app until the lock expires.
-- Overlay must be dismissible only after the unlock time.
+- No unlock button - enforces digital detox.
+- Emergency unlock only accessible through hidden 20-click sequence in About screen.
 
 ### Implementation Status
-✅ Created `AppLockMonitorService` - Foreground service using `UsageStatsManager` to detect app launches
-✅ Created `AppLockOverlayActivity` - Black screen with motivational message, countdown timer, and unlock time
-✅ Added `PACKAGE_USAGE_STATS` permission to manifest
-✅ Added `SYSTEM_ALERT_WINDOW` (overlay) permission to permission flow
-✅ Added usage stats permission to `PermissionScreen` and permission flow
-✅ Added overlay permission to `PermissionScreen` and permission flow
-✅ Service automatically starts/stops based on active lock state
-✅ Monitoring uses Handler.postDelayed (no infinite loop, checks every 1 second)
-✅ Works across launchers - intercepts app launches system-wide when our launcher is installed
-✅ **Removed "Go to Home" button - overlay auto-dismisses when timer expires**
-✅ **Back button completely blocked - user cannot escape the lock screen**
-
-### Remaining Work
-- ⚠️ **Grant "Display over other apps" permission** in Settings → Apps → mini-launcher → Display over other apps
-- Test overlay appears when launching locked app
-- Verify back button is blocked
-- Test service persistence across device reboots
-
+Created `AppLockMonitorService` - Foreground service using `UsageStatsManager` to detect app launches
+Created `AppLockOverlayActivity` - Black screen with motivational message, countdown timer, and unlock time
+Added `PACKAGE_USAGE_STATS` permission to manifest
+Added `SYSTEM_ALERT_WINDOW` (overlay) permission to permission flow
+Added usage stats permission to `PermissionScreen` and permission flow
+Added overlay permission to `PermissionScreen` and permission flow
+Service automatically starts/stops based on active lock state
+Monitoring uses Handler.postDelayed (no infinite loop, checks every 1 second)
+Works across launchers - intercepts app launches system-wide when our launcher is installed
+**Removed "Go to Home" button - overlay auto-dismisses when timer expires**
+**Back button completely blocked - user cannot escape the lock screen**
+**Removed unlock button from lock screen overlay**
+**Removed unlock option from long-press context menus**
+**Emergency unlock system implemented:**
 ---
 
 ## 9. Consistent Back Button & Header Behavior
