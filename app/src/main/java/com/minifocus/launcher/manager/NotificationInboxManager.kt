@@ -7,6 +7,9 @@ import android.app.PendingIntent
 import android.app.TaskStackBuilder
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -23,6 +26,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
+import android.telecom.TelecomManager
 import java.util.concurrent.TimeUnit
 
 class NotificationInboxManager(
@@ -32,17 +39,24 @@ class NotificationInboxManager(
     private val logger: InboxLogger
 ) {
     private val retentionDays = MutableStateFlow(DEFAULT_NOTIFICATION_RETENTION_DAYS)
+    private val packageManager = context.packageManager
+    private val essentialSystemPackages: Set<String> by lazy { discoverEssentialPackages() }
 
     fun observeNotifications(): Flow<List<NotificationItem>> =
         notificationDao.observeAll().map { entities ->
-            entities.map { entity -> entity.toItem() }
+            entities
+                .filterNot { entity -> isSystemPackage(entity.packageName) }
+                .map { entity -> entity.toItem() }
         }
 
     fun observeUnreadCount(): Flow<Int> = notificationDao.observeUnreadCount()
 
     fun observeTotalCount(): Flow<Int> = notificationDao.observeTotalCount()
 
-    fun observeFilters(): Flow<List<NotificationFilterEntity>> = notificationFilterDao.observeAll()
+    fun observeFilters(): Flow<List<NotificationFilterEntity>> =
+        notificationFilterDao.observeAll().map { entities ->
+            entities.filterNot { entity -> isSystemPackage(entity.packageName) }
+        }
 
     suspend fun addNotification(sbn: StatusBarNotification): Boolean {
         logger.log(
@@ -64,6 +78,18 @@ class NotificationInboxManager(
                     metadata = emptyMap()
                 )
             }
+            return false
+        }
+
+        if (isSystemPackage(sbn.packageName)) {
+            logger.log(
+                event = "system_skip",
+                message = "Skipped system package",
+                metadata = mapOf("package" to sbn.packageName)
+            )
+            debug("system skip pkg=${sbn.packageName}")
+            notificationDao.deleteByPackage(sbn.packageName)
+            notificationFilterDao.deleteByPackage(sbn.packageName)
             return false
         }
 
@@ -205,11 +231,18 @@ class NotificationInboxManager(
         notificationDao.findById(id)?.toItem()
 
     suspend fun shouldIntercept(packageName: String): Boolean {
+        if (isSystemPackage(packageName)) {
+            return false
+        }
         val filter = notificationFilterDao.getFilter(packageName)
         return filter?.isEnabled ?: true
     }
 
     suspend fun setFilterEnabled(packageName: String, enabled: Boolean) {
+        if (isSystemPackage(packageName)) {
+            notificationFilterDao.deleteByPackage(packageName)
+            return
+        }
         ensureFilterExists(packageName, resolveAppName(packageName))
         notificationFilterDao.setEnabled(packageName, enabled)
         logger.log(
@@ -220,6 +253,10 @@ class NotificationInboxManager(
     }
 
     suspend fun ensureFilterExists(packageName: String, appName: String) {
+        if (isSystemPackage(packageName)) {
+            notificationFilterDao.deleteByPackage(packageName)
+            return
+        }
         val existing = notificationFilterDao.getFilter(packageName)
         if (existing == null) {
             notificationFilterDao.upsert(
@@ -389,5 +426,44 @@ class NotificationInboxManager(
 
     private fun debug(message: String) {
         Log.d(LOG_TAG, message)
+    }
+
+    private fun isSystemPackage(packageName: String): Boolean {
+        if (packageName in essentialSystemPackages) {
+            return true
+        }
+        return try {
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            val isSystem = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            val isUpdatedSystem = (info.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            isSystem || isUpdatedSystem
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun discoverEssentialPackages(): Set<String> {
+        val pm = packageManager
+        val intents = listOf(
+            Intent(Intent.ACTION_DIAL),
+            Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:")),
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA),
+            Intent(AlarmClock.ACTION_SHOW_ALARMS),
+            Intent(Settings.ACTION_SETTINGS)
+        )
+
+        val resolvedPackages = buildSet {
+            intents.forEach { intent ->
+                pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+                    ?.activityInfo
+                    ?.packageName
+                    ?.let { add(it) }
+            }
+
+            val telecom = context.getSystemService(TelecomManager::class.java)
+            telecom?.defaultDialerPackage?.let { add(it) }
+        }
+
+        return resolvedPackages
     }
 }
