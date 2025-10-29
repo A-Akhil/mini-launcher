@@ -173,21 +173,10 @@ Works across launchers - intercepts app launches system-wide when our launcher i
 ---
 
 ## 9. Consistent Back Button & Header Behavior
-**Status:** Not Started
+**Status:** Completed (2025-10-29)
 
 ### Description
 Unify the back button and header UI across all screens. The back button should always return to the previous screen (not always home), and header styling should be consistent (icon, placement, text size, etc.).
-
-### Known Issues
-- Some screens (e.g., Notification Filter) have inconsistent header/back button behavior.
-- Back button sometimes returns to home instead of the previous screen.
-
-### Technical Approach
-1. Refactor navigation logic to use a consistent back stack.
-2. Standardize header composable across all screens.
-3. Ensure back button always pops the previous screen, not just returns home.
-4. Test navigation flow for all screens (inbox, filters, settings, etc.).
-
 
 ---
 

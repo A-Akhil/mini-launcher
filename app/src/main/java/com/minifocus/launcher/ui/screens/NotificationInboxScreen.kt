@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MarkEmailRead
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.minifocus.launcher.model.NotificationItem
+import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import java.time.Instant
 import java.time.ZoneId
@@ -73,26 +73,24 @@ fun NotificationInboxScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Notification Inbox",
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                if (state.unreadCount > 0) {
+            ScreenHeader(
+                title = "Notification Inbox",
+                onBack = onBack
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "${state.unreadCount} unread",
-                        color = Color(0xFFAAAAAA),
-                        fontSize = 14.sp
+                        text = "Notification Inbox",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
+                    if (state.unreadCount > 0) {
+                        Text(
+                            text = "${state.unreadCount} unread",
+                            color = Color(0xFFAAAAAA),
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
             IconButton(onClick = onMarkAllRead) {
