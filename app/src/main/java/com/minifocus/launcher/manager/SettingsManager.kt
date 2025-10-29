@@ -22,6 +22,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val bottomRight = stringPreferencesKey("bottom_right_package")
         val keyboardSearchOnSwipe = intPreferencesKey("keyboard_search_on_swipe")
         val showSeconds = intPreferencesKey("show_seconds")
+        val notificationInboxEnabled = intPreferencesKey("notification_inbox_enabled")
         val notificationRetentionDays = intPreferencesKey("notification_retention_days")
         val logRetentionDays = intPreferencesKey("log_retention_days")
         val lastLogRotationAt = longPreferencesKey("last_log_rotation_at")
@@ -48,6 +49,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeShowSeconds(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.showSeconds]?.let { it == 1 } ?: false
+    }
+
+    fun observeNotificationInboxEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.notificationInboxEnabled]?.let { it == 1 } ?: false
     }
 
     fun observeNotificationRetentionDays(): Flow<Int> = dataStore.data.map { prefs ->
@@ -88,6 +93,12 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setShowSeconds(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.showSeconds] = if (enabled) 1 else 0
+        }
+    }
+
+    suspend fun setNotificationInboxEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.notificationInboxEnabled] = if (enabled) 1 else 0
         }
     }
 
