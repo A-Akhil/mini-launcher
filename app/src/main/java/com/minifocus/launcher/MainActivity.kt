@@ -154,6 +154,7 @@ class MainActivity : ComponentActivity() {
                         onClockFormatChange = viewModel::setClockFormat,
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
+                        onNotificationInboxEnabledChange = viewModel::setNotificationInboxEnabled,
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
                         onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
                         onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
