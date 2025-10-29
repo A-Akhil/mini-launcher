@@ -122,6 +122,7 @@ fun LauncherApp(
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
+    onNotificationInboxEnabledChange: (Boolean) -> Unit,
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
@@ -294,6 +295,7 @@ fun LauncherApp(
                         clockFormat = state.clockFormat,
                         keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                         showSeconds = state.showSeconds,
+                        notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
                         bottomLeftApp = state.bottomLeft,
@@ -301,6 +303,7 @@ fun LauncherApp(
                         onKeyboardToggle = onKeyboardSearchOnSwipeChange,
                         onClockFormatChange = onClockFormatChange,
                         onShowSecondsToggle = onShowSecondsChange,
+                        onNotificationInboxToggle = onNotificationInboxEnabledChange,
                         onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
                         onOpenAbout = { onAboutVisibilityChange(true) },
@@ -1323,6 +1326,7 @@ private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
     showSeconds: Boolean,
+    notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
     bottomLeftApp: AppEntry?,
@@ -1330,6 +1334,7 @@ private fun SettingsScreen(
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onShowSecondsToggle: (Boolean) -> Unit,
+    onNotificationInboxToggle: (Boolean) -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
     onOpenNotificationSettings: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -1399,22 +1404,40 @@ private fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Notification settings
+        // Notification Inbox toggle
         Text(
-            text = "Notifications",
+            text = "Notification Inbox",
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = "Enable notification interception and inbox",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(checked = notificationInboxEnabled, onCheckedChange = onNotificationInboxToggle)
+        }
 
-        val retentionSummary = "Inbox keeps ${notificationRetentionDays} day${if (notificationRetentionDays == 1) "" else "s"}, logs keep ${logRetentionDays} day${if (logRetentionDays == 1) "" else "s"}"
+        if (notificationInboxEnabled) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-        SettingsRow(
-            title = "Notification Settings",
-            subtitle = retentionSummary,
-            onClick = onOpenNotificationSettings
-        )
+            val retentionSummary = "Inbox keeps ${notificationRetentionDays} day${if (notificationRetentionDays == 1) "" else "s"}, logs keep ${logRetentionDays} day${if (logRetentionDays == 1) "" else "s"}"
+
+            SettingsRow(
+                title = "Notification Settings",
+                subtitle = retentionSummary,
+                onClick = onOpenNotificationSettings
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

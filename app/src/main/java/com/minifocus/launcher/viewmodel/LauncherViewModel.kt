@@ -104,6 +104,7 @@ class LauncherViewModel(
                 bottomRightPackage = null,
                 keyboardSearchOnSwipe = false,
                 showSeconds = false,
+                notificationInboxEnabled = false,
                 notificationRetentionDays = 0,
                 logRetentionDays = 0
             )
@@ -119,6 +120,9 @@ class LauncherViewModel(
         }
         .combine(settingsManager.observeShowSeconds()) { snapshot, showSeconds ->
             snapshot.copy(showSeconds = showSeconds)
+        }
+        .combine(settingsManager.observeNotificationInboxEnabled()) { snapshot, enabled ->
+            snapshot.copy(notificationInboxEnabled = enabled)
         }
         .combine(settingsManager.observeNotificationRetentionDays()) { snapshot, retention ->
             snapshot.copy(notificationRetentionDays = retention)
@@ -185,6 +189,7 @@ class LauncherViewModel(
                 isEmergencyUnlockVisible = false,
                 isKeyboardSearchOnSwipe = prefs.keyboardSearchOnSwipe,
                 showSeconds = prefs.showSeconds,
+                notificationInboxEnabled = prefs.notificationInboxEnabled,
                 notificationRetentionDays = prefs.notificationRetentionDays,
                 logRetentionDays = prefs.logRetentionDays,
                 message = null
@@ -409,6 +414,10 @@ class LauncherViewModel(
         viewModelScope.launch { settingsManager.setShowSeconds(enabled) }
     }
 
+    fun setNotificationInboxEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setNotificationInboxEnabled(enabled) }
+    }
+
     fun setNotificationRetentionDays(days: Int) {
         viewModelScope.launch { settingsManager.setNotificationRetentionDays(days) }
     }
@@ -470,6 +479,7 @@ private data class PreferencesSnapshot(
     val bottomRightPackage: String?,
     val keyboardSearchOnSwipe: Boolean,
     val showSeconds: Boolean,
+    val notificationInboxEnabled: Boolean,
     val notificationRetentionDays: Int,
     val logRetentionDays: Int
 )
@@ -506,6 +516,7 @@ data class LauncherUiState(
     val isAboutVisible: Boolean = false,
     val isEmergencyUnlockVisible: Boolean = false,
     val showSeconds: Boolean = false,
+    val notificationInboxEnabled: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
     val message: String? = null,
