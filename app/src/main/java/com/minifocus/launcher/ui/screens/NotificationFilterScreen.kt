@@ -13,11 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -29,8 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
+import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
+import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 
 @Composable
 fun NotificationFilterScreen(
@@ -45,24 +42,10 @@ fun NotificationFilterScreen(
             .background(Color.Black)
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
-            }
-            Text(
-                text = "Notification Filters",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        ScreenHeader(
+            title = "Notification Filters",
+            onBack = onBack
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
