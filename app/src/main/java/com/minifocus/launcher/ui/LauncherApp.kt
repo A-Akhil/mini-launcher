@@ -1223,7 +1223,7 @@ private fun SearchOverlay(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            LazyColumn {
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 items(results) { result ->
                     when (result) {
                         is SearchResult.App -> Text(
