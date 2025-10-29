@@ -30,6 +30,10 @@ class LockManager(private val appLockDao: AppLockDao) {
         appLockDao.clearExpiredLocks(System.currentTimeMillis())
     }
 
+    suspend fun getLockInfo(packageName: String): AppLockEntity? {
+        return appLockDao.getLock(packageName)
+    }
+
     private suspend fun scheduleCleanupIfNeeded() {
         val earliestLock = appLockDao.getEarliestLock()
         if (earliestLock != null && earliestLock.lockedUntil > System.currentTimeMillis()) {
