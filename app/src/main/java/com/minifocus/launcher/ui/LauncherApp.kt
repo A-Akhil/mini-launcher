@@ -2,6 +2,7 @@
 
 package com.minifocus.launcher.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -11,7 +12,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,8 +74,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -139,7 +137,8 @@ fun LauncherApp(
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
-    lockManager: com.minifocus.launcher.manager.LockManager
+    lockManager: com.minifocus.launcher.manager.LockManager,
+    onRootBack: () -> Unit = {}
 ) {
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -154,6 +153,27 @@ fun LauncherApp(
     val filterBackTarget = remember { mutableStateOf(FilterBackTarget.None) }
     val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
     val notifSettingsBackTarget = remember { mutableStateOf(NotifSettingsBackTarget.None) }
+
+    val shouldSnapToHome = state.isSettingsVisible ||
+        state.isNotificationSettingsVisible ||
+        state.isNotificationFilterVisible ||
+        state.isNotificationInboxVisible ||
+        state.isAboutVisible ||
+        state.isEmergencyUnlockVisible ||
+        state.isHistoryVisible ||
+        state.isSearchVisible
+
+    LaunchedEffect(state.homeResetTick) {
+        if (pagerState.currentPage != 1) {
+            pagerState.scrollToPage(1)
+        }
+    }
+
+    LaunchedEffect(shouldSnapToHome) {
+        if (shouldSnapToHome && pagerState.currentPage != 1) {
+            pagerState.scrollToPage(1)
+        }
+    }
 
     fun openInbox(from: InboxBackTarget) {
         inboxBackTarget.value = from
@@ -209,6 +229,23 @@ fun LauncherApp(
             FilterBackTarget.None -> Unit
         }
         filterBackTarget.value = FilterBackTarget.None
+    }
+
+    BackHandler {
+        when {
+            state.isNotificationFilterVisible -> closeFilters()
+            state.isNotificationSettingsVisible -> closeNotifSettings()
+            state.isNotificationInboxVisible -> closeInbox()
+            state.isSettingsVisible -> onSettingsVisibilityChange(false)
+            state.isHistoryVisible -> onHistoryVisibilityChange(false)
+            state.isAboutVisible -> onAboutVisibilityChange(false)
+            state.isEmergencyUnlockVisible -> onEmergencyUnlockVisibilityChange(false)
+            searchVisible -> onSearchVisibilityChange(false)
+            pagerState.currentPage != 1 -> {
+                coroutineScope.launch { pagerState.scrollToPage(1) }
+            }
+            else -> onRootBack()
+        }
     }
 
     LaunchedEffect(pagerState.currentPage) {
@@ -1371,9 +1408,11 @@ private fun SettingsScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
+        val retentionSummary = "Inbox keeps ${notificationRetentionDays} day${if (notificationRetentionDays == 1) "" else "s"}, logs keep ${logRetentionDays} day${if (logRetentionDays == 1) "" else "s"}"
+
         SettingsRow(
             title = "Notification Settings",
-            subtitle = "Inbox, filters, and retention",
+            subtitle = retentionSummary,
             onClick = onOpenNotificationSettings
         )
 
@@ -1492,22 +1531,6 @@ private fun SettingsScreen(
             subtitle = "Developer info and feedback",
             onClick = onOpenAbout
         )
-    }
-}
-
-private suspend fun PointerInputScope.detectSwipeUp(onSwipeUp: () -> Unit) {
-    var totalDrag = 0f
-    detectVerticalDragGestures(
-        onDragStart = { totalDrag = 0f },
-        onDragEnd = {
-            if (totalDrag < -120f) {
-                onSwipeUp()
-            }
-            totalDrag = 0f
-        },
-        onDragCancel = { totalDrag = 0f }
-    ) { _, dragAmount ->
-        totalDrag += dragAmount
     }
 }
 
