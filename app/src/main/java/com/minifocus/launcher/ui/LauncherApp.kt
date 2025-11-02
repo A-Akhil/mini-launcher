@@ -89,6 +89,7 @@ import com.minifocus.launcher.viewmodel.LauncherUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
+import com.minifocus.launcher.ui.components.AppContextMenu
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
@@ -638,47 +639,19 @@ private fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             items(state.pinnedApps) { app ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = app.label,
-                        fontSize = 22.sp,
-                        color = Color.White,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .combinedClickable(
-                                onClick = { onLaunchApp(app) },
-                                onLongClick = { expandedPinned.value = app.packageName }
-                            ),
-                        textAlign = TextAlign.Center
-                    )
-                    DropdownMenu(
-                        expanded = expandedPinned.value == app.packageName,
-                        onDismissRequest = { expandedPinned.value = null }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Unpin") },
-                            onClick = {
-                                onUnpinApp(app.packageName)
-                                expandedPinned.value = null
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Hide") },
-                            onClick = {
-                                onHideApp(app.packageName)
-                                expandedPinned.value = null
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Lock") },
-                            onClick = {
-                                lockDialogApp.value = app
-                                expandedPinned.value = null
-                            }
-                        )
-                    }
-                }
+                Text(
+                    text = app.label,
+                    fontSize = 22.sp,
+                    color = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .combinedClickable(
+                            onClick = { onLaunchApp(app) },
+                            onLongClick = { expandedPinned.value = app.packageName }
+                        ),
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
@@ -688,6 +661,19 @@ private fun HomeScreen(
             onLaunch = onLaunchApp,
             onLongPress = { slot -> bottomIconPickerSlot.value = slot }
         )
+    }
+    
+    // Context menu for pinned apps
+    expandedPinned.value?.let { pkgName ->
+        state.pinnedApps.find { it.packageName == pkgName }?.let { app ->
+            AppContextMenu(
+                app = app,
+                onDismiss = { expandedPinned.value = null },
+                onUnpin = { onUnpinApp(app.packageName) },
+                onHide = { onHideApp(app.packageName) },
+                onLock = { lockDialogApp.value = app }
+            )
+        }
     }
     
     // Lock duration dialog
@@ -1008,7 +994,8 @@ private fun AllAppsScreen(
         }
     }
 
-    LazyColumn(
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
@@ -1138,46 +1125,18 @@ private fun AllAppsScreen(
         } else {
             items(filteredApps) { app ->
                 val isBlinking = blinkingApp.value == app.packageName
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = app.label,
-                        color = Color.White,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .alpha(if (isBlinking) 0.3f else 1f)
-                            .combinedClickable(
-                                onClick = { onLaunchApp(app) },
-                                onLongClick = { expandedApp.value = app.packageName }
-                            )
-                    )
-                    DropdownMenu(
-                        expanded = expandedApp.value == app.packageName,
-                        onDismissRequest = { expandedApp.value = null }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(if (app.isPinned) "Unpin" else "Pin") },
-                            onClick = {
-                                if (app.isPinned) onUnpinApp(app.packageName) else onPinApp(app.packageName)
-                                expandedApp.value = null
-                            }
+                Text(
+                    text = app.label,
+                    color = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .alpha(if (isBlinking) 0.3f else 1f)
+                        .combinedClickable(
+                            onClick = { onLaunchApp(app) },
+                            onLongClick = { expandedApp.value = app.packageName }
                         )
-                        DropdownMenuItem(
-                            text = { Text("Hide") },
-                            onClick = {
-                                onHideApp(app.packageName)
-                                expandedApp.value = null
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Lock") },
-                            onClick = {
-                                lockDialogApp.value = app
-                                expandedApp.value = null
-                            }
-                        )
-                    }
-                }
+                )
             }
             if (filteredHiddenApps.isNotEmpty()) {
                 item {
@@ -1185,46 +1144,53 @@ private fun AllAppsScreen(
                     Text(text = "Hidden Apps", color = Color.Gray, fontSize = 20.sp)
                 }
                 items(filteredHiddenApps) { app ->
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = app.label,
-                            color = Color.Gray,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp)
-                                .combinedClickable(
-                                    onClick = { onLaunchApp(app) },
-                                    onLongClick = { expandedApp.value = app.packageName }
-                                )
-                        )
-                        DropdownMenu(
-                            expanded = expandedApp.value == app.packageName,
-                            onDismissRequest = { expandedApp.value = null }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Unhide") },
-                                onClick = {
-                                    onUnhideApp(app.packageName)
-                                    expandedApp.value = null
-                                }
+                    Text(
+                        text = app.label,
+                        color = Color.Gray,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                            .combinedClickable(
+                                onClick = { onLaunchApp(app) },
+                                onLongClick = { expandedApp.value = app.packageName }
                             )
-                        }
-                    }
+                    )
                 }
             }
         }
     }
-    
-    // Lock duration dialog
-    lockDialogApp.value?.let { app ->
-        LockDurationDialog(
-            appName = app.label,
-            onDismiss = { lockDialogApp.value = null },
-            onLock = { minutes ->
-                onLockApp(app.packageName, minutes)
-                lockDialogApp.value = null
-            }
-        )
+        
+    // Context menu for regular apps
+    expandedApp.value?.let { pkgName ->
+        filteredApps.find { it.packageName == pkgName }?.let { app ->
+            AppContextMenu(
+                app = app,
+                onDismiss = { expandedApp.value = null },
+                onPin = if (!app.isPinned) ({ onPinApp(app.packageName) }) else null,
+                onUnpin = if (app.isPinned) ({ onUnpinApp(app.packageName) }) else null,
+                onHide = { onHideApp(app.packageName) },
+                onLock = { lockDialogApp.value = app }
+            )
+        } ?: filteredHiddenApps.find { it.packageName == pkgName }?.let { app ->
+            AppContextMenu(
+                app = app,
+                onDismiss = { expandedApp.value = null },
+                onUnhide = { onUnhideApp(app.packageName) }
+            )
+        }
+    }
+        
+        // Lock duration dialog
+        lockDialogApp.value?.let { app ->
+            LockDurationDialog(
+                appName = app.label,
+                onDismiss = { lockDialogApp.value = null },
+                onLock = { minutes ->
+                    onLockApp(app.packageName, minutes)
+                    lockDialogApp.value = null
+                }
+            )
+        }
     }
 }
 
