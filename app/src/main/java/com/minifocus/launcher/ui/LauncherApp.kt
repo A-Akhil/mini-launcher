@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -1530,21 +1532,15 @@ private fun LockDurationDialog(
     onLock: (Long) -> Unit
 ) {
     val predefinedDurations = listOf(
-        "30min" to 30L,
-        "1hr" to 60L,
-        "2hr" to 120L,
-        "4hr" to 240L,
-        "8hr" to 480L,
-        "10hr" to 600L,
-        "12hr" to 720L,
-        "24hr" to 1440L,
-        "48hr" to 2880L,
-        "5days" to 7200L,
-        "10days" to 14400L,
-        "14days" to 20160L,
-        "20days" to 28800L,
-        "25days" to 36000L,
-        "31days" to 44640L
+        "30 min" to 30L,
+        "1 hour" to 60L,
+        "2 hours" to 120L,
+        "4 hours" to 240L,
+        "8 hours" to 480L,
+        "12 hours" to 720L,
+        "1 day" to 1440L,
+        "3 days" to 4320L,
+        "1 week" to 10080L
     )
     
     val sliderPosition = remember { mutableFloatStateOf(0f) }
@@ -1552,28 +1548,33 @@ private fun LockDurationDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.Black,
-        title = {
-            Text(
-                text = "Lock $appName",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        containerColor = Color.Transparent,
+        title = null,
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .padding(horizontal = 32.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color(0xFF1A1A1A))
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
+                    text = "Lock $appName",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                
+                Text(
                     text = predefinedDurations[sliderPosition.floatValue.toInt()].first,
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 32.dp)
                 )
                 
                 Slider(
@@ -1584,62 +1585,107 @@ private fun LockDurationDialog(
                     colors = SliderDefaults.colors(
                         thumbColor = Color.White,
                         activeTrackColor = Color.White,
-                        inactiveTrackColor = Color(0xFF333333)
+                        inactiveTrackColor = Color(0xFF444444)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
                 Text(
-                    text = "Or enter custom hours:",
-                    color = Color(0xFFAAAAAA),
+                    text = "Custom duration (hours)",
+                    color = Color(0xFF999999),
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
                 )
                 
-                OutlinedTextField(
-                    value = customHours.value,
-                    onValueChange = { 
-                        if (it.isEmpty() || it.all { char -> char.isDigit() }) {
-                            customHours.value = it
-                        }
-                    },
-                    placeholder = { Text("Enter hours", color = Color(0xFF555555)) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color(0xFF555555),
-                        cursorColor = Color.White
-                    ),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val minutes = if (customHours.value.isNotEmpty()) {
-                        customHours.value.toLongOrNull()?.times(60) ?: 0L
-                    } else {
-                        predefinedDurations[sliderPosition.floatValue.toInt()].second
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF2A2A2A))
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                ) {
+                    if (customHours.value.isEmpty()) {
+                        Text(
+                            text = "e.g., 5",
+                            color = Color(0xFF666666),
+                            fontSize = 16.sp
+                        )
                     }
-                    if (minutes > 0) {
-                        onLock(minutes)
-                        onDismiss()
+                    BasicTextField(
+                        value = customHours.value,
+                        onValueChange = { 
+                            if (it.isEmpty() || (it.all { char -> char.isDigit() } && it.length <= 4)) {
+                                customHours.value = it
+                            }
+                        },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = Color.White,
+                            fontSize = 16.sp
+                        ),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF2A2A2A))
+                            .clickable(onClick = onDismiss)
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color(0xFF999999),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White)
+                            .clickable {
+                                val minutes = if (customHours.value.isNotEmpty()) {
+                                    customHours.value.toLongOrNull()?.times(60) ?: 0L
+                                } else {
+                                    predefinedDurations[sliderPosition.floatValue.toInt()].second
+                                }
+                                if (minutes > 0) {
+                                    onLock(minutes)
+                                }
+                            }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Lock",
+                            color = Color.Black,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
-            ) {
-                Text("Lock", color = Color.White, fontSize = 16.sp)
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color(0xFFAAAAAA), fontSize = 16.sp)
-            }
-        }
+        confirmButton = {}
     )
 }
