@@ -989,8 +989,14 @@ private fun AllAppsScreen(
 
     LaunchedEffect(shouldFocusSearch, keyboardOnSwipe) {
         if (keyboardOnSwipe && shouldFocusSearch) {
-            focusRequester.requestFocus()
-            keyboardController?.show()
+            // Small delay to ensure focus target is attached to composition
+            kotlinx.coroutines.delay(50)
+            try {
+                focusRequester.requestFocus()
+                keyboardController?.show()
+            } catch (e: IllegalStateException) {
+                // Focus requester not ready yet, ignore
+            }
         } else if (!shouldFocusSearch) {
             keyboardController?.hide()
         }
@@ -1224,8 +1230,14 @@ private fun SearchOverlay(
 
             LaunchedEffect(autoFocus) {
                 if (autoFocus) {
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
+                    // Small delay to ensure focus target is attached to composition
+                    kotlinx.coroutines.delay(50)
+                    try {
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    } catch (e: IllegalStateException) {
+                        // Focus requester not ready yet, ignore
+                    }
                 } else {
                     keyboardController?.hide()
                 }
