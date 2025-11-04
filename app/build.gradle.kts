@@ -15,12 +15,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.minifocus.launcher"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.minifocus.launcher"
-        minSdk = 29
-        targetSdk = 34
+    minSdk = 29
+    targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
@@ -44,6 +44,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // produce native debug symbols (upload to Play Console)
+            ndk {
+                // FULL generates full native debug symbols suitable for Play
+                debugSymbolLevel = "FULL"
+            }
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
@@ -69,6 +74,11 @@ android {
     }
 
     packaging {
+        jniLibs {
+            // keep debug symbols for native libs (pattern) so Gradle will emit a native-debug-symbols.zip
+            // keep all .so debug symbols produced by dependencies
+            keepDebugSymbols.add("**/*.so")
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
