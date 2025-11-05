@@ -26,6 +26,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val notificationRetentionDays = intPreferencesKey("notification_retention_days")
         val logRetentionDays = intPreferencesKey("log_retention_days")
         val lastLogRotationAt = longPreferencesKey("last_log_rotation_at")
+        val showDailyTasksOnHome = intPreferencesKey("show_daily_tasks_on_home")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -49,6 +50,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeShowSeconds(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.showSeconds]?.let { it == 1 } ?: false
+    }
+
+    fun observeShowDailyTasksOnHome(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.showDailyTasksOnHome]?.let { it == 1 } ?: true
     }
 
     fun observeNotificationInboxEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -93,6 +98,12 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setShowSeconds(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.showSeconds] = if (enabled) 1 else 0
+        }
+    }
+
+    suspend fun setShowDailyTasksOnHome(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.showDailyTasksOnHome] = if (enabled) 1 else 0
         }
     }
 

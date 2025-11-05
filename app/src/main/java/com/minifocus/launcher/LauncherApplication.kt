@@ -4,6 +4,7 @@ import android.app.Application
 import com.minifocus.launcher.data.AppDatabase
 import com.minifocus.launcher.data.datastore.launcherSettingsDataStore
 import com.minifocus.launcher.manager.AppsManager
+import com.minifocus.launcher.manager.DailyTasksManager
 import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.InboxLogger
 import com.minifocus.launcher.manager.LockManager
@@ -36,6 +37,7 @@ class LauncherApplication : Application() {
             }
         )
         val tasksManager = TasksManager(database.taskDao(), this)
+    val dailyTasksManager = DailyTasksManager(database.dailyTaskDao())
         val hiddenManager = HiddenAppsManager(database.hiddenAppDao())
         val lockManager = LockManager(database.appLockDao())
         val appsManager = AppsManager(
@@ -59,6 +61,7 @@ class LauncherApplication : Application() {
             appsManager = appsManager,
             settingsManager = settingsManager,
             searchManager = searchManager,
+            dailyTasksManager = dailyTasksManager,
             notificationInboxManager = notificationInboxManager,
             inboxLogger = inboxLogger,
             applicationScope = appScope
@@ -103,6 +106,7 @@ class LauncherApplication : Application() {
 
 class AppContainer(
     val tasksManager: TasksManager,
+    val dailyTasksManager: DailyTasksManager,
     val hiddenAppsManager: HiddenAppsManager,
     val lockManager: LockManager,
     val appsManager: AppsManager,
