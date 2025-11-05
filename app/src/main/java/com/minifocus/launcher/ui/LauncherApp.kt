@@ -126,7 +126,6 @@ fun LauncherApp(
     onHideApp: (String) -> Unit,
     onUnhideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
-    onUnlockApp: (String) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearchVisibilityChange: (Boolean) -> Unit,
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
@@ -149,11 +148,8 @@ fun LauncherApp(
     onLogRetentionSelected: (Int) -> Unit,
     onNotificationDelete: (Long) -> Unit,
     onNotificationMarkAllRead: () -> Unit,
-    onNotificationUndoDelete: () -> Unit,
-    onNotificationUndoConsumed: () -> Unit,
     onNotificationFilterQueryChange: (String) -> Unit,
     onNotificationFilterToggle: (NotificationFilterItem) -> Unit,
-    onConsumeMessage: () -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
@@ -452,9 +448,7 @@ fun LauncherApp(
                     EmergencyUnlockScreen(
                         lockManager = lockManager,
                         onBack = { onEmergencyUnlockVisibilityChange(false) },
-                        onUnlockApp = { packageName ->
-                            lockManager.unlockApp(packageName)
-                        }
+                        onUnlockApp = lockManager::unlockApp
                     )
                 }
                 else -> {
@@ -481,7 +475,6 @@ fun LauncherApp(
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
-                                        canLaunch,
                                         onLaunchApp,
                                         navigateToHome = { /* Already on home */ }
                                     )
@@ -490,7 +483,6 @@ fun LauncherApp(
                                 onUnpinApp = onUnpinApp,
                                 onHideApp = onHideApp,
                                 onLockApp = onLockApp,
-                                onUnlockApp = onUnlockApp,
                                 onOpenClock = onOpenClock,
                                 onDailyTaskCompleted = onDailyTaskCompleted,
                                 onDailyTaskReset = onDailyTaskReset
@@ -507,7 +499,6 @@ fun LauncherApp(
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
-                                        canLaunch,
                                         onLaunchApp,
                                         navigateToHome = {
                                             coroutineScope.launch {
@@ -521,7 +512,6 @@ fun LauncherApp(
                                 onHideApp = onHideApp,
                                 onUnhideApp = onUnhideApp,
                                 onLockApp = onLockApp,
-                                onUnlockApp = onUnlockApp,
                                 onOpenNotificationInbox = { openInbox(InboxBackTarget.None) },
                                 onOpenSettings = { onSettingsVisibilityChange(true) }
                             )
@@ -594,7 +584,6 @@ fun LauncherApp(
 private fun handleAppLaunch(
     entry: AppEntry,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
-    canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     navigateToHome: () -> Unit
 ) {
@@ -718,7 +707,6 @@ private fun HomeScreen(
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
-    onUnlockApp: (String) -> Unit,
     onOpenClock: () -> Unit,
     onDailyTaskCompleted: (Long) -> Unit,
     onDailyTaskReset: (Long) -> Unit
@@ -1342,7 +1330,6 @@ private fun AllAppsScreen(
     onHideApp: (String) -> Unit,
     onUnhideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
-    onUnlockApp: (String) -> Unit,
     onOpenNotificationInbox: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
