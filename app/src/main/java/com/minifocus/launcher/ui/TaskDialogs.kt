@@ -22,6 +22,7 @@ import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -30,12 +31,23 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun FancyAddTaskDialog(
     onDismiss: () -> Unit,
-    onAdd: (String, Long?) -> Unit
+    onAddTask: (String, Long?) -> Unit,
+    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit
 ) {
     val taskName = remember { mutableStateOf("") }
     val enableReminder = remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf<LocalDateTime?>(null) }
     val showDatePicker = remember { mutableStateOf(false) }
+
+    val repeatDaily = remember { mutableStateOf(false) }
+    val dailyEnabled = remember { mutableStateOf(true) }
+    val limitDailyRange = remember { mutableStateOf(false) }
+    val dailyStartDate = remember { mutableStateOf<LocalDate?>(null) }
+    val dailyEndDate = remember { mutableStateOf<LocalDate?>(null) }
+    val showDailyStartPicker = remember { mutableStateOf(false) }
+    val showDailyEndPicker = remember { mutableStateOf(false) }
+    val zoneId = remember { ZoneId.systemDefault() }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -85,13 +97,23 @@ fun FancyAddTaskDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Set Reminder",
+                        text = "Repeat every day",
                         fontSize = 16.sp,
                         color = Color.White
                     )
                     Switch(
-                        checked = enableReminder.value,
-                        onCheckedChange = { enableReminder.value = it },
+                        checked = repeatDaily.value,
+                        onCheckedChange = { isChecked ->
+                            repeatDaily.value = isChecked
+                            if (isChecked) {
+                                enableReminder.value = false
+                                selectedDate.value = null
+                            } else {
+                                limitDailyRange.value = false
+                                dailyStartDate.value = null
+                                dailyEndDate.value = null
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = Color(0xFF444444),
@@ -101,22 +123,143 @@ fun FancyAddTaskDialog(
                     )
                 }
 
-                if (enableReminder.value) {
+                if (repeatDaily.value) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedButton(
-                        onClick = { showDatePicker.value = true },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "Task enabled", color = Color.White, fontSize = 16.sp)
+                            Text(
+                                text = if (dailyEnabled.value) "Will show up every day" else "Hidden until re-enabled",
+                                color = Color(0xFF888888),
+                                fontSize = 13.sp
+                            )
+                        }
+                        Switch(
+                            checked = dailyEnabled.value,
+                            onCheckedChange = { dailyEnabled.value = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF444444),
+                                uncheckedThumbColor = Color(0xFF666666),
+                                uncheckedTrackColor = Color(0xFF222222)
+                            )
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(text = "Limit to date range", color = Color.White, fontSize = 16.sp)
+                            Text(
+                                text = if (limitDailyRange.value) "Visible only within the window" else "Repeats indefinitely",
+                                color = Color(0xFF888888),
+                                fontSize = 13.sp
+                            )
+                        }
+                        Switch(
+                            checked = limitDailyRange.value,
+                            onCheckedChange = { isChecked ->
+                                limitDailyRange.value = isChecked
+                                if (isChecked && dailyStartDate.value == null) {
+                                    dailyStartDate.value = LocalDate.now(zoneId)
+                                }
+                                if (!isChecked) {
+                                    dailyStartDate.value = null
+                                    dailyEndDate.value = null
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF444444),
+                                uncheckedThumbColor = Color(0xFF666666),
+                                uncheckedTrackColor = Color(0xFF222222)
+                            )
+                        )
+                    }
+
+                    if (limitDailyRange.value) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = { showDailyStartPicker.value = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text(
+                                text = dailyStartDate.value?.format(dateFormatter) ?: "Select start date",
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = { showDailyEndPicker.value = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        ) {
+                            Text(
+                                text = dailyEndDate.value?.format(dateFormatter) ?: "Select end date (optional)",
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        if (dailyEndDate.value != null) {
+                            TextButton(onClick = { dailyEndDate.value = null }) {
+                                Text(text = "Clear end date", color = Color(0xFFAAAAAA))
+                            }
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = selectedDate.value?.let {
-                                it.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))
-                            } ?: "Select Date & Time",
-                            fontSize = 16.sp
+                            text = "Set Reminder",
+                            fontSize = 16.sp,
+                            color = Color.White
                         )
+                        Switch(
+                            checked = enableReminder.value,
+                            onCheckedChange = { enableReminder.value = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF444444),
+                                uncheckedThumbColor = Color(0xFF777777),
+                                uncheckedTrackColor = Color(0xFF222222)
+                            )
+                        )
+                    }
+
+                    if (enableReminder.value) {
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { showDatePicker.value = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = selectedDate.value?.let {
+                                    it.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))
+                                } ?: "Select Date & Time",
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
 
@@ -139,11 +282,31 @@ fun FancyAddTaskDialog(
                     Button(
                         onClick = {
                             val title = taskName.value.trim()
-                            if (title.isNotEmpty()) {
-                                val scheduledTime = if (enableReminder.value && selectedDate.value != null) {
-                                    selectedDate.value!!.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                            if (title.isEmpty()) return@Button
+
+                            if (repeatDaily.value) {
+                                val startEpoch = if (limitDailyRange.value) {
+                                    val start = dailyStartDate.value ?: LocalDate.now(zoneId)
+                                    dailyStartDate.value = start
+                                    start.toEpochDay()
                                 } else null
-                                onAdd(title, scheduledTime)
+                                val endEpoch = if (limitDailyRange.value) {
+                                    dailyEndDate.value?.let { end ->
+                                        val start = dailyStartDate.value ?: end
+                                        if (end.isBefore(start)) {
+                                            dailyStartDate.value = end
+                                            end.toEpochDay()
+                                        } else {
+                                            end.toEpochDay()
+                                        }
+                                    }
+                                } else null
+                                onAddDailyTask(title, startEpoch, endEpoch, dailyEnabled.value)
+                            } else {
+                                val scheduledTime = if (enableReminder.value && selectedDate.value != null) {
+                                    selectedDate.value!!.atZone(zoneId).toInstant().toEpochMilli()
+                                } else null
+                                onAddTask(title, scheduledTime)
                             }
                         },
                         modifier = Modifier.weight(1f),
@@ -169,6 +332,73 @@ fun FancyAddTaskDialog(
                 showDatePicker.value = false
             }
         )
+    }
+
+    if (showDailyStartPicker.value) {
+        val initialMillis = dailyStartDate.value?.atStartOfDay(zoneId)?.toInstant()?.toEpochMilli()
+            ?: System.currentTimeMillis()
+        val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+        DatePickerDialog(
+            onDismissRequest = { showDailyStartPicker.value = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+                            dailyStartDate.value = date
+                            if (dailyEndDate.value != null && dailyEndDate.value!!.isBefore(date)) {
+                                dailyEndDate.value = date
+                            }
+                        }
+                        showDailyStartPicker.value = false
+                    }
+                ) {
+                    Text(text = "Set", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDailyStartPicker.value = false }) {
+                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+        ) {
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+        }
+    }
+
+    if (showDailyEndPicker.value) {
+        val initialMillis = dailyEndDate.value?.atStartOfDay(zoneId)?.toInstant()?.toEpochMilli()
+            ?: dailyStartDate.value?.atStartOfDay(zoneId)?.toInstant()?.toEpochMilli()
+            ?: System.currentTimeMillis()
+        val state = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+        DatePickerDialog(
+            onDismissRequest = { showDailyEndPicker.value = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+                            dailyEndDate.value = date
+                            if (dailyStartDate.value != null && date.isBefore(dailyStartDate.value)) {
+                                dailyStartDate.value = date
+                            }
+                        }
+                        showDailyEndPicker.value = false
+                    }
+                ) {
+                    Text(text = "Set", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDailyEndPicker.value = false }) {
+                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+        ) {
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+        }
     }
 }
 

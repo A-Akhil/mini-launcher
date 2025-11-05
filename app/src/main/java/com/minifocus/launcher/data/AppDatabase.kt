@@ -7,12 +7,14 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.minifocus.launcher.data.dao.AppLockDao
+import com.minifocus.launcher.data.dao.DailyTaskDao
 import com.minifocus.launcher.data.dao.HiddenAppDao
 import com.minifocus.launcher.data.dao.PinnedAppDao
 import com.minifocus.launcher.data.dao.TaskDao
 import com.minifocus.launcher.data.dao.NotificationDao
 import com.minifocus.launcher.data.dao.NotificationFilterDao
 import com.minifocus.launcher.data.entity.AppLockEntity
+import com.minifocus.launcher.data.entity.DailyTaskEntity
 import com.minifocus.launcher.data.entity.HiddenAppEntity
 import com.minifocus.launcher.data.entity.PinnedAppEntity
 import com.minifocus.launcher.data.entity.TaskEntity
@@ -26,9 +28,10 @@ import com.minifocus.launcher.data.entity.NotificationFilterEntity
         HiddenAppEntity::class,
         AppLockEntity::class,
         NotificationEntity::class,
-        NotificationFilterEntity::class
+        NotificationFilterEntity::class,
+        DailyTaskEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appLockDao(): AppLockDao
     abstract fun notificationDao(): NotificationDao
     abstract fun notificationFilterDao(): NotificationFilterDao
+    abstract fun dailyTaskDao(): DailyTaskDao
 
     companion object {
         fun build(context: Context): AppDatabase = Room.databaseBuilder(
@@ -46,7 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
             AppDatabase::class.java,
             "minimalist_focus_launcher.db"
         )
-            .addMigrations(MIGRATION_2_3)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -86,6 +90,27 @@ abstract class AppDatabase : RoomDatabase() {
                         PRIMARY KEY(`package_name`)
                     )
                     """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `daily_tasks` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `start_epoch_day` INTEGER,
+                        `end_epoch_day` INTEGER,
+                        `is_enabled` INTEGER NOT NULL DEFAULT 1,
+                        `last_completed_epoch_day` INTEGER,
+                        `created_at` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_daily_tasks_created_at` ON `daily_tasks` (`created_at`)"
                 )
             }
         }
