@@ -1,6 +1,10 @@
 package com.minifocus.launcher.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,15 +16,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.minifocus.launcher.model.DailyTaskRepeatMode
+import com.minifocus.launcher.model.DailyTaskWeekdayMask
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -32,7 +40,7 @@ import java.time.format.DateTimeFormatter
 fun FancyAddTaskDialog(
     onDismiss: () -> Unit,
     onAddTask: (String, Long?) -> Unit,
-    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit
+    onAddDailyTask: (String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit
 ) {
     val taskName = remember { mutableStateOf("") }
     val enableReminder = remember { mutableStateOf(false) }
@@ -46,6 +54,8 @@ fun FancyAddTaskDialog(
     val dailyEndDate = remember { mutableStateOf<LocalDate?>(null) }
     val showDailyStartPicker = remember { mutableStateOf(false) }
     val showDailyEndPicker = remember { mutableStateOf(false) }
+    val repeatMode = remember { mutableStateOf(DailyTaskRepeatMode.EVERY_DAY) }
+    val selectedDaysMask = remember { mutableStateOf(DailyTaskWeekdayMask.ALL) }
     val zoneId = remember { ZoneId.systemDefault() }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
 
@@ -126,6 +136,76 @@ fun FancyAddTaskDialog(
                 if (repeatDaily.value) {
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    Text(text = "Repeat pattern", color = Color.White, fontSize = 16.sp)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RepeatOption(
+                            label = "Daily",
+                            selected = repeatMode.value == DailyTaskRepeatMode.EVERY_DAY
+                        ) { repeatMode.value = DailyTaskRepeatMode.EVERY_DAY }
+
+                        RepeatOption(
+                            label = "Alternate",
+                            selected = repeatMode.value == DailyTaskRepeatMode.EVERY_OTHER_DAY
+                        ) {
+                            repeatMode.value = DailyTaskRepeatMode.EVERY_OTHER_DAY
+                        }
+
+                        RepeatOption(
+                            label = "Days",
+                            selected = repeatMode.value == DailyTaskRepeatMode.SPECIFIC_DAYS
+                        ) {
+                            repeatMode.value = DailyTaskRepeatMode.SPECIFIC_DAYS
+                        }
+                    }
+
+                    if (repeatMode.value == DailyTaskRepeatMode.EVERY_OTHER_DAY) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Repeats every 2 days",
+                            color = Color(0xFF888888),
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    if (repeatMode.value == DailyTaskRepeatMode.SPECIFIC_DAYS) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Choose days",
+                            color = Color(0xFF888888),
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            DayOfWeek.values().forEach { day ->
+                                val maskForDay = DailyTaskWeekdayMask.maskFor(day)
+                                val selected = DailyTaskWeekdayMask.contains(selectedDaysMask.value, day)
+                                WeekdayToggle(
+                                    label = dayLabel(day),
+                                    selected = selected,
+                                    onClick = {
+                                        val toggled = if (selected) {
+                                            selectedDaysMask.value and maskForDay.inv()
+                                        } else {
+                                            selectedDaysMask.value or maskForDay
+                                        }
+                                        selectedDaysMask.value = if (toggled == 0) maskForDay else toggled
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -134,7 +214,7 @@ fun FancyAddTaskDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = "Task enabled", color = Color.White, fontSize = 16.sp)
                             Text(
-                                text = if (dailyEnabled.value) "Will show up every day" else "Hidden until re-enabled",
+                                text = if (dailyEnabled.value) "Will show on scheduled days" else "Hidden until re-enabled",
                                 color = Color(0xFF888888),
                                 fontSize = 13.sp
                             )
@@ -301,7 +381,22 @@ fun FancyAddTaskDialog(
                                         }
                                     }
                                 } else null
-                                onAddDailyTask(title, startEpoch, endEpoch, dailyEnabled.value)
+                                val mode = repeatMode.value
+                                val daysMask = if (mode == DailyTaskRepeatMode.SPECIFIC_DAYS) {
+                                    selectedDaysMask.value
+                                } else {
+                                    DailyTaskWeekdayMask.ALL
+                                }
+                                val interval = if (mode == DailyTaskRepeatMode.EVERY_OTHER_DAY) 2 else 1
+                                onAddDailyTask(
+                                    title,
+                                    startEpoch,
+                                    endEpoch,
+                                    dailyEnabled.value,
+                                    mode,
+                                    interval,
+                                    daysMask
+                                )
                             } else {
                                 val scheduledTime = if (enableReminder.value && selectedDate.value != null) {
                                     selectedDate.value!!.atZone(zoneId).toInstant().toEpochMilli()
@@ -734,7 +829,7 @@ fun HistoryScreen(
                             )
                         }
                     }
-                    Divider(color = Color(0xFF222222), thickness = 1.dp)
+                    androidx.compose.material3.HorizontalDivider(color = Color(0xFF222222), thickness = 1.dp)
                 }
             }
         }
@@ -744,4 +839,46 @@ fun HistoryScreen(
 private fun formatTimestamp(timestamp: Long): String {
     val dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
     return dateTime.format(DateTimeFormatter.ofPattern("MMM dd, yyyy 'at' HH:mm"))
+}
+
+internal fun dayLabel(day: DayOfWeek): String = when (day) {
+    DayOfWeek.MONDAY -> "Mon"
+    DayOfWeek.TUESDAY -> "Tue"
+    DayOfWeek.WEDNESDAY -> "Wed"
+    DayOfWeek.THURSDAY -> "Thu"
+    DayOfWeek.FRIDAY -> "Fri"
+    DayOfWeek.SATURDAY -> "Sat"
+    DayOfWeek.SUNDAY -> "Sun"
+}
+
+@Composable
+internal fun RepeatOption(label: String, selected: Boolean, onClick: () -> Unit) {
+    val background = if (selected) Color.White else Color.Transparent
+    val textColor = if (selected) Color.Black else Color.White
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .border(BorderStroke(1.dp, Color.White), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(text = label, color = textColor, fontSize = 14.sp)
+    }
+}
+
+@Composable
+internal fun WeekdayToggle(label: String, selected: Boolean, onClick: () -> Unit) {
+    val background = if (selected) Color.White else Color.Transparent
+    val textColor = if (selected) Color.Black else Color.White
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .border(BorderStroke(1.dp, Color.White), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(text = label, color = textColor, fontSize = 12.sp)
+    }
 }
