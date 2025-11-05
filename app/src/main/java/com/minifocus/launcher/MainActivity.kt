@@ -156,6 +156,8 @@ class MainActivity : ComponentActivity() {
                         onBottomIconChange = viewModel::setBottomIcon,
                         onSettingsVisibilityChange = viewModel::setSettingsVisibility,
                         onHomeSettingsVisibilityChange = viewModel::setHomeSettingsVisibility,
+                        onClockSettingsVisibilityChange = viewModel::setClockSettingsVisibility,
+                        onAppDrawerSettingsVisibilityChange = viewModel::setAppDrawerSettingsVisibility,
                         onHistoryVisibilityChange = viewModel::setHistoryVisibility,
                         onAboutVisibilityChange = viewModel::setAboutVisibility,
                         onEmergencyUnlockVisibilityChange = viewModel::setEmergencyUnlockVisibility,
