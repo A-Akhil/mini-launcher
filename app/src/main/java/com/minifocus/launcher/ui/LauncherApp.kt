@@ -463,6 +463,7 @@ fun LauncherApp(
                             0 -> TasksScreen(
                                 tasks = state.tasks,
                                 dailyTasks = state.dailyTasks,
+                                heldDailyTaskIds = state.heldDailyTaskIds,
                                 onToggleTask = onToggleTask,
                                 onAddTask = onAddTask,
                                 onDeleteTask = onDeleteTask,
@@ -724,8 +725,10 @@ private fun HomeScreen(
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
-    val activeDailyTasks = remember(state.dailyTasks) {
-        state.dailyTasks.filter { it.isActiveToday && it.isEnabled }
+    val activeDailyTasks = remember(state.dailyTasks, state.heldDailyTaskIds) {
+        state.dailyTasks.filter { task ->
+            task.isActiveToday && task.isEnabled && (!task.isCompletedToday || task.id in state.heldDailyTaskIds)
+        }
     }
     val hasDailyTasksForHome = state.showDailyTasksHomeSection && activeDailyTasks.isNotEmpty()
     val pinnedLimit = if (hasDailyTasksForHome) 3 else 5
@@ -1026,6 +1029,7 @@ private fun BottomIconButton(
 private fun TasksScreen(
     dailyTasks: List<DailyTaskItem>,
     tasks: List<TaskItem>,
+    heldDailyTaskIds: Set<Long>,
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
@@ -1077,12 +1081,14 @@ private fun TasksScreen(
             val resetDailyTask = onDailyTaskReset
             val todayEpochDay = remember { LocalDate.now().toEpochDay() }
             val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d") }
-            val sortedDailyTasks = remember(dailyTasks) {
-                dailyTasks.sortedWith(
-                    compareByDescending<DailyTaskItem> { it.isActiveToday }
-                        .thenByDescending { it.isEnabled }
-                        .thenBy { it.createdAt }
-                )
+            val sortedDailyTasks = remember(dailyTasks, heldDailyTaskIds) {
+                dailyTasks
+                    .filter { task -> !task.isCompletedToday || task.id in heldDailyTaskIds }
+                    .sortedWith(
+                        compareByDescending<DailyTaskItem> { it.isActiveToday }
+                            .thenByDescending { it.isEnabled }
+                            .thenBy { it.createdAt }
+                    )
             }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -1096,6 +1102,18 @@ private fun TasksScreen(
                             onDailyTaskEnabledChange = { taskId, enabled -> enableDailyTask(taskId, enabled) },
                             onDailyTaskCompleted = { taskId -> completeDailyTask(taskId) },
                             onDailyTaskReset = { taskId -> resetDailyTask(taskId) }
+                        )
+                    }
+                    if (tasks.isNotEmpty()) {
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
+                    }
+                } else if (dailyTasks.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "All daily reminders are done for today.",
+                            color = Color(0xFF777777),
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 12.dp)
                         )
                     }
                     if (tasks.isNotEmpty()) {

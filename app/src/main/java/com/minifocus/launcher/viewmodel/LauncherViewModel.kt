@@ -17,7 +17,9 @@ import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.model.DailyTaskItem
 import com.minifocus.launcher.data.entity.toItem
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -43,8 +45,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private const val CLOCK_TICK_INTERVAL_MS = 1000L
-private const val DAILY_TASK_HOME_HOLD_MS = 10_000L
+private const val DAILY_TASK_COMPLETION_HOLD_MS = 10_000L
+private const val TASK_HISTORY_GRACE_MS = 10_000L
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LauncherViewModel(
     private val appsManager: AppsManager,
     private val tasksManager: TasksManager,
@@ -56,14 +60,20 @@ class LauncherViewModel(
 ) : ViewModel() {
 
     private val zoneId = ZoneId.systemDefault()
-    private var homeDailySectionHoldJob: Job? = null
-
     private val timeFlow: Flow<LocalDateTime> = flow {
         while (true) {
             emit(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), zoneId))
             delay(CLOCK_TICK_INTERVAL_MS)
         }
     }
+
+    private val dailyTaskHoldExpiries = MutableStateFlow<Map<Long, Long>>(emptyMap())
+    private val dailyTaskHoldJobs = mutableMapOf<Long, Job>()
+
+    private val tickingTasksFlow: Flow<List<TaskItem>> = combine(
+        tasksManager.observeTasks(),
+        timeFlow
+    ) { tasks, _ -> tasks }
 
     private val todayEpochDayFlow: Flow<Long> = timeFlow
         .map { it.toLocalDate().toEpochDay() }
@@ -73,11 +83,7 @@ class LauncherViewModel(
 
     private val dailyTaskItemsFlow: Flow<List<DailyTaskItem>> = combine(dailyTasksFlow, todayEpochDayFlow) { entities, epochDay ->
         entities.map { it.toItem(epochDay) }
-    }.onEach { items ->
-        handleDailyTaskHomeHold(items)
     }
-
-    private val lastDailyCompletionAt = MutableStateFlow<Long?>(null)
 
     private val searchQuery = MutableStateFlow("")
     private val isSearchVisible = MutableStateFlow(false)
@@ -99,14 +105,13 @@ class LauncherViewModel(
         appsManager.observePinnedApps(),
         appsManager.observeAllApps(),
         appsManager.observeHiddenApps(),
-        tasksManager.observeTasks()
+        tickingTasksFlow
     ) { pinned, allApps, hiddenApps, tasks ->
         val now = System.currentTimeMillis()
-        val gracePeriod = 3000L
 
         val activeTasks = tasks.filter { task ->
             !task.isCompleted ||
-                (task.completedAt != null && (now - task.completedAt) < gracePeriod)
+                (task.completedAt != null && (now - task.completedAt) < TASK_HISTORY_GRACE_MS)
         }.sortedWith(
             compareBy<TaskItem> { it.scheduledFor ?: Long.MAX_VALUE }
                 .thenBy { it.createdAt }
@@ -115,7 +120,7 @@ class LauncherViewModel(
         val historyTasks = tasks.filter { task ->
             task.isCompleted &&
                 task.completedAt != null &&
-                (now - task.completedAt) >= gracePeriod
+                (now - task.completedAt) >= TASK_HISTORY_GRACE_MS
         }
 
         DataSnapshot(pinned, allApps, hiddenApps, activeTasks, historyTasks)
@@ -199,14 +204,15 @@ class LauncherViewModel(
         dataSnapshot,
         preferencesSnapshot,
         dailyTaskItemsFlow,
-        lastDailyCompletionAt
-    ) { data, prefs, dailyTasks, holdExpiry ->
+        dailyTaskHoldExpiries
+    ) { data, prefs, dailyTasks, holdMap ->
         val bottomLeft = resolveBottomIcon(BottomIconSlot.LEFT, prefs.bottomLeftPackage, data)
         val bottomRight = resolveBottomIcon(BottomIconSlot.RIGHT, prefs.bottomRightPackage, data)
         val nowMillis = System.currentTimeMillis()
         val anyDailyActive = dailyTasks.any { it.isActiveToday }
         val anyDailyIncomplete = dailyTasks.any { it.isActiveToday && !it.isCompletedToday }
-        val holdActive = holdExpiry != null && holdExpiry > nowMillis
+        val activeHoldIds = holdMap.filterValues { it > nowMillis }.keys
+        val holdActive = activeHoldIds.isNotEmpty()
         val showHomeDailySection = prefs.showDailyTasksOnHome && anyDailyActive && (anyDailyIncomplete || holdActive)
         LauncherUiState(
             time = LocalDateTime.now(),
@@ -237,6 +243,7 @@ class LauncherViewModel(
             showSeconds = prefs.showSeconds,
             showDailyTasksOnHome = prefs.showDailyTasksOnHome,
             showDailyTasksHomeSection = showHomeDailySection,
+            heldDailyTaskIds = activeHoldIds,
             notificationInboxEnabled = prefs.notificationInboxEnabled,
             notificationRetentionDays = prefs.notificationRetentionDays,
             logRetentionDays = prefs.logRetentionDays,
@@ -357,6 +364,7 @@ class LauncherViewModel(
         viewModelScope.launch {
             dailyTasksManager.deleteDailyTask(taskId)
             snackbarMessage.update { "Daily task removed" }
+            clearDailyTaskHold(taskId)
         }
     }
 
@@ -364,18 +372,31 @@ class LauncherViewModel(
         viewModelScope.launch {
             val entity = dailyTasksManager.getDailyTask(taskId) ?: return@launch
             dailyTasksManager.updateDailyTask(entity.copy(isEnabled = enabled))
+            if (!enabled) {
+                clearDailyTaskHold(taskId)
+            }
         }
     }
 
     fun markDailyTaskCompleted(taskId: Long) {
         viewModelScope.launch {
-            dailyTasksManager.markCompletedForToday(taskId)
+            registerDailyTaskHold(taskId)
+            try {
+                dailyTasksManager.markCompletedForToday(taskId)
+            } catch (cancellation: CancellationException) {
+                clearDailyTaskHold(taskId)
+                throw cancellation
+            } catch (error: Throwable) {
+                clearDailyTaskHold(taskId)
+                throw error
+            }
         }
     }
 
     fun resetDailyTaskForToday(taskId: Long) {
         viewModelScope.launch {
             dailyTasksManager.resetCompletion(taskId)
+            clearDailyTaskHold(taskId)
         }
     }
 
@@ -634,32 +655,27 @@ class LauncherViewModel(
         }
     }
 
-    private fun handleDailyTaskHomeHold(items: List<DailyTaskItem>) {
-        val now = System.currentTimeMillis()
-        val activeToday = items.filter { it.isActiveToday }
-        val allCompleted = activeToday.isNotEmpty() && activeToday.all { it.isCompletedToday }
-
-        if (allCompleted) {
-            val newExpiry = now + DAILY_TASK_HOME_HOLD_MS
-            lastDailyCompletionAt.value = newExpiry
-            homeDailySectionHoldJob?.cancel()
-            homeDailySectionHoldJob = viewModelScope.launch {
-                val currentJob = coroutineContext[Job]
-                delay(DAILY_TASK_HOME_HOLD_MS)
-                if (lastDailyCompletionAt.value == newExpiry) {
-                    lastDailyCompletionAt.value = null
-                }
-                if (currentJob != null && homeDailySectionHoldJob === currentJob) {
-                    homeDailySectionHoldJob = null
+    private fun registerDailyTaskHold(taskId: Long) {
+        val expiry = System.currentTimeMillis() + DAILY_TASK_COMPLETION_HOLD_MS
+        dailyTaskHoldJobs.remove(taskId)?.cancel()
+        dailyTaskHoldExpiries.update { current -> current + (taskId to expiry) }
+        dailyTaskHoldJobs[taskId] = viewModelScope.launch {
+            delay(DAILY_TASK_COMPLETION_HOLD_MS)
+            dailyTaskHoldExpiries.update { current ->
+                val currentExpiry = current[taskId]
+                if (currentExpiry == null || currentExpiry > System.currentTimeMillis()) {
+                    current
+                } else {
+                    current - taskId
                 }
             }
-        } else {
-            if (lastDailyCompletionAt.value != null) {
-                lastDailyCompletionAt.value = null
-            }
-            homeDailySectionHoldJob?.cancel()
-            homeDailySectionHoldJob = null
+            dailyTaskHoldJobs.remove(taskId)
         }
+    }
+
+    private fun clearDailyTaskHold(taskId: Long) {
+        dailyTaskHoldJobs.remove(taskId)?.cancel()
+        dailyTaskHoldExpiries.update { current -> current - taskId }
     }
 
     private fun resolveBottomIcon(slot: BottomIconSlot, packageName: String?, data: DataSnapshot): AppEntry? {
@@ -755,6 +771,7 @@ data class LauncherUiState(
     val showSeconds: Boolean = false,
     val showDailyTasksOnHome: Boolean = true,
     val showDailyTasksHomeSection: Boolean = true,
+    val heldDailyTaskIds: Set<Long> = emptySet(),
     val notificationInboxEnabled: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
