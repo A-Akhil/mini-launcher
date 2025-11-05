@@ -2,6 +2,8 @@ package com.minifocus.launcher.manager
 
 import com.minifocus.launcher.data.dao.DailyTaskDao
 import com.minifocus.launcher.data.entity.DailyTaskEntity
+import com.minifocus.launcher.model.DailyTaskRepeatMode
+import com.minifocus.launcher.model.DailyTaskWeekdayMask
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -19,7 +21,10 @@ class DailyTasksManager(
         title: String,
         startEpochDay: Long?,
         endEpochDay: Long?,
-        enabled: Boolean
+        enabled: Boolean,
+        repeatMode: DailyTaskRepeatMode,
+        intervalDays: Int,
+        daysOfWeekMask: Int
     ): Long {
         val trimmed = title.trim()
         if (trimmed.isEmpty()) return -1
@@ -29,14 +34,21 @@ class DailyTasksManager(
                     title = trimmed,
                     startEpochDay = startEpochDay,
                     endEpochDay = endEpochDay,
-                    isEnabled = enabled
+                    isEnabled = enabled,
+                    repeatMode = repeatMode.name,
+                    intervalDays = intervalDays.coerceAtLeast(1),
+                    daysOfWeekMask = DailyTaskWeekdayMask.normalized(daysOfWeekMask)
                 )
             )
         }
     }
 
     suspend fun updateDailyTask(entity: DailyTaskEntity): Unit = withContext(Dispatchers.IO) {
-        dailyTaskDao.update(entity)
+        val sanitized = entity.copy(
+            intervalDays = entity.intervalDays.coerceAtLeast(1),
+            daysOfWeekMask = DailyTaskWeekdayMask.normalized(entity.daysOfWeekMask)
+        )
+        dailyTaskDao.update(sanitized)
     }
 
     suspend fun deleteDailyTask(taskId: Long) {
