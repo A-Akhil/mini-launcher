@@ -16,6 +16,8 @@ import com.minifocus.launcher.model.LauncherTheme
 import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.model.DailyTaskItem
+import com.minifocus.launcher.model.DailyTaskRepeatMode
+import com.minifocus.launcher.model.DailyTaskWeekdayMask
 import com.minifocus.launcher.data.entity.toItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -323,13 +325,24 @@ class LauncherViewModel(
         title: String,
         startEpochDay: Long?,
         endEpochDay: Long?,
-        enabled: Boolean = true
+        enabled: Boolean = true,
+        repeatMode: DailyTaskRepeatMode = DailyTaskRepeatMode.EVERY_DAY,
+        intervalDays: Int = 1,
+        daysOfWeekMask: Int = DailyTaskWeekdayMask.ALL
     ) {
         viewModelScope.launch {
             val trimmed = title.trim()
             if (trimmed.isEmpty()) return@launch
             val (normalizedStart, normalizedEnd) = normalizeDailyWindow(startEpochDay, endEpochDay)
-            val id = dailyTasksManager.addDailyTask(trimmed, normalizedStart, normalizedEnd, enabled)
+            val id = dailyTasksManager.addDailyTask(
+                trimmed,
+                normalizedStart,
+                normalizedEnd,
+                enabled,
+                repeatMode,
+                intervalDays,
+                daysOfWeekMask
+            )
             if (id > 0) {
                 snackbarMessage.update { "Daily task added" }
             }
@@ -341,7 +354,10 @@ class LauncherViewModel(
         title: String,
         startEpochDay: Long?,
         endEpochDay: Long?,
-        enabled: Boolean
+        enabled: Boolean,
+        repeatMode: DailyTaskRepeatMode,
+        intervalDays: Int,
+        daysOfWeekMask: Int
     ) {
         viewModelScope.launch {
             val entity = dailyTasksManager.getDailyTask(taskId) ?: return@launch
@@ -353,7 +369,10 @@ class LauncherViewModel(
                     title = trimmed,
                     startEpochDay = normalizedStart,
                     endEpochDay = normalizedEnd,
-                    isEnabled = enabled
+                    isEnabled = enabled,
+                    repeatMode = repeatMode.name,
+                    intervalDays = intervalDays,
+                    daysOfWeekMask = daysOfWeekMask
                 )
             )
             snackbarMessage.update { "Daily task updated" }

@@ -91,8 +91,10 @@ import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.SearchResult
-import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.model.DailyTaskItem
+import com.minifocus.launcher.model.DailyTaskRepeatMode
+import com.minifocus.launcher.model.TaskItem
+import com.minifocus.launcher.model.patternLabel
 import com.minifocus.launcher.viewmodel.LauncherUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
@@ -115,8 +117,8 @@ fun LauncherApp(
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
-    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit,
-    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean) -> Unit,
+    onAddDailyTask: (String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit,
+    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit,
     onDeleteDailyTask: (Long) -> Unit,
     onDailyTaskEnabledChange: (Long, Boolean) -> Unit,
     onDailyTaskCompleted: (Long) -> Unit,
@@ -954,9 +956,16 @@ private fun DailyTaskManagerRow(
                 fontSize = 16.sp
             )
             val status = dailyTaskStatusText(task, todayEpochDay, formatter)
+            val pattern = task.patternLabel()
             Text(
                 text = status,
                 color = Color(0xFF888888),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            Text(
+                text = pattern,
+                color = Color(0xFF666666),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
@@ -1022,8 +1031,8 @@ private fun TasksScreen(
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
     onOpenHistory: () -> Unit,
-    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit,
-    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean) -> Unit,
+    onAddDailyTask: (String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit,
+    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit,
     onDeleteDailyTask: (Long) -> Unit,
     onDailyTaskEnabledChange: (Long, Boolean) -> Unit,
     onDailyTaskCompleted: (Long) -> Unit,
@@ -1095,18 +1104,6 @@ private fun TasksScreen(
                     if (tasks.isNotEmpty()) {
                         item { Spacer(modifier = Modifier.height(12.dp)) }
                     }
-                } else if (dailyTasks.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "All daily reminders are done for today.",
-                            color = Color(0xFF777777),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    }
-                    if (tasks.isNotEmpty()) {
-                        item { Spacer(modifier = Modifier.height(12.dp)) }
-                    }
                 }
                 items(tasks, key = { "task-${it.id}" }) { task ->
                     Row(
@@ -1169,8 +1166,8 @@ private fun TasksScreen(
                 onAddTask(title, scheduledTime)
                 showAddDialog.value = false
             },
-            onAddDailyTask = { title, start, end, enabled ->
-                onAddDailyTask(title, start, end, enabled)
+            onAddDailyTask = { title, start, end, enabled, repeatMode, intervalDays, daysMask ->
+                onAddDailyTask(title, start, end, enabled, repeatMode, intervalDays, daysMask)
                 showAddDialog.value = false
             }
         )
@@ -1200,9 +1197,12 @@ private fun TasksScreen(
             initialStartEpochDay = task.startEpochDay,
             initialEndEpochDay = task.endEpochDay,
             initialEnabled = task.isEnabled,
+            initialRepeatMode = task.repeatMode,
+            initialIntervalDays = task.intervalDays,
+            initialDaysOfWeekMask = task.daysOfWeekMask,
             onDismiss = { showEditDailyDialog.value = null },
-            onConfirm = { updatedTitle, start, end, enabled ->
-                onUpdateDailyTask(task.id, updatedTitle, start, end, enabled)
+            onConfirm = { updatedTitle, start, end, enabled, repeatMode, intervalDays, daysMask ->
+                onUpdateDailyTask(task.id, updatedTitle, start, end, enabled, repeatMode, intervalDays, daysMask)
                 if (!enabled && task.isCompletedToday) {
                     onDailyTaskReset(task.id)
                 }
