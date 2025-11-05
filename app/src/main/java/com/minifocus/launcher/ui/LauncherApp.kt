@@ -132,6 +132,8 @@ fun LauncherApp(
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
     onSettingsVisibilityChange: (Boolean) -> Unit,
     onHomeSettingsVisibilityChange: (Boolean) -> Unit,
+    onClockSettingsVisibilityChange: (Boolean) -> Unit,
+    onAppDrawerSettingsVisibilityChange: (Boolean) -> Unit,
     onAboutVisibilityChange: (Boolean) -> Unit,
     onEmergencyUnlockVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
@@ -172,9 +174,12 @@ fun LauncherApp(
     val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
     val notifSettingsBackTarget = remember { mutableStateOf(NotifSettingsBackTarget.None) }
     val homeSettingsBackTarget = remember { mutableStateOf(HomeSettingsBackTarget.None) }
+    val clockSettingsBackTarget = remember { mutableStateOf(ClockSettingsBackTarget.None) }
+    val appDrawerSettingsBackTarget = remember { mutableStateOf(AppDrawerSettingsBackTarget.None) }
 
     val shouldSnapToHome = state.isSettingsVisible ||
         state.isHomeSettingsVisible ||
+        state.isClockSettingsVisible ||
         state.isNotificationSettingsVisible ||
         state.isNotificationFilterVisible ||
         state.isNotificationInboxVisible ||
@@ -246,6 +251,40 @@ fun LauncherApp(
         homeSettingsBackTarget.value = HomeSettingsBackTarget.None
     }
 
+    fun openClockSettings(from: ClockSettingsBackTarget) {
+        clockSettingsBackTarget.value = from
+        if (from == ClockSettingsBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onClockSettingsVisibilityChange(true)
+    }
+
+    fun closeClockSettings() {
+        onClockSettingsVisibilityChange(false)
+        when (clockSettingsBackTarget.value) {
+            ClockSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            ClockSettingsBackTarget.None -> Unit
+        }
+        clockSettingsBackTarget.value = ClockSettingsBackTarget.None
+    }
+
+    fun openAppDrawerSettings(from: AppDrawerSettingsBackTarget) {
+        appDrawerSettingsBackTarget.value = from
+        if (from == AppDrawerSettingsBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onAppDrawerSettingsVisibilityChange(true)
+    }
+
+    fun closeAppDrawerSettings() {
+        onAppDrawerSettingsVisibilityChange(false)
+        when (appDrawerSettingsBackTarget.value) {
+            AppDrawerSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            AppDrawerSettingsBackTarget.None -> Unit
+        }
+        appDrawerSettingsBackTarget.value = AppDrawerSettingsBackTarget.None
+    }
+
     fun openFilters(from: FilterBackTarget) {
         filterBackTarget.value = from
         when (from) {
@@ -272,6 +311,8 @@ fun LauncherApp(
         when {
             state.isNotificationFilterVisible -> closeFilters()
             state.isNotificationSettingsVisible -> closeNotifSettings()
+            state.isClockSettingsVisible -> closeClockSettings()
+            state.isAppDrawerSettingsVisible -> closeAppDrawerSettings()
             state.isHomeSettingsVisible -> closeHomeSettings()
             state.isNotificationInboxVisible -> closeInbox()
             state.isSettingsVisible -> onSettingsVisibilityChange(false)
@@ -330,20 +371,17 @@ fun LauncherApp(
                 state.isSettingsVisible -> {
                     SettingsScreen(
                         clockFormat = state.clockFormat,
-                        keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                         showSeconds = state.showSeconds,
                         showDailyTasksOnHome = state.showDailyTasksOnHome,
+                        bottomLeftApp = state.bottomLeft,
+                        bottomRightApp = state.bottomRight,
+                        keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                         notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
-                        bottomLeftApp = state.bottomLeft,
-                        bottomRightApp = state.bottomRight,
-                        onKeyboardToggle = onKeyboardSearchOnSwipeChange,
-                        onClockFormatChange = onClockFormatChange,
-                        onShowSecondsToggle = onShowSecondsChange,
                         onOpenHomeSettings = { openHomeSettings(HomeSettingsBackTarget.Settings) },
-                        onNotificationInboxToggle = onNotificationInboxEnabledChange,
-                        onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
+                        onOpenClockSettings = { openClockSettings(ClockSettingsBackTarget.Settings) },
+                        onOpenAppDrawerSettings = { openAppDrawerSettings(AppDrawerSettingsBackTarget.Settings) },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
@@ -353,18 +391,39 @@ fun LauncherApp(
                     HomeSettingsScreen(
                         showDailyTasksOnHome = state.showDailyTasksOnHome,
                         showDailyTasksHomeSection = state.showDailyTasksHomeSection,
+                        bottomLeftApp = state.bottomLeft,
+                        bottomRightApp = state.bottomRight,
                         onToggleDailyTasksOnHome = onShowDailyTasksOnHomeChange,
+                        onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                         onBack = { closeHomeSettings() }
+                    )
+                }
+                state.isClockSettingsVisible -> {
+                    ClockSettingsScreen(
+                        clockFormat = state.clockFormat,
+                        showSeconds = state.showSeconds,
+                        onClockFormatChange = onClockFormatChange,
+                        onShowSecondsToggle = onShowSecondsChange,
+                        onBack = { closeClockSettings() }
+                    )
+                }
+                state.isAppDrawerSettingsVisible -> {
+                    AppDrawerSettingsScreen(
+                        keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                        onKeyboardToggle = onKeyboardSearchOnSwipeChange,
+                        onBack = { closeAppDrawerSettings() }
                     )
                 }
                 state.isNotificationSettingsVisible -> {
                     NotificationSettingsScreen(
+                        notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
                         onBack = { closeNotifSettings() },
                         onOpenAppFilters = { openFilters(FilterBackTarget.NotifSettings) },
                         onOpenNotificationRetention = { showNotificationRetentionDialog.value = true },
-                        onOpenLogRetention = { showLogRetentionDialog.value = true }
+                        onOpenLogRetention = { showLogRetentionDialog.value = true },
+                        onNotificationInboxToggle = onNotificationInboxEnabledChange
                     )
                 }
                 state.isNotificationInboxVisible -> {
@@ -590,6 +649,8 @@ private enum class FilterBackTarget { None, Settings, Inbox, NotifSettings }
 private enum class InboxBackTarget { None, Settings }
 private enum class NotifSettingsBackTarget { None, Settings }
 private enum class HomeSettingsBackTarget { None, Settings }
+private enum class ClockSettingsBackTarget { None, Settings }
+private enum class AppDrawerSettingsBackTarget { None, Settings }
 
 @Composable
 private fun RetentionPickerDialog(
@@ -1622,24 +1683,48 @@ private fun BottomIconPickerDialog(
 @Composable
 private fun SettingsScreen(
     clockFormat: ClockFormat,
-    keyboardOnSwipe: Boolean,
     showSeconds: Boolean,
     showDailyTasksOnHome: Boolean,
+    bottomLeftApp: AppEntry?,
+    bottomRightApp: AppEntry?,
+    keyboardOnSwipe: Boolean,
     notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
-    bottomLeftApp: AppEntry?,
-    bottomRightApp: AppEntry?,
-    onKeyboardToggle: (Boolean) -> Unit,
-    onClockFormatChange: (ClockFormat) -> Unit,
-    onShowSecondsToggle: (Boolean) -> Unit,
     onOpenHomeSettings: () -> Unit,
-    onNotificationInboxToggle: (Boolean) -> Unit,
-    onBottomIconClick: (BottomIconSlot) -> Unit,
+    onOpenClockSettings: () -> Unit,
+    onOpenAppDrawerSettings: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
+    val homeSummary = buildString {
+        append(if (showDailyTasksOnHome) "Daily tasks visible" else "Daily tasks hidden")
+        val leftLabel = bottomLeftApp?.label ?: "None"
+        val rightLabel = bottomRightApp?.label ?: "None"
+        append(" · bottom: $leftLabel / $rightLabel")
+    }
+
+    val clockSummary = buildString {
+        val formatLabel = if (clockFormat == ClockFormat.H24) "24-hour" else "12-hour"
+        append(formatLabel)
+        append(if (showSeconds) " · seconds on" else " · seconds off")
+    }
+
+    val notificationSummary = if (notificationInboxEnabled) {
+        val notifLabel = if (notificationRetentionDays == 1) "1 day" else "$notificationRetentionDays days"
+        val logLabel = if (logRetentionDays == 1) "1 day" else "$logRetentionDays days"
+        "Inbox on · clears $notifLabel · logs $logLabel"
+    } else {
+        "Inbox disabled"
+    }
+
+    val appDrawerSummary = if (keyboardOnSwipe) {
+        "Keyboard opens with swipe"
+    } else {
+        "Keyboard opens manually"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1654,216 +1739,37 @@ private fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Keyboard on swipe setting
-        Text(
-            text = "Keyboard on All Apps swipe",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Text(
-                text = "Open search and keyboard when swiping to All Apps",
-                color = Color(0xFFAAAAAA),
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Show seconds setting
-        Text(
-            text = "Show seconds in clock",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Text(
-                text = "Display seconds on home screen clock",
-                color = Color(0xFFAAAAAA),
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(checked = showSeconds, onCheckedChange = onShowSecondsToggle)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Home screen settings entry
-        Text(
-            text = "Home Screen",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
         SettingsRow(
-            title = "Home Screen Settings",
-            subtitle = if (showDailyTasksOnHome) "Daily tasks visible" else "Daily tasks hidden",
+            title = "Home Screen",
+            subtitle = homeSummary,
             onClick = onOpenHomeSettings
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Notification Inbox toggle
-        Text(
-            text = "Notification Inbox",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+        SettingsRow(
+            title = "Clock",
+            subtitle = clockSummary,
+            onClick = onOpenClockSettings
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Text(
-                text = "Enable notification interception and inbox",
-                color = Color(0xFFAAAAAA),
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(checked = notificationInboxEnabled, onCheckedChange = onNotificationInboxToggle)
-        }
 
-        if (notificationInboxEnabled) {
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-            val retentionSummary = "Inbox keeps ${notificationRetentionDays} day${if (notificationRetentionDays == 1) "" else "s"}, logs keep ${logRetentionDays} day${if (logRetentionDays == 1) "" else "s"}"
-
-            SettingsRow(
-                title = "Notification Settings",
-                subtitle = retentionSummary,
-                onClick = onOpenNotificationSettings
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Bottom icons customization
-        Text(
-            text = "Bottom Quick Launch Icons",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+        SettingsRow(
+            title = "Notification Bar",
+            subtitle = notificationSummary,
+            onClick = onOpenNotificationSettings
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Left bottom icon
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .combinedClickable(onClick = { onBottomIconClick(BottomIconSlot.LEFT) })
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Left Icon",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = bottomLeftApp?.label ?: "None",
-                    color = Color(0xFFAAAAAA),
-                    fontSize = 14.sp
-                )
-            }
-            Text(
-                text = "→",
-                color = Color(0xFFAAAAAA),
-                fontSize = 20.sp
-            )
-        }
-        
-        // Right bottom icon
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .combinedClickable(onClick = { onBottomIconClick(BottomIconSlot.RIGHT) })
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Right Icon",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = bottomRightApp?.label ?: "None",
-                    color = Color(0xFFAAAAAA),
-                    fontSize = 14.sp
-                )
-            }
-            Text(
-                text = "→",
-                color = Color(0xFFAAAAAA),
-                fontSize = 20.sp
-            )
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Clock format setting
-        Text(
-            text = "Clock Format",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+        SettingsRow(
+            title = "App Drawer",
+            subtitle = appDrawerSummary,
+            onClick = onOpenAppDrawerSettings
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        ClockFormat.values().forEach { option ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .combinedClickable(onClick = { onClockFormatChange(option) })
-            ) {
-                RadioButton(
-                    selected = clockFormat == option,
-                    onClick = { onClockFormatChange(option) }
-                )
-                Text(
-                    text = when (option) {
-                        ClockFormat.H24 -> "24-hour"
-                        ClockFormat.H12 -> "12-hour"
-                    },
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // About section
-        Text(
-            text = "About",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         SettingsRow(
             title = "About",
@@ -1877,7 +1783,10 @@ private fun SettingsScreen(
 private fun HomeSettingsScreen(
     showDailyTasksOnHome: Boolean,
     showDailyTasksHomeSection: Boolean,
+    bottomLeftApp: AppEntry?,
+    bottomRightApp: AppEntry?,
     onToggleDailyTasksOnHome: (Boolean) -> Unit,
+    onBottomIconClick: (BottomIconSlot) -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -1888,14 +1797,14 @@ private fun HomeSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Home Screen Settings",
+            title = "Home Screen",
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Daily Tasks Module",
+            text = "Daily tasks module",
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -1947,6 +1856,28 @@ private fun HomeSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
+            text = "Bottom quick launch",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingsRow(
+            title = "Left icon",
+            subtitle = bottomLeftApp?.label ?: "None",
+            onClick = { onBottomIconClick(BottomIconSlot.LEFT) }
+        )
+
+        SettingsRow(
+            title = "Right icon",
+            subtitle = bottomRightApp?.label ?: "None",
+            onClick = { onBottomIconClick(BottomIconSlot.RIGHT) }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
             text = "Tip",
             color = Color.White,
             fontSize = 18.sp,
@@ -1955,6 +1886,181 @@ private fun HomeSettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Manage the tasks themselves from the Tasks page — this screen only controls visibility on home.",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp,
+            lineHeight = 20.sp
+        )
+    }
+}
+
+@Composable
+private fun ClockSettingsScreen(
+    clockFormat: ClockFormat,
+    showSeconds: Boolean,
+    onClockFormatChange: (ClockFormat) -> Unit,
+    onShowSecondsToggle: (Boolean) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 36.dp)
+    ) {
+        ScreenHeader(
+            title = "Clock",
+            onBack = onBack
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Time format",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        ClockFormat.values().forEach { option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .combinedClickable(onClick = { onClockFormatChange(option) })
+            ) {
+                RadioButton(
+                    selected = clockFormat == option,
+                    onClick = { onClockFormatChange(option) }
+                )
+                Text(
+                    text = when (option) {
+                        ClockFormat.H24 -> "24-hour"
+                        ClockFormat.H12 -> "12-hour"
+                    },
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Seconds",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Show seconds",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Add a seconds indicator to the clock on the home screen.",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Switch(
+                checked = showSeconds,
+                onCheckedChange = onShowSecondsToggle
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Tip",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "These preferences also update the tasks screen header so everything matches.",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp,
+            lineHeight = 20.sp
+        )
+    }
+}
+
+@Composable
+private fun AppDrawerSettingsScreen(
+    keyboardOnSwipe: Boolean,
+    onKeyboardToggle: (Boolean) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 36.dp)
+    ) {
+        ScreenHeader(
+            title = "App Drawer",
+            onBack = onBack
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Keyboard",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Open keyboard on swipe",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Automatically show the search field and keyboard when you enter All Apps.",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Tip",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "When disabled, you can still pull down to focus the search box manually.",
             color = Color(0xFFAAAAAA),
             fontSize = 14.sp,
             lineHeight = 20.sp

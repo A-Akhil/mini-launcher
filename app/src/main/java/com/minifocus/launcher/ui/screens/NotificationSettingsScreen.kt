@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,12 +27,14 @@ import com.minifocus.launcher.ui.components.ScreenHeader
 
 @Composable
 fun NotificationSettingsScreen(
+    notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
     onBack: () -> Unit,
     onOpenNotificationRetention: () -> Unit,
     onOpenLogRetention: () -> Unit,
-    onOpenAppFilters: () -> Unit
+    onOpenAppFilters: () -> Unit,
+    onNotificationInboxToggle: (Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -45,29 +48,74 @@ fun NotificationSettingsScreen(
             onBack = onBack
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        SettingsRow(
-            title = "Auto-clear notifications",
-            value = "$notificationRetentionDays days",
-            onClick = onOpenNotificationRetention
+        Text(
+            text = "Notification inbox",
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Capture notifications",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Store notifications in the in-app inbox and post a single summary alert.",
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Switch(
+                checked = notificationInboxEnabled,
+                onCheckedChange = onNotificationInboxToggle
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SettingsRow(
-            title = "Log retention",
-            value = "$logRetentionDays days",
-            onClick = onOpenLogRetention
-        )
+        if (notificationInboxEnabled) {
+            SettingsRow(
+                title = "Auto-clear notifications",
+                value = "$notificationRetentionDays days",
+                onClick = onOpenNotificationRetention
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        SettingsRow(
-            title = "App filters",
-            value = "",
-            onClick = onOpenAppFilters
-        )
+            SettingsRow(
+                title = "Log retention",
+                value = "$logRetentionDays days",
+                onClick = onOpenLogRetention
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsRow(
+                title = "App filters",
+                value = "",
+                onClick = onOpenAppFilters
+            )
+        } else {
+            Text(
+                text = "Turn on the inbox to manage retention and filters.",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
     }
 }
 
