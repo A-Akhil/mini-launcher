@@ -51,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +63,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -82,11 +85,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.TaskItem
+import com.minifocus.launcher.model.DailyTaskItem
 import com.minifocus.launcher.viewmodel.LauncherUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
@@ -109,6 +115,12 @@ fun LauncherApp(
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
+    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit,
+    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean) -> Unit,
+    onDeleteDailyTask: (Long) -> Unit,
+    onDailyTaskEnabledChange: (Long, Boolean) -> Unit,
+    onDailyTaskCompleted: (Long) -> Unit,
+    onDailyTaskReset: (Long) -> Unit,
     onPinApp: (String) -> Unit,
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
@@ -119,12 +131,14 @@ fun LauncherApp(
     onSearchVisibilityChange: (Boolean) -> Unit,
     onBottomIconChange: (BottomIconSlot, String) -> Unit,
     onSettingsVisibilityChange: (Boolean) -> Unit,
+    onHomeSettingsVisibilityChange: (Boolean) -> Unit,
     onAboutVisibilityChange: (Boolean) -> Unit,
     onEmergencyUnlockVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
+    onShowDailyTasksOnHomeChange: (Boolean) -> Unit,
     onNotificationInboxEnabledChange: (Boolean) -> Unit,
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
@@ -157,8 +171,10 @@ fun LauncherApp(
     val filterBackTarget = remember { mutableStateOf(FilterBackTarget.None) }
     val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
     val notifSettingsBackTarget = remember { mutableStateOf(NotifSettingsBackTarget.None) }
+    val homeSettingsBackTarget = remember { mutableStateOf(HomeSettingsBackTarget.None) }
 
     val shouldSnapToHome = state.isSettingsVisible ||
+        state.isHomeSettingsVisible ||
         state.isNotificationSettingsVisible ||
         state.isNotificationFilterVisible ||
         state.isNotificationInboxVisible ||
@@ -213,6 +229,23 @@ fun LauncherApp(
         notifSettingsBackTarget.value = NotifSettingsBackTarget.None
     }
 
+    fun openHomeSettings(from: HomeSettingsBackTarget) {
+        homeSettingsBackTarget.value = from
+        if (from == HomeSettingsBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onHomeSettingsVisibilityChange(true)
+    }
+
+    fun closeHomeSettings() {
+        onHomeSettingsVisibilityChange(false)
+        when (homeSettingsBackTarget.value) {
+            HomeSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            HomeSettingsBackTarget.None -> Unit
+        }
+        homeSettingsBackTarget.value = HomeSettingsBackTarget.None
+    }
+
     fun openFilters(from: FilterBackTarget) {
         filterBackTarget.value = from
         when (from) {
@@ -239,6 +272,7 @@ fun LauncherApp(
         when {
             state.isNotificationFilterVisible -> closeFilters()
             state.isNotificationSettingsVisible -> closeNotifSettings()
+            state.isHomeSettingsVisible -> closeHomeSettings()
             state.isNotificationInboxVisible -> closeInbox()
             state.isSettingsVisible -> onSettingsVisibilityChange(false)
             state.isHistoryVisible -> onHistoryVisibilityChange(false)
@@ -298,6 +332,7 @@ fun LauncherApp(
                         clockFormat = state.clockFormat,
                         keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                         showSeconds = state.showSeconds,
+                        showDailyTasksOnHome = state.showDailyTasksOnHome,
                         notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
@@ -306,11 +341,20 @@ fun LauncherApp(
                         onKeyboardToggle = onKeyboardSearchOnSwipeChange,
                         onClockFormatChange = onClockFormatChange,
                         onShowSecondsToggle = onShowSecondsChange,
+                        onOpenHomeSettings = { openHomeSettings(HomeSettingsBackTarget.Settings) },
                         onNotificationInboxToggle = onNotificationInboxEnabledChange,
                         onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isHomeSettingsVisible -> {
+                    HomeSettingsScreen(
+                        showDailyTasksOnHome = state.showDailyTasksOnHome,
+                        showDailyTasksHomeSection = state.showDailyTasksHomeSection,
+                        onToggleDailyTasksOnHome = onShowDailyTasksOnHomeChange,
+                        onBack = { closeHomeSettings() }
                     )
                 }
                 state.isNotificationSettingsVisible -> {
@@ -359,10 +403,17 @@ fun LauncherApp(
                         when (page) {
                             0 -> TasksScreen(
                                 tasks = state.tasks,
+                                dailyTasks = state.dailyTasks,
                                 onToggleTask = onToggleTask,
                                 onAddTask = onAddTask,
                                 onDeleteTask = onDeleteTask,
-                                onOpenHistory = { onHistoryVisibilityChange(true) }
+                                onOpenHistory = { onHistoryVisibilityChange(true) },
+                                onAddDailyTask = onAddDailyTask,
+                                onUpdateDailyTask = onUpdateDailyTask,
+                                onDeleteDailyTask = onDeleteDailyTask,
+                                onDailyTaskEnabledChange = onDailyTaskEnabledChange,
+                                onDailyTaskCompleted = onDailyTaskCompleted,
+                                onDailyTaskReset = onDailyTaskReset
                             )
                             1 -> HomeScreen(
                                 state = state,
@@ -380,7 +431,9 @@ fun LauncherApp(
                                 onHideApp = onHideApp,
                                 onLockApp = onLockApp,
                                 onUnlockApp = onUnlockApp,
-                                onOpenClock = onOpenClock
+                                onOpenClock = onOpenClock,
+                                onDailyTaskCompleted = onDailyTaskCompleted,
+                                onDailyTaskReset = onDailyTaskReset
                             )
                             else -> AllAppsScreen(
                                 apps = state.allApps,
@@ -536,6 +589,7 @@ private fun pluralizeDays(days: Int): String = if (days == 1) "1 day" else "$day
 private enum class FilterBackTarget { None, Settings, Inbox, NotifSettings }
 private enum class InboxBackTarget { None, Settings }
 private enum class NotifSettingsBackTarget { None, Settings }
+private enum class HomeSettingsBackTarget { None, Settings }
 
 @Composable
 private fun RetentionPickerDialog(
@@ -603,17 +657,26 @@ private fun HomeScreen(
     onHideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
     onUnlockApp: (String) -> Unit,
-    onOpenClock: () -> Unit
+    onOpenClock: () -> Unit,
+    onDailyTaskCompleted: (Long) -> Unit,
+    onDailyTaskReset: (Long) -> Unit
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
+    val activeDailyTasks = remember(state.dailyTasks) {
+        state.dailyTasks.filter { it.isActiveToday && it.isEnabled }
+    }
+    val hasDailyTasksForHome = state.showDailyTasksHomeSection && activeDailyTasks.isNotEmpty()
+    val pinnedLimit = if (hasDailyTasksForHome) 3 else 5
+    val pinnedToShow = remember(state.pinnedApps, pinnedLimit) {
+        state.pinnedApps.take(pinnedLimit)
+    }
     
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(horizontal = 32.dp, vertical = 48.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -635,25 +698,35 @@ private fun HomeScreen(
             )
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Box(
+            modifier = Modifier
+                .weight(1f, fill = true)
+                .fillMaxWidth()
         ) {
-            items(state.pinnedApps) { app ->
-                Text(
-                    text = app.label,
-                    fontSize = 22.sp,
-                    color = Color.White,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .combinedClickable(
-                            onClick = { onLaunchApp(app) },
-                            onLongClick = { expandedPinned.value = app.packageName }
-                        ),
-                    textAlign = TextAlign.Center
-                )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically)
+            ) {
+                if (hasDailyTasksForHome) {
+                    DailyTasksHomeSection(
+                        dailyTasks = activeDailyTasks,
+                        onDailyTaskCompleted = onDailyTaskCompleted,
+                        onDailyTaskReset = onDailyTaskReset
+                    )
+                }
+
+                if (pinnedToShow.isNotEmpty()) {
+                    PinnedAppsHomeSection(
+                        pinnedApps = pinnedToShow,
+                        onLaunchApp = onLaunchApp,
+                        onLongPress = { app -> expandedPinned.value = app.packageName }
+                    )
+                }
             }
         }
 
@@ -687,6 +760,164 @@ private fun HomeScreen(
                 onLockApp(app.packageName, minutes)
                 lockDialogApp.value = null
             }
+        )
+    }
+}
+
+@Composable
+private fun DailyTasksHomeSection(
+    dailyTasks: List<DailyTaskItem>,
+    onDailyTaskCompleted: (Long) -> Unit,
+    onDailyTaskReset: (Long) -> Unit
+) {
+    val activeTasks = remember(dailyTasks) {
+        dailyTasks
+            .filter { it.isActiveToday && it.isEnabled }
+            .sortedBy { it.createdAt }
+    }
+
+    if (activeTasks.isEmpty()) return
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        activeTasks.forEach { task ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .combinedClickable(
+                        onClick = {
+                            if (task.isCompletedToday) {
+                                onDailyTaskReset(task.id)
+                            } else {
+                                onDailyTaskCompleted(task.id)
+                            }
+                        }
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MinimalCheckbox(
+                    checked = task.isCompletedToday,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            onDailyTaskCompleted(task.id)
+                        } else {
+                            onDailyTaskReset(task.id)
+                        }
+                    }
+                )
+                Text(
+                    text = task.title,
+                    color = if (task.isCompletedToday) Color(0xFF777777) else Color.White,
+                    fontSize = 22.sp,
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PinnedAppsHomeSection(
+    pinnedApps: List<AppEntry>,
+    onLaunchApp: (AppEntry) -> Unit,
+    onLongPress: (AppEntry) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        pinnedApps.forEach { app ->
+            Text(
+                text = app.label,
+                fontSize = 22.sp,
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = { onLaunchApp(app) },
+                        onLongClick = { onLongPress(app) }
+                    ),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun DailyTaskManagerRow(
+    task: DailyTaskItem,
+    todayEpochDay: Long,
+    formatter: DateTimeFormatter,
+    onEditDailyTask: (DailyTaskItem) -> Unit,
+    onDailyTaskEnabledChange: (Long, Boolean) -> Unit,
+    onDailyTaskCompleted: (Long) -> Unit,
+    onDailyTaskReset: (Long) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .combinedClickable(
+                onClick = {
+                    if (!task.isActiveToday || !task.isEnabled) return@combinedClickable
+                    if (task.isCompletedToday) {
+                        onDailyTaskReset(task.id)
+                    } else {
+                        onDailyTaskCompleted(task.id)
+                    }
+                },
+                onLongClick = { onEditDailyTask(task) }
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MinimalCheckbox(
+            checked = task.isCompletedToday,
+            onCheckedChange = { checked ->
+                if (!task.isActiveToday || !task.isEnabled) return@MinimalCheckbox
+                if (checked) {
+                    onDailyTaskCompleted(task.id)
+                } else {
+                    onDailyTaskReset(task.id)
+                }
+            },
+            enabled = task.isActiveToday && task.isEnabled
+        )
+        Column(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .weight(1f)
+        ) {
+            Text(
+                text = task.title,
+                color = when {
+                    !task.isEnabled -> Color(0xFF555555)
+                    task.isCompletedToday -> Color(0xFF777777)
+                    else -> Color.White
+                },
+                fontSize = 16.sp
+            )
+            val status = dailyTaskStatusText(task, todayEpochDay, formatter)
+            Text(
+                text = status,
+                color = Color(0xFF888888),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        Switch(
+            checked = task.isEnabled,
+            onCheckedChange = { enabled -> onDailyTaskEnabledChange(task.id, enabled) },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF444444),
+                uncheckedThumbColor = Color(0xFF666666),
+                uncheckedTrackColor = Color(0xFF222222)
+            )
         )
     }
 }
@@ -732,14 +963,22 @@ private fun BottomIconButton(
 
 @Composable
 private fun TasksScreen(
+    dailyTasks: List<DailyTaskItem>,
     tasks: List<TaskItem>,
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
-    onOpenHistory: () -> Unit
+    onOpenHistory: () -> Unit,
+    onAddDailyTask: (String, Long?, Long?, Boolean) -> Unit,
+    onUpdateDailyTask: (Long, String, Long?, Long?, Boolean) -> Unit,
+    onDeleteDailyTask: (Long) -> Unit,
+    onDailyTaskEnabledChange: (Long, Boolean) -> Unit,
+    onDailyTaskCompleted: (Long) -> Unit,
+    onDailyTaskReset: (Long) -> Unit
 ) {
     val showAddDialog = remember { mutableStateOf(false) }
     val showEditDialog = remember { mutableStateOf<TaskItem?>(null) }
+    val showEditDailyDialog = remember { mutableStateOf<DailyTaskItem?>(null) }
 
     Box(
         modifier = Modifier
@@ -772,8 +1011,37 @@ private fun TasksScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
 
+            val enableDailyTask = onDailyTaskEnabledChange
+            val completeDailyTask = onDailyTaskCompleted
+            val resetDailyTask = onDailyTaskReset
+            val todayEpochDay = remember { LocalDate.now().toEpochDay() }
+            val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d") }
+            val sortedDailyTasks = remember(dailyTasks) {
+                dailyTasks.sortedWith(
+                    compareByDescending<DailyTaskItem> { it.isActiveToday }
+                        .thenByDescending { it.isEnabled }
+                        .thenBy { it.createdAt }
+                )
+            }
+
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(tasks, key = { it.id }) { task ->
+                if (sortedDailyTasks.isNotEmpty()) {
+                    items(sortedDailyTasks, key = { "daily-${it.id}" }) { task ->
+                        DailyTaskManagerRow(
+                            task = task,
+                            todayEpochDay = todayEpochDay,
+                            formatter = dateFormatter,
+                            onEditDailyTask = { showEditDailyDialog.value = it },
+                            onDailyTaskEnabledChange = { taskId, enabled -> enableDailyTask(taskId, enabled) },
+                            onDailyTaskCompleted = { taskId -> completeDailyTask(taskId) },
+                            onDailyTaskReset = { taskId -> resetDailyTask(taskId) }
+                        )
+                    }
+                    if (tasks.isNotEmpty()) {
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
+                    }
+                }
+                items(tasks, key = { "task-${it.id}" }) { task ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -830,8 +1098,12 @@ private fun TasksScreen(
     if (showAddDialog.value) {
         FancyAddTaskDialog(
             onDismiss = { showAddDialog.value = false },
-            onAdd = { title, scheduledTime ->
+            onAddTask = { title, scheduledTime ->
                 onAddTask(title, scheduledTime)
+                showAddDialog.value = false
+            },
+            onAddDailyTask = { title, start, end, enabled ->
+                onAddDailyTask(title, start, end, enabled)
                 showAddDialog.value = false
             }
         )
@@ -853,6 +1125,28 @@ private fun TasksScreen(
             }
         )
     }
+
+    showEditDailyDialog.value?.let { task ->
+        DailyTaskEditorDialog(
+            title = "Edit Daily Task",
+            initialTitle = task.title,
+            initialStartEpochDay = task.startEpochDay,
+            initialEndEpochDay = task.endEpochDay,
+            initialEnabled = task.isEnabled,
+            onDismiss = { showEditDailyDialog.value = null },
+            onConfirm = { updatedTitle, start, end, enabled ->
+                onUpdateDailyTask(task.id, updatedTitle, start, end, enabled)
+                if (!enabled && task.isCompletedToday) {
+                    onDailyTaskReset(task.id)
+                }
+                showEditDailyDialog.value = null
+            },
+            onDelete = {
+                onDeleteDailyTask(task.id)
+                showEditDailyDialog.value = null
+            }
+        )
+    }
 }
 
 private fun formatScheduledTime(timestamp: Long): String {
@@ -869,6 +1163,30 @@ private fun formatScheduledTime(timestamp: Long): String {
         taskDate == today.plusDays(1) -> "Tomorrow at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
         timestamp < now -> "⚠ ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))}"
         else -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
+    }
+}
+
+private fun dailyTaskStatusText(
+    task: DailyTaskItem,
+    todayEpochDay: Long,
+    formatter: DateTimeFormatter
+): String {
+    val today = LocalDate.ofEpochDay(todayEpochDay)
+    val startDate = task.startEpochDay?.let { LocalDate.ofEpochDay(it) }
+    val endDate = task.endEpochDay?.let { LocalDate.ofEpochDay(it) }
+
+    return when {
+        !task.isEnabled -> "Paused"
+        task.isActiveToday && task.isCompletedToday -> "Completed today"
+        task.isActiveToday -> when {
+            endDate != null -> "Active • ends ${endDate.format(formatter)}"
+            startDate != null -> "Active • since ${startDate.format(formatter)}"
+            else -> "Active every day"
+        }
+        startDate != null && today.isBefore(startDate) -> "Starts ${startDate.format(formatter)}"
+        endDate != null && today.isAfter(endDate) -> "Ended ${endDate.format(formatter)}"
+        endDate != null -> "Inactive • ended ${endDate.format(formatter)}"
+        else -> "Inactive today"
     }
 }
 
@@ -1306,6 +1624,7 @@ private fun SettingsScreen(
     clockFormat: ClockFormat,
     keyboardOnSwipe: Boolean,
     showSeconds: Boolean,
+    showDailyTasksOnHome: Boolean,
     notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
@@ -1314,6 +1633,7 @@ private fun SettingsScreen(
     onKeyboardToggle: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onShowSecondsToggle: (Boolean) -> Unit,
+    onOpenHomeSettings: () -> Unit,
     onNotificationInboxToggle: (Boolean) -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
     onOpenNotificationSettings: () -> Unit,
@@ -1381,6 +1701,22 @@ private fun SettingsScreen(
             )
             Switch(checked = showSeconds, onCheckedChange = onShowSecondsToggle)
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Home screen settings entry
+        Text(
+            text = "Home Screen",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsRow(
+            title = "Home Screen Settings",
+            subtitle = if (showDailyTasksOnHome) "Daily tasks visible" else "Daily tasks hidden",
+            onClick = onOpenHomeSettings
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -1533,6 +1869,95 @@ private fun SettingsScreen(
             title = "About",
             subtitle = "Developer info and feedback",
             onClick = onOpenAbout
+        )
+    }
+}
+
+@Composable
+private fun HomeSettingsScreen(
+    showDailyTasksOnHome: Boolean,
+    showDailyTasksHomeSection: Boolean,
+    onToggleDailyTasksOnHome: (Boolean) -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 36.dp)
+    ) {
+        ScreenHeader(
+            title = "Home Screen Settings",
+            onBack = onBack
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Daily Tasks Module",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Show daily tasks on home",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                val description = buildString {
+                    append("Active daily reminders appear beneath the clock.")
+                    if (showDailyTasksOnHome && !showDailyTasksHomeSection) {
+                        append(" All tasks are complete right now, so the section is hidden until tomorrow or new activity.")
+                    } else if (showDailyTasksOnHome) {
+                        append(" Complete everything to hide it for the day.")
+                    }
+                }
+                Text(
+                    text = description,
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Switch(
+                checked = showDailyTasksOnHome,
+                onCheckedChange = onToggleDailyTasksOnHome
+            )
+        }
+
+        if (showDailyTasksOnHome) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Daily tasks stay visible for 10 seconds after completion, then hide automatically.",
+                color = Color(0xFF888888),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Tip",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Manage the tasks themselves from the Tasks page — this screen only controls visibility on home.",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp,
+            lineHeight = 20.sp
         )
     }
 }

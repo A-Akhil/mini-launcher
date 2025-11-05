@@ -3,6 +3,7 @@ package com.minifocus.launcher.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.minifocus.launcher.manager.AppsManager
+import com.minifocus.launcher.manager.DailyTasksManager
 import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
@@ -12,6 +13,7 @@ import com.minifocus.launcher.manager.TasksManager
 class LauncherViewModelFactory(
     private val appsManager: AppsManager,
     private val tasksManager: TasksManager,
+    private val dailyTasksManager: DailyTasksManager,
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
     private val settingsManager: SettingsManager,
@@ -24,6 +26,7 @@ class LauncherViewModelFactory(
             return LauncherViewModel(
                 appsManager = appsManager,
                 tasksManager = tasksManager,
+                dailyTasksManager = dailyTasksManager,
                 hiddenAppsManager = hiddenAppsManager,
                 lockManager = lockManager,
                 settingsManager = settingsManager,
