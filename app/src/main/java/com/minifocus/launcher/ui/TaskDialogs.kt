@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,10 +14,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +40,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +50,10 @@ fun FancyAddTaskDialog(
     onAddTask: (String, Long?) -> Unit,
     onAddDailyTask: (String, Long?, Long?, Boolean, DailyTaskRepeatMode, Int, Int) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val defocusRequester = remember { FocusRequester() }
+    val scrollState = rememberScrollState()
     val taskName = remember { mutableStateOf("") }
     val enableReminder = remember { mutableStateOf(false) }
     val selectedDate = remember { mutableStateOf<LocalDateTime?>(null) }
@@ -58,6 +70,25 @@ fun FancyAddTaskDialog(
     val selectedDaysMask = remember { mutableStateOf(DailyTaskWeekdayMask.ALL) }
     val zoneId = remember { ZoneId.systemDefault() }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM d, yyyy") }
+    val clearFocus: () -> Unit = remember(focusManager, keyboardController, defocusRequester) {
+        {
+            try {
+                defocusRequester.requestFocus()
+            } catch (_: IllegalStateException) {
+                // Ignore cases where the anchor is not yet attached
+            }
+            focusManager.clearFocus(force = true)
+            keyboardController?.hide()
+        }
+    }
+
+    LaunchedEffect(scrollState) {
+        snapshotFlow { scrollState.isScrollInProgress }
+            .filter { it }
+            .collectLatest {
+                clearFocus()
+            }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -71,9 +102,17 @@ fun FancyAddTaskDialog(
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
         ) {
             Column(
-                modifier = Modifier.padding(32.dp),
+                modifier = Modifier
+                    .verticalScroll(scrollState)
+                    .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(
+                    modifier = Modifier
+                        .size(0.dp)
+                        .focusRequester(defocusRequester)
+                        .focusable()
+                )
                 Text(
                     text = "Add New Task",
                     fontSize = 24.sp,
@@ -114,6 +153,7 @@ fun FancyAddTaskDialog(
                     Switch(
                         checked = repeatDaily.value,
                         onCheckedChange = { isChecked ->
+                            clearFocus()
                             repeatDaily.value = isChecked
                             if (isChecked) {
                                 enableReminder.value = false
@@ -147,12 +187,16 @@ fun FancyAddTaskDialog(
                         RepeatOption(
                             label = "Daily",
                             selected = repeatMode.value == DailyTaskRepeatMode.EVERY_DAY
-                        ) { repeatMode.value = DailyTaskRepeatMode.EVERY_DAY }
+                        ) {
+                            clearFocus()
+                            repeatMode.value = DailyTaskRepeatMode.EVERY_DAY
+                        }
 
                         RepeatOption(
                             label = "Alternate",
                             selected = repeatMode.value == DailyTaskRepeatMode.EVERY_OTHER_DAY
                         ) {
+                            clearFocus()
                             repeatMode.value = DailyTaskRepeatMode.EVERY_OTHER_DAY
                         }
 
@@ -160,6 +204,7 @@ fun FancyAddTaskDialog(
                             label = "Days",
                             selected = repeatMode.value == DailyTaskRepeatMode.SPECIFIC_DAYS
                         ) {
+                            clearFocus()
                             repeatMode.value = DailyTaskRepeatMode.SPECIFIC_DAYS
                         }
                     }
@@ -194,6 +239,7 @@ fun FancyAddTaskDialog(
                                     label = dayLabel(day),
                                     selected = selected,
                                     onClick = {
+                                        clearFocus()
                                         val toggled = if (selected) {
                                             selectedDaysMask.value and maskForDay.inv()
                                         } else {
@@ -221,7 +267,10 @@ fun FancyAddTaskDialog(
                         }
                         Switch(
                             checked = dailyEnabled.value,
-                            onCheckedChange = { dailyEnabled.value = it },
+                            onCheckedChange = {
+                                clearFocus()
+                                dailyEnabled.value = it
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = Color(0xFF444444),
@@ -249,6 +298,7 @@ fun FancyAddTaskDialog(
                         Switch(
                             checked = limitDailyRange.value,
                             onCheckedChange = { isChecked ->
+                                clearFocus()
                                 limitDailyRange.value = isChecked
                                 if (isChecked && dailyStartDate.value == null) {
                                     dailyStartDate.value = LocalDate.now(zoneId)
@@ -271,7 +321,10 @@ fun FancyAddTaskDialog(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedButton(
-                            onClick = { showDailyStartPicker.value = true },
+                            onClick = {
+                                clearFocus()
+                                showDailyStartPicker.value = true
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                         ) {
@@ -284,7 +337,10 @@ fun FancyAddTaskDialog(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedButton(
-                            onClick = { showDailyEndPicker.value = true },
+                            onClick = {
+                                clearFocus()
+                                showDailyEndPicker.value = true
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                         ) {
@@ -295,7 +351,10 @@ fun FancyAddTaskDialog(
                         }
 
                         if (dailyEndDate.value != null) {
-                            TextButton(onClick = { dailyEndDate.value = null }) {
+                            TextButton(onClick = {
+                                clearFocus()
+                                dailyEndDate.value = null
+                            }) {
                                 Text(text = "Clear end date", color = Color(0xFFAAAAAA))
                             }
                         }
@@ -313,7 +372,10 @@ fun FancyAddTaskDialog(
                         )
                         Switch(
                             checked = enableReminder.value,
-                            onCheckedChange = { enableReminder.value = it },
+                            onCheckedChange = {
+                                clearFocus()
+                                enableReminder.value = it
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = Color(0xFF444444),
@@ -327,7 +389,10 @@ fun FancyAddTaskDialog(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         OutlinedButton(
-                            onClick = { showDatePicker.value = true },
+                            onClick = {
+                                clearFocus()
+                                showDatePicker.value = true
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = Color.White
