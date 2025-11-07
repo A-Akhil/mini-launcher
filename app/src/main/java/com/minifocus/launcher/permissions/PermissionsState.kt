@@ -12,6 +12,9 @@ data class PermissionsState(
     val usageStatsGranted: Boolean,
     val overlayGranted: Boolean
 ) {
+    val requiredGranted: Boolean
+        get() = notificationsGranted
+
     val allGranted: Boolean
         get() = notificationsGranted &&
             notificationListenerGranted &&
