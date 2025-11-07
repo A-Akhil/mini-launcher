@@ -19,6 +19,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -131,7 +135,17 @@ class MainActivity : ComponentActivity() {
                 val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
-                if (permissions.allGranted) {
+                var permissionsAcknowledged by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(permissions.requiredGranted) {
+                    if (!permissions.requiredGranted) {
+                        permissionsAcknowledged = false
+                    }
+                }
+
+                val showPermissionScreen = !permissions.requiredGranted || !permissionsAcknowledged
+
+                if (!showPermissionScreen) {
                     LauncherApp(
                         state = state,
                         notificationInboxState = inboxState,
@@ -189,7 +203,8 @@ class MainActivity : ComponentActivity() {
                         onRequestUsageStats = ::requestUsageStatsPermission,
                         onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
-                        onOpenRestrictedSettings = ::openRestrictedSettings
+                        onOpenRestrictedSettings = ::openRestrictedSettings,
+                        onContinue = { permissionsAcknowledged = true }
                     )
                 }
             }
