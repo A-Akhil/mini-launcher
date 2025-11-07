@@ -169,6 +169,7 @@ class MainActivity : ComponentActivity() {
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
                         onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
                         onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
+                        onOpenDeviceSettings = ::openDeviceSettings,
                         onNotificationRetentionSelected = notificationInboxViewModel::setNotificationRetentionDays,
                         onLogRetentionSelected = notificationInboxViewModel::setLogRetentionDays,
                         onNotificationDelete = notificationInboxViewModel::deleteNotification,
@@ -341,6 +342,17 @@ class MainActivity : ComponentActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun openDeviceSettings() {
+        val intent = Intent(Settings.ACTION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Unable to open device settings", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun isFromTrustedStore(): Boolean {
