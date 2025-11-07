@@ -146,6 +146,7 @@ fun LauncherApp(
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
+    onOpenDeviceSettings: () -> Unit,
     onNotificationRetentionSelected: (Int) -> Unit,
     onLogRetentionSelected: (Int) -> Unit,
     onNotificationDelete: (Long) -> Unit,
@@ -381,6 +382,7 @@ fun LauncherApp(
                         onOpenClockSettings = { openClockSettings(ClockSettingsBackTarget.Settings) },
                         onOpenAppDrawerSettings = { openAppDrawerSettings(AppDrawerSettingsBackTarget.Settings) },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
+                        onOpenDeviceSettings = onOpenDeviceSettings,
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
                     )
@@ -1700,6 +1702,7 @@ private fun SettingsScreen(
     onOpenClockSettings: () -> Unit,
     onOpenAppDrawerSettings: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onOpenDeviceSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -1729,6 +1732,8 @@ private fun SettingsScreen(
     } else {
         "Keyboard opens manually"
     }
+
+    val deviceSettingsSummary = "Open Android settings"
 
     Column(
         modifier = Modifier
@@ -1775,6 +1780,14 @@ private fun SettingsScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        SettingsRow(
+            title = "Device Settings",
+            subtitle = deviceSettingsSummary,
+            onClick = onOpenDeviceSettings
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
             title = "About",
