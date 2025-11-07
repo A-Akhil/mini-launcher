@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -41,8 +42,53 @@ fun PermissionScreen(
     onRequestUsageStats: () -> Unit,
     onRequestOverlay: () -> Unit,
     showRestrictedNotificationHint: Boolean,
-    onOpenRestrictedSettings: () -> Unit
+    onOpenRestrictedSettings: () -> Unit,
+    onContinue: () -> Unit
 ) {
+    val requiredPermissions = listOf(
+        PermissionRequest(
+            title = "Post notifications",
+            description = "Allow reminders and essential alerts to reach you.",
+            granted = state.notificationsGranted,
+            onRequest = onRequestNotifications
+        )
+    )
+
+    val optionalPermissions = listOf(
+        PermissionRequest(
+            title = "Exact alarms & reminders",
+            description = "Let reminders ring exactly on time, even in battery saver.",
+            granted = state.exactAlarmsGranted,
+            onRequest = onRequestExactAlarms
+        ),
+        PermissionRequest(
+            title = "Notification access",
+            description = "Enable the optional inbox that curates notifications.",
+            granted = state.notificationListenerGranted,
+            onRequest = onRequestNotificationListener
+        ),
+        PermissionRequest(
+            title = "Device admin",
+            description = "Needed for power features like the future double-tap-to-lock.",
+            granted = state.deviceAdminGranted,
+            onRequest = onRequestDeviceAdmin
+        ),
+        PermissionRequest(
+            title = "Usage stats access",
+            description = "Tracks launched apps so optional app locks stay enforced.",
+            granted = state.usageStatsGranted,
+            onRequest = onRequestUsageStats
+        ),
+        PermissionRequest(
+            title = "Display over other apps",
+            description = "Shows the lock overlay when you try opening locked apps.",
+            granted = state.overlayGranted,
+            onRequest = onRequestOverlay
+        )
+    )
+
+    val optionalPending = optionalPermissions.any { !it.granted }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,49 +113,45 @@ fun PermissionScreen(
         )
         Spacer(modifier = Modifier.height(32.dp))
 
-        PermissionCard(
-            title = "Post notifications",
-            description = "Allow reminders and essential alerts to reach you.",
-            granted = state.notificationsGranted,
-            onClick = onRequestNotifications
+        Text(
+            text = "Required",
+            fontSize = 18.sp,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(12.dp))
 
-        PermissionCard(
-            title = "Notification access",
-            description = "Let the launcher curate notifications for the inbox.",
-            granted = state.notificationListenerGranted,
-            onClick = onRequestNotificationListener
-        )
-
-        PermissionCard(
-            title = "Exact alarms & reminders",
-            description = "Allow reminders to ring exactly on time, even in battery saver.",
-            granted = state.exactAlarmsGranted,
-            onClick = onRequestExactAlarms
-        )
-
-        PermissionCard(
-            title = "Device admin",
-            description = "Required to lock the screen with future double-tap gesture.",
-            granted = state.deviceAdminGranted,
-            onClick = onRequestDeviceAdmin
-        )
-
-        PermissionCard(
-            title = "Usage stats access",
-            description = "Monitor app launches to enforce app locks even when using other launchers.",
-            granted = state.usageStatsGranted,
-            onClick = onRequestUsageStats
-        )
-
-        PermissionCard(
-            title = "Display over other apps",
-            description = "Show lock screen overlay when you try to open locked apps.",
-            granted = state.overlayGranted,
-            onClick = onRequestOverlay
-        )
+        requiredPermissions.forEach { permission ->
+            PermissionCard(
+                title = permission.title,
+                description = permission.description,
+                granted = permission.granted,
+                onClick = permission.onRequest
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Optional",
+            fontSize = 18.sp,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        optionalPermissions.forEach { permission ->
+            PermissionCard(
+                title = permission.title,
+                description = permission.description,
+                granted = permission.granted,
+                onClick = permission.onRequest
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (showRestrictedNotificationHint && !state.notificationListenerGranted) {
             Text(
@@ -128,13 +170,41 @@ fun PermissionScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val statusMessage = when {
+            !state.requiredGranted -> "Grant required permissions to continue."
+            optionalPending -> "Optional permissions unlock the notification inbox and advanced locks."
+            else -> "All permissions granted."
+        }
+
         Text(
-            text = if (state.allGranted) "All set!" else "Grant every permission to proceed.",
+            text = statusMessage,
             fontSize = 16.sp,
             color = Color(0xFF888888)
         )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = onContinue,
+            enabled = state.requiredGranted,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            )
+        ) {
+            Text(text = if (optionalPending) "Continue" else "Continue")
+        }
     }
 }
+
+private data class PermissionRequest(
+    val title: String,
+    val description: String,
+    val granted: Boolean,
+    val onRequest: () -> Unit
+)
 
 @Composable
 private fun PermissionCard(
