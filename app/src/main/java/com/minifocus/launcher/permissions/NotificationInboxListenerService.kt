@@ -30,6 +30,9 @@ class NotificationInboxListenerService : NotificationListenerService() {
             return
         }
         val manager = inboxManager ?: return
+        if (!manager.isEnabled()) {
+            return
+        }
         serviceScope.launch {
             val intercepted = manager.addNotification(sbn)
             Log.d(TAG, "posted pkg=${sbn.packageName} intercepted=$intercepted")
