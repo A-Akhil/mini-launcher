@@ -19,10 +19,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -42,7 +38,6 @@ import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.NotificationInboxListenerService
 import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
 import kotlinx.coroutines.runBlocking
-
 class MainActivity : ComponentActivity() {
 
     private val requestHomeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -135,15 +130,7 @@ class MainActivity : ComponentActivity() {
                 val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
-                var permissionsAcknowledged by rememberSaveable { mutableStateOf(false) }
-
-                LaunchedEffect(permissions.requiredGranted) {
-                    if (!permissions.requiredGranted) {
-                        permissionsAcknowledged = false
-                    }
-                }
-
-                val showPermissionScreen = !permissions.requiredGranted || !permissionsAcknowledged
+                val showPermissionScreen = !permissions.requiredGranted
 
                 if (!showPermissionScreen) {
                     LauncherApp(
@@ -204,7 +191,7 @@ class MainActivity : ComponentActivity() {
                         onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
                         onOpenRestrictedSettings = ::openRestrictedSettings,
-                        onContinue = { permissionsAcknowledged = true }
+                        onContinue = {}
                     )
                 }
             }
