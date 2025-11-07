@@ -39,6 +39,7 @@ class NotificationInboxManager(
     private val logger: InboxLogger
 ) {
     private val retentionDays = MutableStateFlow(DEFAULT_NOTIFICATION_RETENTION_DAYS)
+    private val inboxEnabled = MutableStateFlow(false)
     private val packageManager = context.packageManager
     private val essentialSystemPackages: Set<String> by lazy { discoverEssentialPackages() }
 
@@ -58,7 +59,39 @@ class NotificationInboxManager(
             entities.filterNot { entity -> isSystemPackage(entity.packageName) }
         }
 
+    fun isEnabled(): Boolean = inboxEnabled.value
+
+    suspend fun setEnabled(enabled: Boolean) {
+        if (inboxEnabled.value == enabled) {
+            return
+        }
+        inboxEnabled.value = enabled
+        logger.log(
+            event = "inbox_toggle",
+            message = if (enabled) "Notification inbox enabled" else "Notification inbox disabled",
+            metadata = emptyMap()
+        )
+        debug("inbox enabled=$enabled")
+        if (!enabled) {
+            withContext(Dispatchers.IO) {
+                notificationDao.deleteAll()
+            }
+            cancelSummaryNotification()
+        } else {
+            refreshSummaryNotification()
+        }
+    }
+
     suspend fun addNotification(sbn: StatusBarNotification): Boolean {
+        if (!inboxEnabled.value) {
+            logger.log(
+                event = "disabled_skip",
+                message = "Notification inbox disabled; skipping capture",
+                metadata = mapOf("package" to sbn.packageName)
+            )
+            debug("disabled skip pkg=${sbn.packageName}")
+            return false
+        }
         logger.log(
             event = "posted",
             message = "Notification received",
@@ -309,6 +342,10 @@ class NotificationInboxManager(
     }
 
     suspend fun refreshSummaryNotification() {
+        if (!inboxEnabled.value) {
+            cancelSummaryNotification()
+            return
+        }
         withContext(Dispatchers.IO) {
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -355,12 +392,19 @@ class NotificationInboxManager(
                 .setContentText(summaryText)
                 .setNumber(total)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .build()
 
             notificationManager.notify(SUMMARY_NOTIFICATION_ID, summary)
+        }
+    }
+
+    private suspend fun cancelSummaryNotification() {
+        withContext(Dispatchers.IO) {
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(SUMMARY_NOTIFICATION_ID)
         }
     }
 

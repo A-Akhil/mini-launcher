@@ -68,6 +68,12 @@ class LauncherApplication : Application() {
         )
 
         appScope.launch {
+            settingsManager.observeNotificationInboxEnabled().collectLatest { enabled ->
+                notificationInboxManager.setEnabled(enabled)
+            }
+        }
+
+        appScope.launch {
             settingsManager.observeNotificationRetentionDays().collectLatest { days ->
                 notificationInboxManager.updateRetention(days)
             }
