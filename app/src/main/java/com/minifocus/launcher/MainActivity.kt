@@ -88,6 +88,8 @@ class MainActivity : ComponentActivity() {
         )
     )
 
+    private val permissionManagerVisible = MutableStateFlow(false)
+
     private val notificationRestrictionHint = MutableStateFlow(false)
     private var notificationAccessRequested = false
 
@@ -142,15 +144,25 @@ class MainActivity : ComponentActivity() {
                 val inboxState by notificationInboxViewModel.uiState.collectAsStateWithLifecycle()
                 val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
+                val manualPermissionManagerVisible by permissionManagerVisible.collectAsStateWithLifecycle()
                 val permissionsAcknowledged by settingsManager
                     .observePermissionOnboardingAcknowledged()
                     .collectAsStateWithLifecycle(initialPermissionsAcknowledged)
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
-                val showPermissionScreen = !permissions.requiredGranted || !permissionsAcknowledged
+                val showPermissionScreen = !permissions.requiredGranted || manualPermissionManagerVisible
 
-                LaunchedEffect(permissions.requiredGranted) {
+                LaunchedEffect(showPermissionScreen) {
+                    // android.util.Log.d(
+                    //     "PermissionOverlay",
+                    //     "show=$showPermissionScreen manual=$manualPermissionManagerVisible required=${permissions.requiredGranted}"
+                    // )
+                }
+
+                LaunchedEffect(permissions.requiredGranted, manualPermissionManagerVisible, permissionsAcknowledged) {
                     if (!permissions.requiredGranted) {
                         settingsManager.setPermissionOnboardingAcknowledged(false)
+                    } else if (!manualPermissionManagerVisible && !permissionsAcknowledged) {
+                        settingsManager.setPermissionOnboardingAcknowledged(true)
                     }
                 }
 
@@ -159,6 +171,7 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         notificationInboxState = inboxState,
                         notificationFilterState = filterState,
+                        permissionsState = permissions,
                         onToggleTask = viewModel::toggleTask,
                         onAddTask = viewModel::addTask,
                         onDeleteTask = viewModel::deleteTask,
@@ -191,7 +204,6 @@ class MainActivity : ComponentActivity() {
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
                         onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
                         onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
-                        onOpenDeviceSettings = ::openDeviceSettings,
                         onNotificationRetentionSelected = notificationInboxViewModel::setNotificationRetentionDays,
                         onLogRetentionSelected = notificationInboxViewModel::setLogRetentionDays,
                         onNotificationDelete = notificationInboxViewModel::deleteNotification,
@@ -199,6 +211,11 @@ class MainActivity : ComponentActivity() {
                         onNotificationFilterQueryChange = notificationFilterViewModel::updateSearchQuery,
                         onNotificationFilterToggle = notificationFilterViewModel::toggle,
                         onNotificationFilterToggleAll = notificationFilterViewModel::setAll,
+                        onOpenPermissionManager = {
+                            updatePermissionsState()
+                            permissionManagerVisible.value = true
+                        },
+                        onOpenDeviceSettings = ::openDeviceSettings,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },
@@ -207,6 +224,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     PermissionScreen(
                         state = permissions,
+                        allowDismiss = manualPermissionManagerVisible,
                         onRequestNotifications = ::requestPostNotificationsPermission,
                         onRequestNotificationListener = ::requestNotificationAccess,
                         onRequestExactAlarms = ::requestExactAlarmPermission,
@@ -215,9 +233,15 @@ class MainActivity : ComponentActivity() {
                         onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
                         onOpenRestrictedSettings = ::openRestrictedSettings,
+                        onClose = {
+                            if (permissionManagerVisible.value) {
+                                permissionManagerVisible.value = false
+                            }
+                        },
                         onContinue = {
                             lifecycleScope.launch {
                                 settingsManager.setPermissionOnboardingAcknowledged(true)
+                                permissionManagerVisible.value = false
                             }
                         }
                     )
@@ -228,6 +252,23 @@ class MainActivity : ComponentActivity() {
         if (intent?.action == ACTION_OPEN_INBOX) {
             viewModel.setNotificationInboxVisibility(true)
             intent.action = Intent.ACTION_MAIN
+        }
+    }
+
+    // TODO: Replace these manual permissionManagerVisible resets with a single navigation
+    // owner once the permission overlay manages lifecycle transitions (home, back,
+    // leave-hint) without workarounds in onStop/onUserLeaveHint/onNewIntent.
+    override fun onStop() {
+        super.onStop()
+        if (permissionManagerVisible.value) {
+            permissionManagerVisible.value = false
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (permissionManagerVisible.value) {
+            permissionManagerVisible.value = false
         }
     }
 
@@ -309,6 +350,11 @@ class MainActivity : ComponentActivity() {
     private fun updatePermissionsState() {
         val state = PermissionsEvaluator.currentState(this)
         permissionsState.value = state
+        // android.util.Log.d(
+        //     "PermissionsState",
+        //     "notifications=${state.notificationsGranted}, listener=${state.notificationListenerGranted}, " +
+        //         "deviceAdmin=${state.deviceAdminGranted}, exact=${state.exactAlarmsGranted}, usage=${state.usageStatsGranted}, overlay=${state.overlayGranted}"
+        // )
         if (notificationAccessRequested && !state.notificationListenerGranted) {
             notificationRestrictionHint.value = !isFromTrustedStore()
         } else if (state.notificationListenerGranted) {
@@ -590,6 +636,9 @@ class MainActivity : ComponentActivity() {
             }
             Intent.ACTION_MAIN -> {
                 if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+                    if (permissionManagerVisible.value) {
+                        permissionManagerVisible.value = false
+                    }
                     viewModel.resetToHome()
                 }
             }

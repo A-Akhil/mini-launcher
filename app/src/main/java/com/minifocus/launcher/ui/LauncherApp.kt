@@ -99,6 +99,7 @@ import com.minifocus.launcher.viewmodel.LauncherUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
+import com.minifocus.launcher.permissions.PermissionsState
 import com.minifocus.launcher.ui.components.AppContextMenu
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
@@ -114,6 +115,7 @@ fun LauncherApp(
     state: LauncherUiState,
     notificationInboxState: NotificationInboxUiState,
     notificationFilterState: FilterUiState,
+    permissionsState: PermissionsState,
     onToggleTask: (Long) -> Unit,
     onAddTask: (String, Long?) -> Unit,
     onDeleteTask: (Long) -> Unit,
@@ -146,6 +148,7 @@ fun LauncherApp(
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
+    onOpenPermissionManager: () -> Unit,
     onOpenDeviceSettings: () -> Unit,
     onNotificationRetentionSelected: (Int) -> Unit,
     onLogRetentionSelected: (Int) -> Unit,
@@ -380,10 +383,12 @@ fun LauncherApp(
                         notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
+                        permissionsState = permissionsState,
                         onOpenHomeSettings = { openHomeSettings(HomeSettingsBackTarget.Settings) },
                         onOpenClockSettings = { openClockSettings(ClockSettingsBackTarget.Settings) },
                         onOpenAppDrawerSettings = { openAppDrawerSettings(AppDrawerSettingsBackTarget.Settings) },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
+                        onOpenPermissionManager = onOpenPermissionManager,
                         onOpenDeviceSettings = onOpenDeviceSettings,
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
@@ -1700,10 +1705,12 @@ private fun SettingsScreen(
     notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
+    permissionsState: PermissionsState,
     onOpenHomeSettings: () -> Unit,
     onOpenClockSettings: () -> Unit,
     onOpenAppDrawerSettings: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onOpenPermissionManager: () -> Unit,
     onOpenDeviceSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
@@ -1727,6 +1734,20 @@ private fun SettingsScreen(
         "Inbox on · clears $notifLabel · logs $logLabel"
     } else {
         "Inbox disabled"
+    }
+
+    val optionalMissing = buildList {
+        if (!permissionsState.notificationListenerGranted) add("Notification access")
+        if (!permissionsState.exactAlarmsGranted) add("Exact alarms")
+        if (!permissionsState.deviceAdminGranted) add("Device admin")
+        if (!permissionsState.usageStatsGranted) add("Usage access")
+        if (!permissionsState.overlayGranted) add("Overlay")
+    }
+
+    val permissionSummary = when {
+        !permissionsState.notificationsGranted -> "Notifications required"
+        optionalMissing.isEmpty() -> "All permissions granted"
+        else -> "Missing ${optionalMissing.joinToString(", ")}"
     }
 
     val appDrawerSummary = if (keyboardOnSwipe) {
@@ -1789,6 +1810,14 @@ private fun SettingsScreen(
             onClick = onOpenDeviceSettings
         )
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        SettingsRow(
+            title = "Permissions",
+            subtitle = permissionSummary,
+            onClick = onOpenPermissionManager
+        )
+        
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(

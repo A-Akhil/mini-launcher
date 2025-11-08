@@ -30,11 +30,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import com.minifocus.launcher.permissions.PermissionsState
 
 @Composable
 fun PermissionScreen(
     state: PermissionsState,
+    allowDismiss: Boolean = false,
     onRequestNotifications: () -> Unit,
     onRequestNotificationListener: () -> Unit,
     onRequestExactAlarms: () -> Unit,
@@ -43,8 +45,13 @@ fun PermissionScreen(
     onRequestOverlay: () -> Unit,
     showRestrictedNotificationHint: Boolean,
     onOpenRestrictedSettings: () -> Unit,
+    onClose: () -> Unit,
     onContinue: () -> Unit
 ) {
+    BackHandler(enabled = allowDismiss) {
+        onClose()
+    }
+
     val requiredPermissions = listOf(
         PermissionRequest(
             title = "Post notifications",

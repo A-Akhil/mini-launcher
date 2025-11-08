@@ -34,6 +34,7 @@
         android:label="Minimalist Focus"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.MinimalistFocusLauncher">
         <activity
             android:name="com.minifocus.launcher.MainActivity"
