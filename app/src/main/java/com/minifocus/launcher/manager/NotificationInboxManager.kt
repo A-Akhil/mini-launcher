@@ -172,7 +172,7 @@ class NotificationInboxManager(
         }
 
         val appName = resolveAppName(sbn.packageName)
-        ensureFilterExists(sbn.packageName, appName)
+        ensureFilterExists(sbn.packageName, appName, defaultEnabled = true)
 
         val timestamp = sbn.postTime
         val title = sbn.notification.extras?.let { extras ->
@@ -268,7 +268,7 @@ class NotificationInboxManager(
             return false
         }
         val filter = notificationFilterDao.getFilter(packageName)
-        return filter?.isEnabled ?: true
+        return filter?.isEnabled ?: false
     }
 
     suspend fun setFilterEnabled(packageName: String, enabled: Boolean) {
@@ -276,7 +276,7 @@ class NotificationInboxManager(
             notificationFilterDao.deleteByPackage(packageName)
             return
         }
-        ensureFilterExists(packageName, resolveAppName(packageName))
+        ensureFilterExists(packageName, resolveAppName(packageName), defaultEnabled = enabled)
         notificationFilterDao.setEnabled(packageName, enabled)
         logger.log(
             event = "filter_update",
@@ -285,7 +285,7 @@ class NotificationInboxManager(
         )
     }
 
-    suspend fun ensureFilterExists(packageName: String, appName: String) {
+    suspend fun ensureFilterExists(packageName: String, appName: String, defaultEnabled: Boolean = false) {
         if (isSystemPackage(packageName)) {
             notificationFilterDao.deleteByPackage(packageName)
             return
@@ -296,10 +296,33 @@ class NotificationInboxManager(
                 NotificationFilterEntity(
                     packageName = packageName,
                     appName = appName,
-                    isEnabled = true
+                    isEnabled = defaultEnabled
                 )
             )
         }
+    }
+
+    suspend fun setFiltersEnabled(packageNames: List<String>, enabled: Boolean) {
+        withContext(Dispatchers.IO) {
+            packageNames.forEach { packageName ->
+                if (isSystemPackage(packageName)) {
+                    notificationFilterDao.deleteByPackage(packageName)
+                } else {
+                    val appName = resolveAppName(packageName)
+                    ensureFilterExists(packageName, appName, defaultEnabled = enabled)
+                    notificationFilterDao.setEnabled(packageName, enabled)
+                }
+            }
+        }
+        logger.log(
+            event = "filter_bulk_update",
+            message = "Bulk toggled filters",
+            metadata = mapOf(
+                "enabled" to enabled.toString(),
+                "count" to packageNames.size.toString()
+            )
+        )
+        refreshSummaryNotification()
     }
 
     suspend fun updateRetention(retentionInDays: Int) {

@@ -153,6 +153,7 @@ fun LauncherApp(
     onNotificationMarkAllRead: () -> Unit,
     onNotificationFilterQueryChange: (String) -> Unit,
     onNotificationFilterToggle: (NotificationFilterItem) -> Unit,
+    onNotificationFilterToggleAll: (Boolean) -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
@@ -364,7 +365,8 @@ fun LauncherApp(
                         state = notificationFilterState,
                         onBack = { closeFilters() },
                         onQueryChange = onNotificationFilterQueryChange,
-                        onToggle = onNotificationFilterToggle
+                        onToggle = onNotificationFilterToggle,
+                        onToggleAll = onNotificationFilterToggleAll
                     )
                 }
                 state.isSettingsVisible -> {
