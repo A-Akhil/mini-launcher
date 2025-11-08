@@ -22,6 +22,9 @@ interface NotificationFilterDao {
     @Query("UPDATE notification_filters SET is_enabled = :enabled WHERE package_name = :packageName")
     suspend fun setEnabled(packageName: String, enabled: Boolean)
 
+    @Query("UPDATE notification_filters SET is_enabled = :enabled")
+    suspend fun setAllEnabled(enabled: Boolean)
+
     @Query("DELETE FROM notification_filters WHERE package_name = :packageName")
     suspend fun deleteByPackage(packageName: String)
 }
