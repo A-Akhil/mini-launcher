@@ -6,13 +6,16 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.MediaStore
 import android.provider.Settings
+import android.telecom.TelecomManager
 import com.minifocus.launcher.data.dao.PinnedAppDao
 import com.minifocus.launcher.data.entity.PinnedAppEntity
 import com.minifocus.launcher.model.AppEntry
+import com.minifocus.launcher.model.BottomIconSlot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -109,6 +112,15 @@ class AppsManager(
         }.filterNot { it.isHidden }
     }.distinctUntilChanged()
 
+    fun resolveDefaultQuickLaunch(slot: BottomIconSlot, apps: List<AppEntry>): String? {
+        val availablePackages = apps.map { it.packageName }.toSet()
+        if (availablePackages.isEmpty()) return null
+        return when (slot) {
+            BottomIconSlot.LEFT -> resolveDialerPackage(availablePackages)
+            BottomIconSlot.RIGHT -> resolveCameraPackage(availablePackages)
+        }
+    }
+
     fun observeHiddenApps(): Flow<List<AppEntry>> = combine(
         installedApps,
         hiddenAppsManager.observeHiddenApps(),
@@ -186,6 +198,10 @@ class AppsManager(
             return true
         }
 
+        if (hasLauncherActivity(appInfo.packageName)) {
+            return true
+        }
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val category = appInfo.category
             if (category != ApplicationInfo.CATEGORY_UNDEFINED) {
@@ -197,22 +213,92 @@ class AppsManager(
     }
 
     private fun discoverEssentialSystemPackages(): Set<String> {
-        val pm = packageManager
-        val intents = listOf(
+        val baseIntents = listOf(
             Intent(Intent.ACTION_DIAL),
             Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:")),
             Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA),
+            Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA),
             Intent(AlarmClock.ACTION_SHOW_ALARMS),
             Intent(Settings.ACTION_SETTINGS)
         )
+        val categoryIntents = listOf(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CONTACTS),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_EMAIL),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_FILES),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_GALLERY),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MAPS),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MARKET),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MESSAGING),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MUSIC),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_WEATHER),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_BROWSER)
+        )
 
         return buildSet {
-            for (intent in intents) {
-                pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-                    ?.activityInfo
-                    ?.packageName
-                    ?.let { add(it) }
+            (baseIntents + categoryIntents).forEach { intent ->
+                queryPackages(intent).forEach { add(it) }
             }
         }
+    }
+
+    private fun hasLauncherActivity(packageName: String): Boolean {
+        val launcherIntent = Intent(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_LAUNCHER)
+            .setPackage(packageName)
+        return queryPackages(launcherIntent, flags = 0).any()
+    }
+
+    private fun resolveDialerPackage(availablePackages: Set<String>): String? {
+        val telecomManager = context.getSystemService(TelecomManager::class.java)
+        val defaultDialer = telecomManager?.defaultDialerPackage
+        if (defaultDialer != null && defaultDialer in availablePackages) {
+            return defaultDialer
+        }
+
+        val intents = listOf(
+            Intent(Intent.ACTION_DIAL),
+            Intent(Intent.ACTION_CALL_BUTTON),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CONTACTS)
+        )
+
+        intents.forEach { intent ->
+            queryPackages(intent).forEach { packageName ->
+                if (packageName in availablePackages) {
+                    return packageName
+                }
+            }
+        }
+
+        return null
+    }
+
+    private fun resolveCameraPackage(availablePackages: Set<String>): String? {
+        val intents = listOf(
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA),
+            Intent(MediaStore.INTENT_ACTION_VIDEO_CAMERA)
+        )
+
+        intents.forEach { intent ->
+            queryPackages(intent).forEach { packageName ->
+                if (packageName in availablePackages) {
+                    return packageName
+                }
+            }
+        }
+
+        return null
+    }
+
+    private fun queryPackages(intent: Intent, flags: Int = PackageManager.MATCH_DEFAULT_ONLY): Sequence<String> {
+        val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(flags.toLong()))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.queryIntentActivities(intent, flags)
+        }
+        return resolveInfos.asSequence()
+            .mapNotNull { info -> info.activityInfo?.packageName }
     }
 }

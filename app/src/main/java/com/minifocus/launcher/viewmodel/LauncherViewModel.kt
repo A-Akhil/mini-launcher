@@ -705,24 +705,7 @@ class LauncherViewModel(
     }
 
     private fun defaultPackageForSlot(slot: BottomIconSlot, apps: List<AppEntry>): String? {
-        val packagePreferences = when (slot) {
-            BottomIconSlot.LEFT -> listOf(
-                "com.google.android.dialer",
-                "com.android.dialer",
-                "com.samsung.android.dialer",
-                "com.oneplus.dialer",
-                "com.miui.dialer"
-            )
-            BottomIconSlot.RIGHT -> listOf(
-                "com.google.android.GoogleCamera",
-                "com.android.camera",
-                "com.sec.android.app.camera",
-                "com.oneplus.camera",
-                "com.oppo.camera"
-            )
-        }
-        val availablePackages = apps.map { it.packageName }.toSet()
-        return packagePreferences.firstOrNull { it in availablePackages }
+        return appsManager.resolveDefaultQuickLaunch(slot, apps)
     }
 
     private fun formatTime(timestamp: Long): String {
