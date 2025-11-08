@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
                     .observePermissionOnboardingAcknowledged()
                     .collectAsStateWithLifecycle(initialPermissionsAcknowledged)
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
-                val showPermissionScreen = !permissions.requiredGranted || manualPermissionManagerVisible
+                val showPermissionScreen = manualPermissionManagerVisible || !permissions.requiredGranted || !permissionsAcknowledged
 
                 LaunchedEffect(showPermissionScreen) {
                     // android.util.Log.d(
@@ -158,11 +158,9 @@ class MainActivity : ComponentActivity() {
                     // )
                 }
 
-                LaunchedEffect(permissions.requiredGranted, manualPermissionManagerVisible, permissionsAcknowledged) {
+                LaunchedEffect(permissions.requiredGranted) {
                     if (!permissions.requiredGranted) {
                         settingsManager.setPermissionOnboardingAcknowledged(false)
-                    } else if (!manualPermissionManagerVisible && !permissionsAcknowledged) {
-                        settingsManager.setPermissionOnboardingAcknowledged(true)
                     }
                 }
 
