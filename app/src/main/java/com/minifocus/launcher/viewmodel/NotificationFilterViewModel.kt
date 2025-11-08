@@ -7,6 +7,7 @@ import com.minifocus.launcher.manager.NotificationInboxManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -41,7 +42,7 @@ class NotificationFilterViewModel(
                 NotificationFilterItem(
                     packageName = app.packageName,
                     appName = app.label,
-                    isEnabled = filter?.isEnabled ?: true
+                    isEnabled = filter?.isEnabled ?: false
                 )
             }
 
@@ -91,6 +92,13 @@ class NotificationFilterViewModel(
             val targetState = !item.isEnabled
             notificationInboxManager.ensureFilterExists(item.packageName, item.appName)
             notificationInboxManager.setFilterEnabled(item.packageName, targetState)
+        }
+    }
+
+    fun setAll(enabled: Boolean) {
+        viewModelScope.launch {
+            val packages = itemsFlow.first().map { it.packageName }
+            notificationInboxManager.setFiltersEnabled(packages, enabled)
         }
     }
 }

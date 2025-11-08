@@ -19,7 +19,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +40,14 @@ import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.NotificationInboxListenerService
 import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import com.minifocus.launcher.manager.SettingsManager
 class MainActivity : ComponentActivity() {
+
+    private val settingsManager: SettingsManager by lazy {
+        val app = application as LauncherApplication
+        app.container.settingsManager
+    }
 
     private val requestHomeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         // No-op; user choice handled by system UI.
@@ -114,6 +123,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        val initialPermissionsAcknowledged = runBlocking {
+            settingsManager.getPermissionOnboardingAcknowledged()
+        }
+
         // Enforce default launcher requirement - app cannot be used otherwise
         if (!isDefaultLauncher()) {
             showDefaultLauncherPrompt()
@@ -129,8 +142,17 @@ class MainActivity : ComponentActivity() {
                 val inboxState by notificationInboxViewModel.uiState.collectAsStateWithLifecycle()
                 val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
+                val permissionsAcknowledged by settingsManager
+                    .observePermissionOnboardingAcknowledged()
+                    .collectAsStateWithLifecycle(initialPermissionsAcknowledged)
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
-                val showPermissionScreen = !permissions.requiredGranted
+                val showPermissionScreen = !permissions.requiredGranted || !permissionsAcknowledged
+
+                LaunchedEffect(permissions.requiredGranted) {
+                    if (!permissions.requiredGranted) {
+                        settingsManager.setPermissionOnboardingAcknowledged(false)
+                    }
+                }
 
                 if (!showPermissionScreen) {
                     LauncherApp(
@@ -150,7 +172,7 @@ class MainActivity : ComponentActivity() {
                         onUnpinApp = viewModel::unpinApp,
                         onHideApp = viewModel::hideApp,
                         onUnhideApp = viewModel::unhideApp,
-                        onLockApp = viewModel::lockApp,
+                        onLockApp = ::handleLockRequest,
                         onSearchQueryChange = viewModel::updateSearchQuery,
                         onSearchVisibilityChange = viewModel::setSearchVisibility,
                         onBottomIconChange = viewModel::setBottomIcon,
@@ -165,7 +187,7 @@ class MainActivity : ComponentActivity() {
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
                         onShowDailyTasksOnHomeChange = viewModel::setShowDailyTasksOnHome,
-                        onNotificationInboxEnabledChange = viewModel::setNotificationInboxEnabled,
+                        onNotificationInboxEnabledChange = ::handleNotificationInboxToggle,
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
                         onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
                         onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
@@ -176,6 +198,7 @@ class MainActivity : ComponentActivity() {
                         onNotificationMarkAllRead = notificationInboxViewModel::markAllAsRead,
                         onNotificationFilterQueryChange = notificationFilterViewModel::updateSearchQuery,
                         onNotificationFilterToggle = notificationFilterViewModel::toggle,
+                        onNotificationFilterToggleAll = notificationFilterViewModel::setAll,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },
@@ -192,7 +215,11 @@ class MainActivity : ComponentActivity() {
                         onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
                         onOpenRestrictedSettings = ::openRestrictedSettings,
-                        onContinue = {}
+                        onContinue = {
+                            lifecycleScope.launch {
+                                settingsManager.setPermissionOnboardingAcknowledged(true)
+                            }
+                        }
                     )
                 }
             }
@@ -342,6 +369,39 @@ class MainActivity : ComponentActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
+    }
+
+    private fun handleNotificationInboxToggle(enabled: Boolean) {
+        if (enabled) {
+            var missingPermission = false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !permissionsState.value.notificationsGranted) {
+                requestPostNotificationsPermission()
+                missingPermission = true
+            }
+            if (!permissionsState.value.notificationListenerGranted) {
+                requestNotificationAccess()
+                missingPermission = true
+            }
+            if (missingPermission) {
+                Toast.makeText(this, "Grant notification permissions first", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+        viewModel.setNotificationInboxEnabled(enabled)
+    }
+
+    private fun handleLockRequest(packageName: String, durationMinutes: Long) {
+        if (!permissionsState.value.usageStatsGranted) {
+            requestUsageStatsPermission()
+            Toast.makeText(this, "Grant usage access to lock apps", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!permissionsState.value.overlayGranted) {
+            requestOverlayPermission()
+            Toast.makeText(this, "Grant overlay permission to lock apps", Toast.LENGTH_SHORT).show()
+            return
+        }
+        viewModel.lockApp(packageName, durationMinutes)
     }
 
     private fun openDeviceSettings() {

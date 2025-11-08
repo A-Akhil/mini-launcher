@@ -11,6 +11,7 @@ import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.LauncherTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 
 class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
@@ -27,6 +28,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val logRetentionDays = intPreferencesKey("log_retention_days")
         val lastLogRotationAt = longPreferencesKey("last_log_rotation_at")
         val showDailyTasksOnHome = intPreferencesKey("show_daily_tasks_on_home")
+        val permissionOnboardingAcknowledged = intPreferencesKey("permission_onboarding_acknowledged")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -58,6 +60,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeNotificationInboxEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.notificationInboxEnabled]?.let { it == 1 } ?: false
+    }
+
+    fun observePermissionOnboardingAcknowledged(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.permissionOnboardingAcknowledged]?.let { it == 1 } ?: false
     }
 
     fun observeNotificationRetentionDays(): Flow<Int> = dataStore.data.map { prefs ->
@@ -111,6 +117,17 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { prefs ->
             prefs[Keys.notificationInboxEnabled] = if (enabled) 1 else 0
         }
+    }
+
+    suspend fun setPermissionOnboardingAcknowledged(acknowledged: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.permissionOnboardingAcknowledged] = if (acknowledged) 1 else 0
+        }
+    }
+
+    suspend fun getPermissionOnboardingAcknowledged(): Boolean {
+        val prefs = dataStore.data.first()
+        return prefs[Keys.permissionOnboardingAcknowledged]?.let { it == 1 } ?: false
     }
 
     suspend fun setNotificationRetentionDays(days: Int) {
