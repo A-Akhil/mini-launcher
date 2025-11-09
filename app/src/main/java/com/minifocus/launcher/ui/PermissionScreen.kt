@@ -40,7 +40,7 @@ fun PermissionScreen(
     onRequestNotifications: () -> Unit,
     onRequestNotificationListener: () -> Unit,
     onRequestExactAlarms: () -> Unit,
-    onRequestDeviceAdmin: () -> Unit,
+    onRequestLockAccessibility: () -> Unit,
     onRequestUsageStats: () -> Unit,
     onRequestOverlay: () -> Unit,
     showRestrictedNotificationHint: Boolean,
@@ -75,10 +75,10 @@ fun PermissionScreen(
             onRequest = onRequestNotificationListener
         ),
         PermissionRequest(
-            title = "Device admin",
-            description = "Needed for power features like the future double-tap-to-lock.",
-            granted = state.deviceAdminGranted,
-            onRequest = onRequestDeviceAdmin
+            title = "Lock screen shortcut",
+            description = "Enable the accessibility service that powers double-tap lock without disabling biometrics.",
+            granted = state.lockAccessibilityGranted,
+            onRequest = onRequestLockAccessibility
         ),
         PermissionRequest(
             title = "Usage stats access",

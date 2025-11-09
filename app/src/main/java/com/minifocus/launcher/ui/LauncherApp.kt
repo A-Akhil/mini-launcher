@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +80,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -144,12 +146,15 @@ fun LauncherApp(
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
     onShowDailyTasksOnHomeChange: (Boolean) -> Unit,
+    onDoubleTapLockScreenChange: (Boolean) -> Unit,
     onNotificationInboxEnabledChange: (Boolean) -> Unit,
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
     onOpenPermissionManager: () -> Unit,
     onOpenDeviceSettings: () -> Unit,
+    onRequestLockAccessibility: () -> Unit,
+    onLockDevice: () -> Unit,
     onNotificationRetentionSelected: (Int) -> Unit,
     onLogRetentionSelected: (Int) -> Unit,
     onNotificationDelete: (Long) -> Unit,
@@ -398,9 +403,13 @@ fun LauncherApp(
                     HomeSettingsScreen(
                         showDailyTasksOnHome = state.showDailyTasksOnHome,
                         showDailyTasksHomeSection = state.showDailyTasksHomeSection,
+                        doubleTapLockScreen = state.doubleTapLockScreen,
+                        lockAccessibilityGranted = permissionsState.lockAccessibilityGranted,
                         bottomLeftApp = state.bottomLeft,
                         bottomRightApp = state.bottomRight,
                         onToggleDailyTasksOnHome = onShowDailyTasksOnHomeChange,
+                        onToggleDoubleTapLockScreen = onDoubleTapLockScreenChange,
+                        onRequestLockAccessibility = onRequestLockAccessibility,
                         onBottomIconClick = { slot -> bottomIconPickerSlot.value = slot },
                         onBack = { closeHomeSettings() }
                     )
@@ -496,7 +505,8 @@ fun LauncherApp(
                                 onLockApp = onLockApp,
                                 onOpenClock = onOpenClock,
                                 onDailyTaskCompleted = onDailyTaskCompleted,
-                                onDailyTaskReset = onDailyTaskReset
+                                onDailyTaskReset = onDailyTaskReset,
+                                onLockDevice = onLockDevice
                             )
                             else -> AllAppsScreen(
                                 apps = state.allApps,
@@ -720,10 +730,14 @@ private fun HomeScreen(
     onLockApp: (String, Long) -> Unit,
     onOpenClock: () -> Unit,
     onDailyTaskCompleted: (Long) -> Unit,
-    onDailyTaskReset: (Long) -> Unit
+    onDailyTaskReset: (Long) -> Unit,
+    onLockDevice: () -> Unit
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
+    val lastTapTime = remember { mutableStateOf(0L) }
+    val doubleTapThresholdMs = 300L
+    
     val activeDailyTasks = remember(state.dailyTasks, state.heldDailyTaskIds) {
         state.dailyTasks.filter { task ->
             task.isActiveToday && task.isEnabled && (!task.isCompletedToday || task.id in state.heldDailyTaskIds)
@@ -739,6 +753,22 @@ private fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .pointerInput(state.doubleTapLockScreen) {
+                if (state.doubleTapLockScreen) {
+                    detectTapGestures(
+                        onTap = {
+                            val currentTime = System.currentTimeMillis()
+                            val timeSinceLastTap = currentTime - lastTapTime.value
+                            if (timeSinceLastTap < doubleTapThresholdMs) {
+                                onLockDevice()
+                                lastTapTime.value = 0L
+                            } else {
+                                lastTapTime.value = currentTime
+                            }
+                        }
+                    )
+                }
+            }
             .padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1739,7 +1769,7 @@ private fun SettingsScreen(
     val optionalMissing = buildList {
         if (!permissionsState.notificationListenerGranted) add("Notification access")
         if (!permissionsState.exactAlarmsGranted) add("Exact alarms")
-        if (!permissionsState.deviceAdminGranted) add("Device admin")
+    if (!permissionsState.lockAccessibilityGranted) add("Lock service")
         if (!permissionsState.usageStatsGranted) add("Usage access")
         if (!permissionsState.overlayGranted) add("Overlay")
     }
@@ -1832,9 +1862,13 @@ private fun SettingsScreen(
 private fun HomeSettingsScreen(
     showDailyTasksOnHome: Boolean,
     showDailyTasksHomeSection: Boolean,
+    doubleTapLockScreen: Boolean,
+    lockAccessibilityGranted: Boolean,
     bottomLeftApp: AppEntry?,
     bottomRightApp: AppEntry?,
     onToggleDailyTasksOnHome: (Boolean) -> Unit,
+    onToggleDoubleTapLockScreen: (Boolean) -> Unit,
+    onRequestLockAccessibility: () -> Unit,
     onBottomIconClick: (BottomIconSlot) -> Unit,
     onBack: () -> Unit
 ) {
@@ -1899,6 +1933,52 @@ private fun HomeSettingsScreen(
                 color = Color(0xFF888888),
                 fontSize = 13.sp,
                 lineHeight = 18.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Gestures",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Double-tap to lock screen",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+                val description = if (!lockAccessibilityGranted) {
+                    "Enable the lock service in Accessibility settings"
+                } else {
+                    "Double-tap empty space on home to lock device"
+                }
+                Text(
+                    text = description,
+                    color = if (!lockAccessibilityGranted) Color(0xFFFFAA00) else Color(0xFFAAAAAA),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Switch(
+                checked = doubleTapLockScreen,
+                onCheckedChange = { enabled ->
+                    if (enabled && !lockAccessibilityGranted) {
+                        onRequestLockAccessibility()
+                    } else {
+                        onToggleDoubleTapLockScreen(enabled)
+                    }
+                },
+                enabled = lockAccessibilityGranted || !doubleTapLockScreen
             )
         }
 
