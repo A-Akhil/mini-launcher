@@ -3,15 +3,16 @@ package com.minifocus.launcher.permissions
 import android.Manifest
 import android.app.AlarmManager
 import android.app.AppOpsManager
-import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.text.TextUtils
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.minifocus.launcher.service.LockScreenAccessibilityService
 
 object PermissionsEvaluator {
 
@@ -19,7 +20,7 @@ object PermissionsEvaluator {
         return PermissionsState(
             notificationsGranted = isPostNotificationsGranted(context),
             notificationListenerGranted = isNotificationListenerGranted(context),
-            deviceAdminGranted = isDeviceAdminActive(context),
+            lockAccessibilityGranted = isLockAccessibilityEnabled(context),
             exactAlarmsGranted = canScheduleExactAlarms(context),
             usageStatsGranted = hasUsageStatsPermission(context),
             overlayGranted = canDrawOverlays(context)
@@ -42,10 +43,22 @@ object PermissionsEvaluator {
         return enabledPackages.contains(context.packageName)
     }
 
-    private fun isDeviceAdminActive(context: Context): Boolean {
-        val component = ComponentName(context, LauncherDeviceAdminReceiver::class.java)
-        val dpm = context.getSystemService(DevicePolicyManager::class.java)
-        return dpm?.isAdminActive(component) == true
+    private fun isLockAccessibilityEnabled(context: Context): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        val expected = ComponentName(context, LockScreenAccessibilityService::class.java)
+        val colonSplitter = TextUtils.SimpleStringSplitter(':')
+        colonSplitter.setString(enabledServices)
+        while (colonSplitter.hasNext()) {
+            val componentName = colonSplitter.next()
+            if (componentName.equals(expected.flattenToString(), ignoreCase = true)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun canScheduleExactAlarms(context: Context): Boolean {

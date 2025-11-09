@@ -29,6 +29,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val lastLogRotationAt = longPreferencesKey("last_log_rotation_at")
         val showDailyTasksOnHome = intPreferencesKey("show_daily_tasks_on_home")
         val permissionOnboardingAcknowledged = intPreferencesKey("permission_onboarding_acknowledged")
+        val doubleTapLockScreen = intPreferencesKey("double_tap_lock_screen")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -64,6 +65,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observePermissionOnboardingAcknowledged(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.permissionOnboardingAcknowledged]?.let { it == 1 } ?: false
+    }
+
+    fun observeDoubleTapLockScreen(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.doubleTapLockScreen]?.let { it == 1 } ?: false
     }
 
     fun observeNotificationRetentionDays(): Flow<Int> = dataStore.data.map { prefs ->
@@ -145,6 +150,12 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setLastLogRotation(timestamp: Long) {
         dataStore.edit { prefs ->
             prefs[Keys.lastLogRotationAt] = timestamp
+        }
+    }
+
+    suspend fun setDoubleTapLockScreen(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.doubleTapLockScreen] = if (enabled) 1 else 0
         }
     }
 

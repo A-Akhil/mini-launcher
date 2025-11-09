@@ -7,7 +7,7 @@ package com.minifocus.launcher.permissions
 data class PermissionsState(
     val notificationsGranted: Boolean,
     val notificationListenerGranted: Boolean,
-    val deviceAdminGranted: Boolean,
+    val lockAccessibilityGranted: Boolean,
     val exactAlarmsGranted: Boolean,
     val usageStatsGranted: Boolean,
     val overlayGranted: Boolean
@@ -18,7 +18,7 @@ data class PermissionsState(
     val allGranted: Boolean
         get() = notificationsGranted &&
             notificationListenerGranted &&
-            deviceAdminGranted &&
+            lockAccessibilityGranted &&
             exactAlarmsGranted &&
             usageStatsGranted &&
             overlayGranted

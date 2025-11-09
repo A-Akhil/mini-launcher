@@ -140,7 +140,8 @@ class LauncherViewModel(
                 showDailyTasksOnHome = true,
                 notificationInboxEnabled = false,
                 notificationRetentionDays = 0,
-                logRetentionDays = 0
+                logRetentionDays = 0,
+                doubleTapLockScreen = false
             )
         }
         .combine(settingsManager.observeBottomIcon(BottomIconSlot.LEFT)) { snapshot, bottomLeft ->
@@ -166,6 +167,9 @@ class LauncherViewModel(
         }
         .combine(settingsManager.observeLogRetentionDays()) { snapshot, retention ->
             snapshot.copy(logRetentionDays = retention)
+        }
+        .combine(settingsManager.observeDoubleTapLockScreen()) { snapshot, doubleTap ->
+            snapshot.copy(doubleTapLockScreen = doubleTap)
         }
 
     private val overlaySnapshot = timeFlow
@@ -249,6 +253,7 @@ class LauncherViewModel(
             notificationInboxEnabled = prefs.notificationInboxEnabled,
             notificationRetentionDays = prefs.notificationRetentionDays,
             logRetentionDays = prefs.logRetentionDays,
+            doubleTapLockScreen = prefs.doubleTapLockScreen,
             message = null
         )
     }
@@ -659,6 +664,10 @@ class LauncherViewModel(
         viewModelScope.launch { settingsManager.setLogRetentionDays(days) }
     }
 
+    fun setDoubleTapLockScreen(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setDoubleTapLockScreen(enabled) }
+    }
+
     suspend fun canLaunch(packageName: String): Boolean = withContext(Dispatchers.IO) {
         !lockManager.isLocked(packageName)
     }
@@ -732,7 +741,8 @@ private data class PreferencesSnapshot(
     val showDailyTasksOnHome: Boolean,
     val notificationInboxEnabled: Boolean,
     val notificationRetentionDays: Int,
-    val logRetentionDays: Int
+    val logRetentionDays: Int,
+    val doubleTapLockScreen: Boolean
 )
 
 private data class OverlaySnapshot(
@@ -777,6 +787,7 @@ data class LauncherUiState(
     val notificationInboxEnabled: Boolean = false,
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
+    val doubleTapLockScreen: Boolean = false,
     val message: String? = null,
     val homeResetTick: Int = 0
 ) {

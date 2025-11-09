@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Minimalist Focus</string>
-    <string name="device_admin_explanation">Minimalist Focus needs device admin access to lock the screen when you double-tap the home page.</string>
+    <string name="lock_accessibility_service_description">Allow Minimalist Focus to lock the screen when you double-tap the home page.</string>
+    <string name="lock_accessibility_service_toast">Enable the double-tap lock service in Accessibility settings.</string>
     <plurals name="notification_summary_title">
         <item quantity="one">%d notification</item>
         <item quantity="other">%d notifications</item>
