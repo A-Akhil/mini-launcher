@@ -61,18 +61,17 @@
             android:taskAffinity=""
             android:theme="@style/Theme.MinimalistFocusLauncher" />
 
-        <receiver
-            android:name="com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver"
-            android:permission="android.permission.BIND_DEVICE_ADMIN"
-            android:exported="true">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/launcher_device_admin" />
+        <service
+            android:name="com.minifocus.launcher.service.LockScreenAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
-        </receiver>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lock_accessibility_service" />
+        </service>
 
         <service
             android:name="com.minifocus.launcher.permissions.NotificationInboxListenerService"

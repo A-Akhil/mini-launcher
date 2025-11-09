@@ -2,9 +2,8 @@ package com.minifocus.launcher
 
 import android.Manifest
 import android.app.AlarmManager
-import android.app.admin.DevicePolicyManager
 import android.app.role.RoleManager
-import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -12,6 +11,7 @@ import android.os.Bundle
 import android.os.Build
 import android.provider.AlarmClock
 import android.provider.Settings
+import android.content.ComponentName
 import android.widget.Toast
 import android.service.notification.NotificationListenerService
 import androidx.activity.ComponentActivity
@@ -38,10 +38,10 @@ import com.minifocus.launcher.viewmodel.NotificationInboxViewModelFactory
 import com.minifocus.launcher.permissions.PermissionsState
 import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.NotificationInboxListenerService
-import com.minifocus.launcher.permissions.LauncherDeviceAdminReceiver
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import com.minifocus.launcher.manager.SettingsManager
+import com.minifocus.launcher.service.LockScreenAccessibilityService
 class MainActivity : ComponentActivity() {
 
     private val settingsManager: SettingsManager by lazy {
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
         updatePermissionsState()
     }
 
-    private val deviceAdminLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    private val accessibilitySettingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         updatePermissionsState()
     }
 
@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
         PermissionsState(
             notificationsGranted = false,
             notificationListenerGranted = false,
-            deviceAdminGranted = false,
+            lockAccessibilityGranted = false,
             exactAlarmsGranted = false,
             usageStatsGranted = false,
             overlayGranted = false
@@ -198,6 +198,7 @@ class MainActivity : ComponentActivity() {
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
                         onShowSecondsChange = viewModel::setShowSeconds,
                         onShowDailyTasksOnHomeChange = viewModel::setShowDailyTasksOnHome,
+                        onDoubleTapLockScreenChange = viewModel::setDoubleTapLockScreen,
                         onNotificationInboxEnabledChange = ::handleNotificationInboxToggle,
                         onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
                         onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
@@ -214,6 +215,8 @@ class MainActivity : ComponentActivity() {
                             permissionManagerVisible.value = true
                         },
                         onOpenDeviceSettings = ::openDeviceSettings,
+                        onRequestLockAccessibility = ::requestLockAccessibility,
+                        onLockDevice = ::lockDevice,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },
@@ -226,7 +229,7 @@ class MainActivity : ComponentActivity() {
                         onRequestNotifications = ::requestPostNotificationsPermission,
                         onRequestNotificationListener = ::requestNotificationAccess,
                         onRequestExactAlarms = ::requestExactAlarmPermission,
-                        onRequestDeviceAdmin = ::requestDeviceAdmin,
+                        onRequestLockAccessibility = ::requestLockAccessibility,
                         onRequestUsageStats = ::requestUsageStatsPermission,
                         onRequestOverlay = ::requestOverlayPermission,
                         showRestrictedNotificationHint = restrictedHint,
@@ -290,17 +293,41 @@ class MainActivity : ComponentActivity() {
         notificationAccessLauncher.launch(intent)
     }
 
-    private fun requestDeviceAdmin() {
-        if (permissionsState.value.deviceAdminGranted) {
+    private fun requestLockAccessibility() {
+        if (permissionsState.value.lockAccessibilityGranted) {
             updatePermissionsState()
             return
         }
-        val component = ComponentName(this, LauncherDeviceAdminReceiver::class.java)
-        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-            putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
-            putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.device_admin_explanation))
+
+        val detailIntent = Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS").apply {
+            setData(Uri.parse("package:$packageName"))
         }
-        deviceAdminLauncher.launch(intent)
+        val targetIntent = if (detailIntent.resolveActivity(packageManager) != null) {
+            detailIntent
+        } else {
+            Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        }
+
+        accessibilitySettingsLauncher.launch(targetIntent)
+    }
+
+    /**
+     * Locks the device using accessibility service GLOBAL_ACTION_LOCK_SCREEN.
+     *
+     * WHY NOT DEVICE ADMIN:
+     * DevicePolicyManager.lockNow() was tried first but it disables biometric unlock
+     * and forces PIN-only authentication. Accessibility service approach preserves
+     * fingerprint/face unlock just like the hardware power button.
+     */
+    private fun lockDevice() {
+        val locked = LockScreenAccessibilityService.lockDevice()
+        if (!locked) {
+            Toast.makeText(
+                this,
+                getString(R.string.lock_accessibility_service_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun requestExactAlarmPermission() {
@@ -350,8 +377,8 @@ class MainActivity : ComponentActivity() {
         permissionsState.value = state
         // android.util.Log.d(
         //     "PermissionsState",
-        //     "notifications=${state.notificationsGranted}, listener=${state.notificationListenerGranted}, " +
-        //         "deviceAdmin=${state.deviceAdminGranted}, exact=${state.exactAlarmsGranted}, usage=${state.usageStatsGranted}, overlay=${state.overlayGranted}"
+    //     "notifications=${state.notificationsGranted}, listener=${state.notificationListenerGranted}, " +
+    //         "lockAccessibility=${state.lockAccessibilityGranted}, exact=${state.exactAlarmsGranted}, usage=${state.usageStatsGranted}, overlay=${state.overlayGranted}"
         // )
         if (notificationAccessRequested && !state.notificationListenerGranted) {
             notificationRestrictionHint.value = !isFromTrustedStore()
