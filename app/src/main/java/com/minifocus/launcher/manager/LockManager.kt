@@ -9,7 +9,10 @@ class LockManager(private val appLockDao: AppLockDao) {
     fun observeLocks(): Flow<List<AppLockEntity>> = appLockDao.observeLocks()
 
     suspend fun lockApp(packageName: String, lockedUntil: Long) {
-        appLockDao.upsertLock(AppLockEntity(packageName, lockedUntil))
+        val existing = appLockDao.getLock(packageName)
+        if (existing == null || lockedUntil > existing.lockedUntil) {
+            appLockDao.upsertLock(AppLockEntity(packageName, lockedUntil))
+        }
     }
 
     suspend fun unlockApp(packageName: String) {
