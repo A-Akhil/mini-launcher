@@ -167,9 +167,6 @@ private fun NotificationRow(
         dismissContent = {
             NotificationCard(item = item)
         },
-        dismissThresholds = { direction ->
-            androidx.compose.material.FractionalThreshold(0.7f)
-        },
         directions = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd)
     )
 }
