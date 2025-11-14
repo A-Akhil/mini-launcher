@@ -459,8 +459,8 @@ class NotificationInboxManager(
     private fun resolveAppName(packageName: String): String =
         try {
             val pm = context.packageManager
-            val label = pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0))
-            label?.toString() ?: packageName
+            val label = pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+            if (label.isNotBlank()) label else packageName
         } catch (_: Exception) {
             packageName
         }

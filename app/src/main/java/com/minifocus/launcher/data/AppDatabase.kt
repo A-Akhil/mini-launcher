@@ -55,8 +55,8 @@ abstract class AppDatabase : RoomDatabase() {
             .build()
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `notifications` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -72,16 +72,16 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                database.execSQL(
+                db.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS `index_notifications_key` ON `notifications` (`key`)"
                 )
-                database.execSQL(
+                db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_notifications_is_read` ON `notifications` (`is_read`)"
                 )
-                database.execSQL(
+                db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_notifications_timestamp` ON `notifications` (`timestamp`)"
                 )
-                database.execSQL(
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `notification_filters` (
                         `package_name` TEXT NOT NULL,
@@ -95,8 +95,8 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `daily_tasks` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -109,21 +109,21 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
-                database.execSQL(
+                db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_daily_tasks_created_at` ON `daily_tasks` (`created_at`)"
                 )
             }
         }
 
         private val MIGRATION_4_5 = object : Migration(4, 5) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL(
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
                     "ALTER TABLE `daily_tasks` ADD COLUMN `repeat_mode` TEXT NOT NULL DEFAULT 'EVERY_DAY'"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE `daily_tasks` ADD COLUMN `interval_days` INTEGER NOT NULL DEFAULT 1"
                 )
-                database.execSQL(
+                db.execSQL(
                     "ALTER TABLE `daily_tasks` ADD COLUMN `days_of_week_mask` INTEGER NOT NULL DEFAULT 0"
                 )
             }
