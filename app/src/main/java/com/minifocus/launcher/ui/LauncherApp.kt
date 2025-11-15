@@ -73,6 +73,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -166,7 +168,8 @@ fun LauncherApp(
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
     lockManager: com.minifocus.launcher.manager.LockManager,
-    onRootBack: () -> Unit = {}
+    onRootBack: () -> Unit = {},
+    onConsumeMessage: () -> Unit = {}
 ) {
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -206,6 +209,14 @@ fun LauncherApp(
         if (shouldSnapToHome && pagerState.currentPage != 1) {
             pagerState.scrollToPage(1)
         }
+    }
+
+    // Show transient UI messages (from ViewModel) as a Toast and notify consumer
+    val _context = LocalContext.current
+    LaunchedEffect(state.message) {
+        val msg = state.message ?: return@LaunchedEffect
+        Toast.makeText(_context, msg, Toast.LENGTH_SHORT).show()
+        onConsumeMessage()
     }
 
     fun openInbox(from: InboxBackTarget) {

@@ -20,4 +20,7 @@ interface PinnedAppDao {
 
     @Query("SELECT COUNT(*) FROM pinned_apps")
     suspend fun getPinnedCount(): Int
+
+    @Query("SELECT * FROM pinned_apps ORDER BY position ASC")
+    suspend fun getAllPinned(): List<PinnedAppEntity>
 }

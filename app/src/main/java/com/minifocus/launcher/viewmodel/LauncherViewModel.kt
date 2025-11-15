@@ -425,7 +425,12 @@ class LauncherViewModel(
     }
 
     fun pinApp(packageName: String) {
-        viewModelScope.launch { appsManager.pinApp(packageName) }
+        viewModelScope.launch {
+            val success = appsManager.pinApp(packageName)
+            if (!success) {
+                snackbarMessage.update { "Maximum 5 apps can be pinned" }
+            }
+        }
     }
 
     fun unpinApp(packageName: String) {
