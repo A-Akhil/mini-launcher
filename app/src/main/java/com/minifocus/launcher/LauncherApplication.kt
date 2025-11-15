@@ -89,6 +89,11 @@ class LauncherApplication : Application() {
             notificationInboxManager.trimExpired()
         }
 
+        // Compact pinned app positions on startup
+        appScope.launch {
+            appsManager.compactPinnedPositions()
+        }
+
         // Monitor lock state and start/stop monitoring service
         appScope.launch {
             lockManager.observeLocks().collectLatest { locks ->

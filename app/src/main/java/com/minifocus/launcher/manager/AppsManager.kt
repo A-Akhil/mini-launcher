@@ -41,6 +41,10 @@ class AppsManager(
     private var isRefreshed = false
     private val essentialSystemPackages: Set<String> by lazy(LazyThreadSafetyMode.NONE) { discoverEssentialSystemPackages() }
 
+    companion object {
+        private const val MAX_PINNED_APPS = 5
+    }
+
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -133,18 +137,43 @@ class AppsManager(
             .sortedBy { it.label.lowercase() }
     }.distinctUntilChanged()
 
-    suspend fun pinApp(packageName: String) {
-        val nextPosition = withContext(Dispatchers.IO) { pinnedAppDao.getPinnedCount() }
-        pinnedAppDao.upsertPinnedApp(
-            PinnedAppEntity(
-                packageName = packageName,
-                position = nextPosition
+    suspend fun pinApp(packageName: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            val currentPins = pinnedAppDao.getAllPinned()
+            
+            // Enforce maximum 5 pinned apps
+            if (currentPins.size >= MAX_PINNED_APPS) {
+                return@withContext false
+            }
+            
+            // Find first available position (fill gaps)
+            val existingPositions = currentPins.map { it.position }.toSet()
+            val targetPosition = (0 until MAX_PINNED_APPS).firstOrNull { it !in existingPositions }
+                ?: currentPins.size
+            
+            pinnedAppDao.upsertPinnedApp(
+                PinnedAppEntity(
+                    packageName = packageName,
+                    position = targetPosition
+                )
             )
-        )
+            true
+        }
     }
 
     suspend fun unpinApp(packageName: String) {
         pinnedAppDao.unpinApp(packageName)
+    }
+
+    suspend fun compactPinnedPositions() {
+        withContext(Dispatchers.IO) {
+            val allPinned = pinnedAppDao.getAllPinned()
+            allPinned.forEachIndexed { index, entity ->
+                if (entity.position != index) {
+                    pinnedAppDao.upsertPinnedApp(entity.copy(position = index))
+                }
+            }
+        }
     }
 
     suspend fun refreshInstalledApps() {
