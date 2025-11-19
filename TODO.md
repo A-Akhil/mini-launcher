@@ -180,6 +180,182 @@ Unify the back button and header UI across all screens. The back button should a
 
 ---
 
+---
+
+## 10. Clock Widget Sync
+**Status:** Not Started
+
+### Description
+Display the phone's default clock app data directly on the launcher home screen (e.g., next alarm time, active timers).
+
+### Technical Approach
+- Query `AlarmManager.getNextAlarmClock()` for next scheduled alarm
+- Show formatted alarm time on home screen below the main clock
+- Auto-refresh when alarm changes (broadcast receiver)
+- Handle case where no alarm is set
+
+### Dependencies
+- Android AlarmManager API
+- Broadcast receiver for alarm updates
+
+---
+
+## 11. Focus Mode (Lockdown)
+**Status:** Not Started
+
+### Description
+Create configurable "Focus Mode" profiles where user selects a set of apps to block. When a profile is activated, all selected apps become inaccessible. Emergency access available via the existing unlock screen.
+
+### Features
+- Multiple named profiles (e.g., "Work", "Sleep", "Study")
+- Per-profile app selection (checkboxes in all apps list)
+- Quick toggle to activate/deactivate profiles
+- Use existing app lock overlay for blocked apps
+- Emergency unlock screen (20-tap sequence) to override
+
+### UI Flow
+1. Settings → Focus Mode → Create/Edit Profiles
+2. Select profile, choose apps to block
+3. Home screen widget/shortcut to activate profile
+4. When profile is active, selected apps trigger lock overlay
+
+### Technical Approach
+- Store profiles in Room (profile name, list of package names)
+- On profile activation, lock all selected apps with a special "focus mode" flag
+- Reuse `AppLockOverlayActivity` with custom message ("Focus Mode Active")
+- Profile timer (optional: auto-disable after X hours)
+
+---
+
+## 12. App Time Intention Dialog
+**Status:** Not Started
+
+### Description
+Before opening an app, show a dialog asking "How long do you want to use this app?" User selects a duration (5, 10, 15, 30 min or custom). After the time expires, show a reminder or auto-close the app.
+
+### Features
+- Dialog with preset durations: 5, 10, 15, 30 minutes + custom input
+- Show current screen time for that app (today + past 7 days)
+- Select behavior when time expires (in same dialog):
+  - Show popup reminder (dismissible)
+  - Force close app
+  - Return to launcher home screen
+- Clicking any time duration immediately opens the app (no Start button needed)
+
+### UI Design
+```
+┌─────────────────────────────┐
+│  How long do you want to    │
+│  use [App Name]?            │
+│                             │
+│  Today: 24 min  │  7d: 3.2h │
+│                             │
+│  ○ 5 min   ○ 10 min         │
+│  ○ 15 min  ○ 30 min         │
+│                             │
+│  Custom: [__] minutes       │
+│                             │
+│  After time expires:        │
+│  ○ Show reminder            │
+│  ○ Close app                │
+│  ○ Return home              │
+└─────────────────────────────┘
+```
+
+### Technical Approach
+- Intercept app launch, show dialog before starting activity
+- Store session start time and duration
+- Background service checks elapsed time
+- Show notification or overlay when time limit reached
+- Query `UsageStatsManager` for daily screen time
+
+### Settings
+- Enable/disable per app
+- Default action when time expires
+- Snooze duration for reminders
+
+---
+
+## 13. 20-20-20 Rule Reminder
+**Status:** Not Started
+
+### Description
+Implement the 20-20-20 eye health rule: Every 20 minutes of screen time, remind user to look at something 20 feet away for 20 seconds. Screen blurs and shows reminder overlay.
+
+### Features
+- Tracks total screen-on time (across all apps)
+- Every 20 minutes, overlay activates:
+  - Screen content blurs behind overlay
+  - Message: "Take a break! Look 20 feet away for 20 seconds"
+  - 20-second countdown timer
+  - Cannot dismiss until timer completes
+- Snooze option (skip once, resume tracking)
+- Settings to enable/disable and customize intervals
+
+### UI Design
+```
+┌─────────────────────────────┐
+│      [Blurred screen]       │
+│                             │
+│       Eye Break Time!       │
+│                             │
+│  Look at something 20 feet  │
+│  away for 20 seconds        │
+│                             │
+│        0:18 remaining       │
+│                             │
+│   [ Snooze 5 min ]          │
+└─────────────────────────────┘
+```
+
+### Technical Approach
+- Foreground service tracks screen-on time via `UsageStatsManager`
+- Show fullscreen overlay activity every 20 minutes
+- Blur background using `Modifier.blur()` or screenshot + blur
+- Countdown timer (20 seconds)
+- Store last break time to resume tracking after app restart
+
+### Settings
+- Enable/disable 20-20-20 rule
+- Customize interval (default: 20 minutes)
+- Customize break duration (default: 20 seconds)
+- Snooze duration (default: 5 minutes)
+
+---
+
+## 14. Alphabetical Scroll Bar with Animations
+**Status:** Not Started
+
+### Description
+Add a polished alphabetical fast-scroll side bar to the All Apps drawer, similar to Contacts app, with smooth animations and haptic feedback.
+
+### Features
+- Vertical A-Z strip on right edge of All Apps screen
+- Section headers for each letter (only letters with apps)
+- Touch/drag side bar to jump to sections
+- Large centered bubble shows current letter while dragging
+- Smooth spring animations when scrolling
+- Haptic feedback on letter change (Vibration can be controlled in settings as it takes lots of battery)
+- Letters scale up when finger is near
+- Blur background slightly during fast-scroll
+
+### Animation Details
+- Bubble: scale from 0.8 → 1.0 with fade in/out
+- Scroll: spring animation with slight overshoot
+- Side bar: letters scale 1.0 → 1.2x when touched
+- Touch ripple effect follows finger vertically
+
+### Technical Approach
+- Group apps by first letter in ViewModel
+- `LazyColumn` with section headers
+- Custom side bar overlay (Box with drag gesture)
+- `animateScrollToItem` with spring spec
+- `HapticFeedback.performHapticFeedback()`
+- `AnimatedVisibility` for letter bubble
+- `Modifier.blur()` for background during scroll
+
+---
+
 ## Future Enhancements
 - [ ] Widget support on home screen (But the thing is we need in black and white theme)
 - [ ] Gesture customization (swipe actions)
