@@ -75,9 +75,10 @@ abstract class AppDatabase : RoomDatabase() {
             val keyAlias = "db_encryption_key"
             
             // Check if we have a stored key already
-            val storedKey = prefs.getString(keyAlias, null)
-            if (storedKey != null) {
-                return storedKey.toByteArray(Charsets.UTF_8)
+            val storedKeyHex = prefs.getString(keyAlias, null)
+            if (storedKeyHex != null) {
+                // Decode hex string back to bytes
+                return hexStringToByteArray(storedKeyHex)
             }
             
             // Generate new key on first use
@@ -87,9 +88,12 @@ abstract class AppDatabase : RoomDatabase() {
                 android.provider.Settings.Secure.ANDROID_ID
             )
             
-            // Fallback if Android ID is null or empty
+            // Fallback if Android ID is null or empty - use device-specific random key
             if (androidId.isNullOrEmpty()) {
-                androidId = "default_fallback"
+                // Generate unique random ID and store it
+                val randomId = java.util.UUID.randomUUID().toString()
+                prefs.edit().putString("fallback_device_id", randomId).apply()
+                androidId = randomId
             }
             
             // Add some entropy from secure random for additional security
@@ -109,7 +113,22 @@ abstract class AppDatabase : RoomDatabase() {
             val passphraseHex = passphrase.joinToString("") { "%02x".format(it) }
             prefs.edit().putString(keyAlias, passphraseHex).apply()
             
-            return passphraseHex.toByteArray(Charsets.UTF_8)
+            return passphrase
+        }
+        
+        /**
+         * Helper function to convert hex string to byte array
+         */
+        private fun hexStringToByteArray(hexString: String): ByteArray {
+            val len = hexString.length
+            val data = ByteArray(len / 2)
+            var i = 0
+            while (i < len) {
+                data[i / 2] = ((Character.digit(hexString[i], 16) shl 4) + 
+                               Character.digit(hexString[i + 1], 16)).toByte()
+                i += 2
+            }
+            return data
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
