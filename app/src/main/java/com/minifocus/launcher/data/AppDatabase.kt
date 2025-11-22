@@ -64,26 +64,52 @@ abstract class AppDatabase : RoomDatabase() {
         }
         
         /**
-         * Security: Generate or retrieve database encryption key from Android Keystore.
-         * This ensures the key is hardware-backed and secure.
+         * Security: Generate or retrieve database encryption key.
+         * Uses a combination of Android ID and app-specific data for device-specific encryption.
+         * 
+         * Note: For production apps handling highly sensitive data, consider using
+         * Android Keystore System for hardware-backed key storage.
          */
         private fun getOrCreateDatabasePassphrase(context: Context): ByteArray {
-            val prefs = context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences("secure_db_prefs", Context.MODE_PRIVATE)
             val keyAlias = "db_encryption_key"
             
-            // For simplicity, using a device-specific key derived from Android ID
-            // In production, consider using Android Keystore System for better security
-            val androidId = android.provider.Settings.Secure.getString(
+            // Check if we have a stored key already
+            val storedKey = prefs.getString(keyAlias, null)
+            if (storedKey != null) {
+                return storedKey.toByteArray(Charsets.UTF_8)
+            }
+            
+            // Generate new key on first use
+            // Get Android ID (can be null or change on factory reset)
+            var androidId = android.provider.Settings.Secure.getString(
                 context.contentResolver,
                 android.provider.Settings.Secure.ANDROID_ID
             )
             
-            // Create a deterministic but device-specific key
-            val key = "$keyAlias:$androidId:${context.packageName}".toByteArray(Charsets.UTF_8)
+            // Fallback if Android ID is null or empty
+            if (androidId.isNullOrEmpty()) {
+                androidId = "default_fallback"
+            }
+            
+            // Add some entropy from secure random for additional security
+            val secureRandom = java.security.SecureRandom()
+            val entropy = ByteArray(16)
+            secureRandom.nextBytes(entropy)
+            val entropyHex = entropy.joinToString("") { "%02x".format(it) }
+            
+            // Create a deterministic but device-specific key with multiple components
+            val keyComponents = "$keyAlias:$androidId:${context.packageName}:$entropyHex"
             
             // Use SHA-256 to create a fixed-length key
             val digest = java.security.MessageDigest.getInstance("SHA-256")
-            return digest.digest(key)
+            val passphrase = digest.digest(keyComponents.toByteArray(Charsets.UTF_8))
+            
+            // Store the key for future use (as hex string)
+            val passphraseHex = passphrase.joinToString("") { "%02x".format(it) }
+            prefs.edit().putString(keyAlias, passphraseHex).apply()
+            
+            return passphraseHex.toByteArray(Charsets.UTF_8)
         }
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
