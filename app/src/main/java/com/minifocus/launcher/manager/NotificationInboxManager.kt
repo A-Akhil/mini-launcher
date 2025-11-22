@@ -496,6 +496,7 @@ class NotificationInboxManager(
         private const val DEFAULT_NOTIFICATION_RETENTION_DAYS = 2
         private const val SUMMARY_NOTIFICATION_ID = 0x4E_54_46
         private const val SUMMARY_CHANNEL_ID = "notification_inbox_summary"
+        private const val MAX_NOTIFICATION_TEXT_LENGTH = 5000
     }
 
     private fun debug(message: String) {
@@ -548,10 +549,9 @@ class NotificationInboxManager(
     private fun sanitizeNotificationText(text: String?): String? {
         if (text == null) return null
         
-        // Limit text length to prevent excessive storage (max 5000 chars)
-        val maxLength = 5000
-        val truncated = if (text.length > maxLength) {
-            text.substring(0, maxLength) + "..."
+        // Limit text length to prevent excessive storage
+        val truncated = if (text.length > MAX_NOTIFICATION_TEXT_LENGTH) {
+            text.substring(0, MAX_NOTIFICATION_TEXT_LENGTH) + "..."
         } else {
             text
         }
