@@ -42,6 +42,9 @@ class NotificationInboxManager(
     private val inboxEnabled = MutableStateFlow(false)
     private val packageManager = context.packageManager
     private val essentialSystemPackages: Set<String> by lazy { discoverEssentialPackages() }
+    
+    // Compile regex once for better performance
+    private val controlCharPattern = Regex("[\\x00-\\x08\\x0B-\\x0C\\x0E-\\x1F\\x7F]")
 
     fun observeNotifications(): Flow<List<NotificationItem>> =
         notificationDao.observeAll().map { entities ->
@@ -554,6 +557,6 @@ class NotificationInboxManager(
         }
         
         // Remove control characters except newlines and tabs for safety
-        return truncated.replace(Regex("[\\x00-\\x08\\x0B-\\x0C\\x0E-\\x1F\\x7F]"), "")
+        return truncated.replace(controlCharPattern, "")
     }
 }

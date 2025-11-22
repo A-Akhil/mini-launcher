@@ -101,8 +101,9 @@ class AppLockOverlayActivity : ComponentActivity() {
      * Security: Validate package name format to prevent malicious input
      */
     private fun isValidPackageName(packageName: String): Boolean {
-        // Package names must match the pattern: com.example.app
-        val packageNamePattern = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\$")
+        // Package names must match Android's pattern (allows uppercase, case-insensitive)
+        // Valid examples: com.example.app, Com.Example.App, com.example_app
+        val packageNamePattern = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*\$")
         return packageName.matches(packageNamePattern) && packageName.length <= 255
     }
 
