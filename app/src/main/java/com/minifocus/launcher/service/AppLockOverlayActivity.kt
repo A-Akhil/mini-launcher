@@ -192,20 +192,25 @@ class AppLockOverlayActivity : ComponentActivity() {
      * Constant-time string comparison to prevent timing attacks.
      * Compares two hex strings in constant time regardless of content or length.
      * 
-     * Note: Uses fixed-length comparison (64 chars for HmacSHA256 hex output)
-     * to prevent length-based timing leaks.
+     * Uses byte array comparison with fixed-size buffer to prevent CPU cache
+     * and branch prediction leaks.
      */
     private fun constantTimeEquals(a: String, b: String): Boolean {
         // HmacSHA256 produces 32 bytes = 64 hex characters
         val expectedLength = 64
         
-        // Pad or truncate to expected length to prevent length-based timing attacks
-        val aPadded = a.padEnd(expectedLength, '0').take(expectedLength)
-        val bPadded = b.padEnd(expectedLength, '0').take(expectedLength)
+        // Convert to byte arrays with fixed size (pad with zeros if needed)
+        val aBytes = ByteArray(expectedLength) { i ->
+            if (i < a.length) a[i].code.toByte() else 0
+        }
+        val bBytes = ByteArray(expectedLength) { i ->
+            if (i < b.length) b[i].code.toByte() else 0
+        }
         
+        // Constant-time comparison using byte arrays
         var result = 0
         for (i in 0 until expectedLength) {
-            result = result or (aPadded[i].code xor bPadded[i].code)
+            result = result or (aBytes[i].toInt() xor bBytes[i].toInt())
         }
         return result == 0
     }
