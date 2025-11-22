@@ -40,6 +40,11 @@ import java.util.Locale
 
 class AppLockOverlayActivity : ComponentActivity() {
 
+    companion object {
+        // Compile regex once for better performance
+        private val PACKAGE_NAME_PATTERN = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*\$")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -103,8 +108,7 @@ class AppLockOverlayActivity : ComponentActivity() {
     private fun isValidPackageName(packageName: String): Boolean {
         // Package names must match Android's pattern (allows uppercase, case-insensitive)
         // Valid examples: com.example.app, Com.Example.App, com.example_app
-        val packageNamePattern = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*\$")
-        return packageName.matches(packageNamePattern) && packageName.length <= 255
+        return packageName.matches(PACKAGE_NAME_PATTERN) && packageName.length <= 255
     }
 
     private fun getAppName(packageName: String): String {
