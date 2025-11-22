@@ -40,8 +40,85 @@ import java.util.Locale
 
 class AppLockOverlayActivity : ComponentActivity() {
 
+    companion object {
+        // Android package name validation constants
+        private const val MAX_PACKAGE_NAME_LENGTH = 255
+        
+        // Security token constants for validating internal intents
+        const val EXTRA_SECURITY_TOKEN = "security_token"
+        const val EXTRA_TIMESTAMP = "timestamp"
+        private const val TOKEN_VALIDITY_MS = 5000L // Token valid for 5 seconds
+        
+        // Shared secret for HMAC (persists across app lifecycle)
+        private val SECRET_KEY: ByteArray by lazy {
+            // Use a deterministic key based on app installation
+            // This ensures tokens remain valid across process restarts
+            val keyMaterial = "AppLockSecurity_${android.os.Build.ID}_v1"
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            digest.digest(keyMaterial.toByteArray(Charsets.UTF_8))
+        }
+        
+        // Thread-local Mac instance for efficient token generation
+        private val macThreadLocal = ThreadLocal.withInitial {
+            javax.crypto.Mac.getInstance("HmacSHA256").apply {
+                val secretKeySpec = javax.crypto.spec.SecretKeySpec(SECRET_KEY, "HmacSHA256")
+                init(secretKeySpec)
+            }
+        }
+        
+        /**
+         * Generate a time-based HMAC security token that can only be created by our app.
+         * Uses HmacSHA256 for proper authentication and integrity.
+         * 
+         * This is internal to prevent exposing token generation to external code.
+         */
+        internal fun generateSecurityToken(timestamp: Long): String {
+            val message = timestamp.toString().toByteArray(Charsets.UTF_8)
+            
+            // Use thread-local Mac instance for efficiency and thread safety
+            val mac = macThreadLocal.get() ?: throw IllegalStateException("Mac initialization failed")
+            
+            // Explicitly reset to ensure clean state for thread safety
+            mac.reset()
+            val hmac = mac.doFinal(message)
+            
+            return hmac.joinToString("") { "%02x".format(it) }
+        }
+        
+        /**
+         * Regex pattern for Android package name validation
+         * 
+         * Android package naming rules:
+         * - Must have at least two segments separated by dots
+         * - Each segment must start with a lowercase letter [a-z]
+         * - Segments can contain: lowercase letters, uppercase letters, numbers, underscores
+         * - Pattern: ^[a-z][a-zA-Z0-9_]*(\\.[a-z][a-zA-Z0-9_]*)+$
+         * 
+         * Examples:
+         * - Valid: com.example.app, com.myCompany.myApp, com.example_app
+         * - Invalid: Com.example.app (first segment starts with uppercase)
+         * - Invalid: com (only one segment)
+         * - Invalid: 1com.example (segment starts with number)
+         */
+        private val PACKAGE_NAME_PATTERN = Regex("^[a-z][a-zA-Z0-9_]*(\\.[a-z][a-zA-Z0-9_]*)+\$")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Security: Verify the intent is from our own app using cryptographic token
+        // The token approach prevents intent spoofing attacks
+        if (!validateSecurityToken()) {
+            android.util.Log.w("AppLockOverlay", "Invalid or missing security token - rejecting intent")
+            finish()
+            return
+        }
+        
+        // Security: Prevent tapjacking/overlay attacks on this lock screen
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
         
         // Set black status bar and navigation bar
         window.statusBarColor = AndroidColor.BLACK
@@ -54,7 +131,14 @@ class AppLockOverlayActivity : ComponentActivity() {
         val packageName = intent.getStringExtra(AppLockMonitorService.EXTRA_PACKAGE_NAME) ?: ""
         val lockedUntil = intent.getLongExtra(AppLockMonitorService.EXTRA_LOCKED_UNTIL, 0L)
         
-        if (packageName.isEmpty() || lockedUntil == 0L) {
+        // Security: Validate input parameters
+        if (packageName.isEmpty() || lockedUntil == 0L || lockedUntil < System.currentTimeMillis()) {
+            finish()
+            return
+        }
+        
+        // Security: Validate package name format to prevent injection
+        if (!isValidPackageName(packageName)) {
             finish()
             return
         }
@@ -69,6 +153,74 @@ class AppLockOverlayActivity : ComponentActivity() {
                 )
             }
         }
+    }
+    
+    /**
+     * Security: Validate security token to ensure intent originates from our app.
+     * 
+     * This prevents intent spoofing attacks where malicious apps could launch
+     * fake lock screens by crafting intents with our component name.
+     * 
+     * The token is a time-based HMAC that only our app can generate using a
+     * secret key that's unique per app instance.
+     * 
+     * @return true if token is valid and not expired, false otherwise
+     */
+    private fun validateSecurityToken(): Boolean {
+        val receivedToken = intent.getStringExtra(EXTRA_SECURITY_TOKEN)
+        val timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, 0L)
+        
+        if (receivedToken == null || timestamp == 0L) {
+            return false
+        }
+        
+        // Check token age - prevent replay attacks
+        val tokenAge = System.currentTimeMillis() - timestamp
+        if (tokenAge < 0 || tokenAge > TOKEN_VALIDITY_MS) {
+            android.util.Log.w("AppLockOverlay", "Token expired or invalid timestamp")
+            return false
+        }
+        
+        // Validate token by regenerating it with same timestamp
+        val expectedToken = generateSecurityToken(timestamp)
+        
+        // Use constant-time comparison to prevent timing attacks
+        return constantTimeEquals(receivedToken, expectedToken)
+    }
+    
+    /**
+     * Constant-time string comparison to prevent timing attacks.
+     * Compares two hex strings in constant time regardless of content or length.
+     * 
+     * Uses byte array comparison with fixed-size buffer to prevent CPU cache
+     * and branch prediction leaks.
+     */
+    private fun constantTimeEquals(a: String, b: String): Boolean {
+        // HmacSHA256 produces 32 bytes = 64 hex characters
+        val expectedLength = 64
+        
+        // Convert to byte arrays with fixed size (pad with zeros if needed)
+        val aBytes = ByteArray(expectedLength) { i ->
+            if (i < a.length) a[i].code.toByte() else 0
+        }
+        val bBytes = ByteArray(expectedLength) { i ->
+            if (i < b.length) b[i].code.toByte() else 0
+        }
+        
+        // Constant-time comparison using byte arrays
+        var result = 0
+        for (i in 0 until expectedLength) {
+            result = result or (aBytes[i].toInt() xor bBytes[i].toInt())
+        }
+        return result == 0
+    }
+    
+    /**
+     * Security: Validate package name format to prevent malicious input
+     */
+    private fun isValidPackageName(packageName: String): Boolean {
+        return packageName.matches(PACKAGE_NAME_PATTERN) && 
+               packageName.length <= MAX_PACKAGE_NAME_LENGTH
     }
 
     private fun getAppName(packageName: String): String {

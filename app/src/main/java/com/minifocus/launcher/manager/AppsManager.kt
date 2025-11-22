@@ -73,7 +73,12 @@ class AppsManager(
             addAction(Intent.ACTION_PACKAGE_CHANGED)
             addDataScheme("package")
         }
-        context.registerReceiver(packageChangeReceiver, filter)
+        // Security: Register receiver as non-exported (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(packageChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(packageChangeReceiver, filter)
+        }
     }
 
     fun cleanup() {

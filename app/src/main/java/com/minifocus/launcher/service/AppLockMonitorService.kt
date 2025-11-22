@@ -87,11 +87,17 @@ class AppLockMonitorService : Service() {
     }
 
     private fun showLockOverlay(packageName: String, lockedUntil: Long) {
+        // Generate security token to prove this intent is from our app
+        val timestamp = System.currentTimeMillis()
+        val securityToken = AppLockOverlayActivity.generateSecurityToken(timestamp)
+        
         val intent = Intent(this, AppLockOverlayActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(EXTRA_PACKAGE_NAME, packageName)
             putExtra(EXTRA_LOCKED_UNTIL, lockedUntil)
+            putExtra(AppLockOverlayActivity.EXTRA_SECURITY_TOKEN, securityToken)
+            putExtra(AppLockOverlayActivity.EXTRA_TIMESTAMP, timestamp)
         }
         startActivity(intent)
     }

@@ -42,6 +42,9 @@ class NotificationInboxManager(
     private val inboxEnabled = MutableStateFlow(false)
     private val packageManager = context.packageManager
     private val essentialSystemPackages: Set<String> by lazy { discoverEssentialPackages() }
+    
+    // Compile regex once for better performance
+    private val controlCharPattern = Regex("[\\x00-\\x08\\x0B-\\x0C\\x0E-\\x1F\\x7F]")
 
     fun observeNotifications(): Flow<List<NotificationItem>> =
         notificationDao.observeAll().map { entities ->
@@ -186,6 +189,10 @@ class NotificationInboxManager(
             "content pkg=${sbn.packageName} title=${title ?: ""} text=${contentText ?: ""} summary=${sbn.notification.extras?.getCharSequence(Notification.EXTRA_SUMMARY_TEXT) ?: ""}"
         )
 
+        // Security: Sanitize notification content to prevent excessive data storage
+        val sanitizedTitle = sanitizeNotificationText(title)
+        val sanitizedText = sanitizeNotificationText(contentText)
+
         val existing = notificationDao.findByKey(sbn.key)
         val expiresAt = timestamp + TimeUnit.DAYS.toMillis(retentionDays.value.toLong())
 
@@ -194,8 +201,8 @@ class NotificationInboxManager(
             key = sbn.key,
             packageName = sbn.packageName,
             appName = appName,
-            title = title,
-            text = contentText,
+            title = sanitizedTitle,
+            text = sanitizedText,
             timestamp = timestamp,
             isRead = existing?.isRead ?: false,
             smallIcon = null,
@@ -489,6 +496,7 @@ class NotificationInboxManager(
         private const val DEFAULT_NOTIFICATION_RETENTION_DAYS = 2
         private const val SUMMARY_NOTIFICATION_ID = 0x4E_54_46
         private const val SUMMARY_CHANNEL_ID = "notification_inbox_summary"
+        private const val MAX_NOTIFICATION_TEXT_LENGTH = 5000
     }
 
     private fun debug(message: String) {
@@ -532,5 +540,24 @@ class NotificationInboxManager(
         }
 
         return resolvedPackages
+    }
+
+    /**
+     * Security: Sanitize notification text to prevent excessive data storage and potential issues.
+     * Limits text length and removes control characters.
+     */
+    private fun sanitizeNotificationText(text: String?): String? {
+        if (text == null) return null
+        
+        // Limit text length to prevent excessive storage
+        val truncated = if (text.length > MAX_NOTIFICATION_TEXT_LENGTH) {
+            text.substring(0, MAX_NOTIFICATION_TEXT_LENGTH) + "..."
+        } else {
+            text
+        }
+        
+        // Remove control characters except newlines (\x0A), tabs (\x09), and carriage returns (\x0D)
+        // Pattern excludes: \x00-\x08 (before tab), \x0B-\x0C (between LF and CR), \x0E-\x1F (after CR), \x7F (DEL)
+        return truncated.replace(controlCharPattern, "")
     }
 }
