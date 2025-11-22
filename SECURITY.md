@@ -89,11 +89,18 @@ implementation("androidx.sqlite:sqlite-ktx:2.4.0")
 
 **Technical Details:**
 ```kotlin
-// Security token generation (only possible within our app)
+// HMAC-SHA256 token generation with cryptographically secure key
+private val SECRET_KEY: ByteArray by lazy {
+    val secureRandom = SecureRandom()
+    ByteArray(32).apply { secureRandom.nextBytes(this) } // 256-bit key
+}
+
 fun generateSecurityToken(timestamp: Long): String {
-    val message = "$timestamp:${SECRET_KEY}" // SECRET_KEY is app-instance unique
-    val hash = MessageDigest.getInstance("SHA-256").digest(message.toByteArray())
-    return hash.joinToString("") { "%02x".format(it) }
+    val mac = Mac.getInstance("HmacSHA256")
+    val secretKeySpec = SecretKeySpec(SECRET_KEY, "HmacSHA256")
+    mac.init(secretKeySpec)
+    val hmac = mac.doFinal(timestamp.toString().toByteArray())
+    return hmac.joinToString("") { "%02x".format(it) }
 }
 
 // Token validation with replay attack prevention

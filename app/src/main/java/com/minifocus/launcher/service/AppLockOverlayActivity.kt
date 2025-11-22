@@ -44,24 +44,32 @@ class AppLockOverlayActivity : ComponentActivity() {
         // Android package name validation constants
         private const val MAX_PACKAGE_NAME_LENGTH = 255
         
-        // Security token for validating internal intents
-        private const val EXTRA_SECURITY_TOKEN = "security_token"
+        // Security token constants for validating internal intents
+        const val EXTRA_SECURITY_TOKEN = "security_token"
+        const val EXTRA_TIMESTAMP = "timestamp"
         private const val TOKEN_VALIDITY_MS = 5000L // Token valid for 5 seconds
         
-        // Shared secret for HMAC (generated at class initialization)
-        private val SECRET_KEY: String by lazy {
-            // Generate app instance specific secret at first use
-            java.util.UUID.randomUUID().toString()
+        // Shared secret for HMAC (generated at class initialization with SecureRandom)
+        private val SECRET_KEY: ByteArray by lazy {
+            // Generate cryptographically secure random key for HMAC
+            val secureRandom = java.security.SecureRandom()
+            ByteArray(32).apply { secureRandom.nextBytes(this) } // 256-bit key
         }
         
         /**
-         * Generate a time-based security token that can only be created by our app
+         * Generate a time-based HMAC security token that can only be created by our app.
+         * Uses HmacSHA256 for proper authentication and integrity.
          */
         fun generateSecurityToken(timestamp: Long): String {
-            val message = "$timestamp:${SECRET_KEY}"
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            val hash = digest.digest(message.toByteArray(Charsets.UTF_8))
-            return hash.joinToString("") { "%02x".format(it) }
+            val message = timestamp.toString().toByteArray(Charsets.UTF_8)
+            
+            // Use proper HMAC instead of simple hash
+            val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+            val secretKeySpec = javax.crypto.spec.SecretKeySpec(SECRET_KEY, "HmacSHA256")
+            mac.init(secretKeySpec)
+            
+            val hmac = mac.doFinal(message)
+            return hmac.joinToString("") { "%02x".format(it) }
         }
         
         /**
@@ -147,7 +155,7 @@ class AppLockOverlayActivity : ComponentActivity() {
      */
     private fun validateSecurityToken(): Boolean {
         val receivedToken = intent.getStringExtra(EXTRA_SECURITY_TOKEN)
-        val timestamp = intent.getLongExtra("timestamp", 0L)
+        val timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, 0L)
         
         if (receivedToken == null || timestamp == 0L) {
             return false
