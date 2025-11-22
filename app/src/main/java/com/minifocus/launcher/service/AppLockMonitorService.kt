@@ -96,8 +96,8 @@ class AppLockMonitorService : Service() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(EXTRA_PACKAGE_NAME, packageName)
             putExtra(EXTRA_LOCKED_UNTIL, lockedUntil)
-            putExtra("security_token", securityToken)
-            putExtra("timestamp", timestamp)
+            putExtra(AppLockOverlayActivity.EXTRA_SECURITY_TOKEN, securityToken)
+            putExtra(AppLockOverlayActivity.EXTRA_TIMESTAMP, timestamp)
         }
         startActivity(intent)
     }
