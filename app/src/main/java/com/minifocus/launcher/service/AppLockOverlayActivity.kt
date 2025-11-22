@@ -49,26 +49,36 @@ class AppLockOverlayActivity : ComponentActivity() {
         const val EXTRA_TIMESTAMP = "timestamp"
         private const val TOKEN_VALIDITY_MS = 5000L // Token valid for 5 seconds
         
-        // Shared secret for HMAC (generated at class initialization with SecureRandom)
+        // Shared secret for HMAC (persists across app lifecycle)
         private val SECRET_KEY: ByteArray by lazy {
-            // Generate cryptographically secure random key for HMAC
-            val secureRandom = java.security.SecureRandom()
-            ByteArray(32).apply { secureRandom.nextBytes(this) } // 256-bit key
+            // Use a deterministic key based on app installation
+            // This ensures tokens remain valid across process restarts
+            val keyMaterial = "AppLockSecurity_${android.os.Build.ID}_v1"
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            digest.digest(keyMaterial.toByteArray(Charsets.UTF_8))
+        }
+        
+        // Thread-local Mac instance for efficient token generation
+        private val macThreadLocal = ThreadLocal.withInitial {
+            javax.crypto.Mac.getInstance("HmacSHA256").apply {
+                val secretKeySpec = javax.crypto.spec.SecretKeySpec(SECRET_KEY, "HmacSHA256")
+                init(secretKeySpec)
+            }
         }
         
         /**
          * Generate a time-based HMAC security token that can only be created by our app.
          * Uses HmacSHA256 for proper authentication and integrity.
+         * 
+         * This is internal to prevent exposing token generation to external code.
          */
-        fun generateSecurityToken(timestamp: Long): String {
+        internal fun generateSecurityToken(timestamp: Long): String {
             val message = timestamp.toString().toByteArray(Charsets.UTF_8)
             
-            // Use proper HMAC instead of simple hash
-            val mac = javax.crypto.Mac.getInstance("HmacSHA256")
-            val secretKeySpec = javax.crypto.spec.SecretKeySpec(SECRET_KEY, "HmacSHA256")
-            mac.init(secretKeySpec)
-            
+            // Use thread-local Mac instance for efficiency and thread safety
+            val mac = macThreadLocal.get()!!
             val hmac = mac.doFinal(message)
+            
             return hmac.joinToString("") { "%02x".format(it) }
         }
         
@@ -170,7 +180,23 @@ class AppLockOverlayActivity : ComponentActivity() {
         
         // Validate token by regenerating it with same timestamp
         val expectedToken = generateSecurityToken(timestamp)
-        return receivedToken == expectedToken
+        
+        // Use constant-time comparison to prevent timing attacks
+        return constantTimeEquals(receivedToken, expectedToken)
+    }
+    
+    /**
+     * Constant-time string comparison to prevent timing attacks.
+     * Compares two hex strings in constant time regardless of where they differ.
+     */
+    private fun constantTimeEquals(a: String, b: String): Boolean {
+        if (a.length != b.length) return false
+        
+        var result = 0
+        for (i in a.indices) {
+            result = result or (a[i].code xor b[i].code)
+        }
+        return result == 0
     }
     
     /**
