@@ -44,6 +44,26 @@ class AppLockOverlayActivity : ComponentActivity() {
         // Android package name validation constants
         private const val MAX_PACKAGE_NAME_LENGTH = 255
         
+        // Security token for validating internal intents
+        private const val EXTRA_SECURITY_TOKEN = "security_token"
+        private const val TOKEN_VALIDITY_MS = 5000L // Token valid for 5 seconds
+        
+        // Shared secret for HMAC (generated at class initialization)
+        private val SECRET_KEY: String by lazy {
+            // Generate app instance specific secret at first use
+            java.util.UUID.randomUUID().toString()
+        }
+        
+        /**
+         * Generate a time-based security token that can only be created by our app
+         */
+        fun generateSecurityToken(timestamp: Long): String {
+            val message = "$timestamp:${SECRET_KEY}"
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            val hash = digest.digest(message.toByteArray(Charsets.UTF_8))
+            return hash.joinToString("") { "%02x".format(it) }
+        }
+        
         /**
          * Regex pattern for Android package name validation
          * 
@@ -65,8 +85,10 @@ class AppLockOverlayActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Security: Verify the intent is from our own app to prevent intent redirection attacks
-        if (callingActivity != null || !isInternalIntent()) {
+        // Security: Verify the intent is from our own app using cryptographic token
+        // The token approach prevents intent spoofing attacks
+        if (!validateSecurityToken()) {
+            android.util.Log.w("AppLockOverlay", "Invalid or missing security token - rejecting intent")
             finish()
             return
         }
@@ -113,10 +135,34 @@ class AppLockOverlayActivity : ComponentActivity() {
     }
     
     /**
-     * Security: Verify the intent is from our own app
+     * Security: Validate security token to ensure intent originates from our app.
+     * 
+     * This prevents intent spoofing attacks where malicious apps could launch
+     * fake lock screens by crafting intents with our component name.
+     * 
+     * The token is a time-based HMAC that only our app can generate using a
+     * secret key that's unique per app instance.
+     * 
+     * @return true if token is valid and not expired, false otherwise
      */
-    private fun isInternalIntent(): Boolean {
-        return intent.component?.packageName == packageName
+    private fun validateSecurityToken(): Boolean {
+        val receivedToken = intent.getStringExtra(EXTRA_SECURITY_TOKEN)
+        val timestamp = intent.getLongExtra("timestamp", 0L)
+        
+        if (receivedToken == null || timestamp == 0L) {
+            return false
+        }
+        
+        // Check token age - prevent replay attacks
+        val tokenAge = System.currentTimeMillis() - timestamp
+        if (tokenAge < 0 || tokenAge > TOKEN_VALIDITY_MS) {
+            android.util.Log.w("AppLockOverlay", "Token expired or invalid timestamp")
+            return false
+        }
+        
+        // Validate token by regenerating it with same timestamp
+        val expectedToken = generateSecurityToken(timestamp)
+        return receivedToken == expectedToken
     }
     
     /**
