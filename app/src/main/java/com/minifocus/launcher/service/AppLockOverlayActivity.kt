@@ -76,7 +76,10 @@ class AppLockOverlayActivity : ComponentActivity() {
             val message = timestamp.toString().toByteArray(Charsets.UTF_8)
             
             // Use thread-local Mac instance for efficiency and thread safety
-            val mac = macThreadLocal.get()!!
+            val mac = macThreadLocal.get() ?: throw IllegalStateException("Mac initialization failed")
+            
+            // Explicitly reset to ensure clean state for thread safety
+            mac.reset()
             val hmac = mac.doFinal(message)
             
             return hmac.joinToString("") { "%02x".format(it) }
@@ -187,14 +190,22 @@ class AppLockOverlayActivity : ComponentActivity() {
     
     /**
      * Constant-time string comparison to prevent timing attacks.
-     * Compares two hex strings in constant time regardless of where they differ.
+     * Compares two hex strings in constant time regardless of content or length.
+     * 
+     * Note: Uses fixed-length comparison (64 chars for HmacSHA256 hex output)
+     * to prevent length-based timing leaks.
      */
     private fun constantTimeEquals(a: String, b: String): Boolean {
-        if (a.length != b.length) return false
+        // HmacSHA256 produces 32 bytes = 64 hex characters
+        val expectedLength = 64
+        
+        // Pad or truncate to expected length to prevent length-based timing attacks
+        val aPadded = a.padEnd(expectedLength, '0').take(expectedLength)
+        val bPadded = b.padEnd(expectedLength, '0').take(expectedLength)
         
         var result = 0
-        for (i in a.indices) {
-            result = result or (a[i].code xor b[i].code)
+        for (i in 0 until expectedLength) {
+            result = result or (aPadded[i].code xor bPadded[i].code)
         }
         return result == 0
     }
