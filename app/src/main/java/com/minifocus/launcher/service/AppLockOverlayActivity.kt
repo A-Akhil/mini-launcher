@@ -42,7 +42,8 @@ class AppLockOverlayActivity : ComponentActivity() {
 
     companion object {
         // Compile regex once for better performance
-        private val PACKAGE_NAME_PATTERN = Regex("^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*\$")
+        // Android package naming: segments must start with lowercase letter, can contain uppercase/numbers/underscores
+        private val PACKAGE_NAME_PATTERN = Regex("^[a-z][a-zA-Z0-9_]*(\\.[a-z][a-zA-Z0-9_]*)+\$")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,8 +107,9 @@ class AppLockOverlayActivity : ComponentActivity() {
      * Security: Validate package name format to prevent malicious input
      */
     private fun isValidPackageName(packageName: String): Boolean {
-        // Package names must match Android's pattern (allows both upper and lowercase)
-        // Valid examples: com.example.app, Com.Example.App, com.example_app
+        // Package names must follow Android conventions: segments start with lowercase letter
+        // Valid examples: com.example.app, com.example.myApp, com.example_app
+        // Invalid examples: Com.Example.App (segments must start with lowercase)
         return packageName.matches(PACKAGE_NAME_PATTERN) && packageName.length <= 255
     }
 

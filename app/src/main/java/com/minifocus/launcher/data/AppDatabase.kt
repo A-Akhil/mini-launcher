@@ -88,22 +88,21 @@ abstract class AppDatabase : RoomDatabase() {
                 android.provider.Settings.Secure.ANDROID_ID
             )
             
-            // Fallback if Android ID is null or empty - use device-specific random key
+            // Fallback if Android ID is null or empty - use persistent device-specific ID
             if (androidId.isNullOrEmpty()) {
-                // Generate unique random ID and store it
-                val randomId = java.util.UUID.randomUUID().toString()
-                prefs.edit().putString("fallback_device_id", randomId).apply()
-                androidId = randomId
+                // Check if we already have a fallback ID stored
+                androidId = prefs.getString("fallback_device_id", null)
+                if (androidId.isNullOrEmpty()) {
+                    // Generate unique random ID and store it for future use
+                    val randomId = java.util.UUID.randomUUID().toString()
+                    prefs.edit().putString("fallback_device_id", randomId).apply()
+                    androidId = randomId
+                }
             }
             
-            // Add some entropy from secure random for additional security
-            val secureRandom = java.security.SecureRandom()
-            val entropy = ByteArray(16)
-            secureRandom.nextBytes(entropy)
-            val entropyHex = entropy.joinToString("") { "%02x".format(it) }
-            
-            // Create a deterministic but device-specific key with multiple components
-            val keyComponents = "$keyAlias:$androidId:${context.packageName}:$entropyHex"
+            // Create a deterministic but device-specific key
+            // Note: Key must be deterministic for consistent database access
+            val keyComponents = "$keyAlias:$androidId:${context.packageName}"
             
             // Use SHA-256 to create a fixed-length key
             val digest = java.security.MessageDigest.getInstance("SHA-256")
