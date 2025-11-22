@@ -120,12 +120,23 @@ abstract class AppDatabase : RoomDatabase() {
          * Helper function to convert hex string to byte array
          */
         private fun hexStringToByteArray(hexString: String): ByteArray {
+            // Validate input
+            if (hexString.length % 2 != 0) {
+                throw IllegalArgumentException("Hex string must have even length")
+            }
+            
             val len = hexString.length
             val data = ByteArray(len / 2)
             var i = 0
             while (i < len) {
-                data[i / 2] = ((Character.digit(hexString[i], 16) shl 4) + 
-                               Character.digit(hexString[i + 1], 16)).toByte()
+                val digit1 = Character.digit(hexString[i], 16)
+                val digit2 = Character.digit(hexString[i + 1], 16)
+                
+                if (digit1 == -1 || digit2 == -1) {
+                    throw IllegalArgumentException("Invalid hex character at position $i")
+                }
+                
+                data[i / 2] = ((digit1 shl 4) + digit2).toByte()
                 i += 2
             }
             return data

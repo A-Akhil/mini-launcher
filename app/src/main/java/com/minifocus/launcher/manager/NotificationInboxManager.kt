@@ -556,7 +556,8 @@ class NotificationInboxManager(
             text
         }
         
-        // Remove control characters except newlines and tabs for safety
+        // Remove control characters except newlines (\x0A), tabs (\x09), and carriage returns (\x0D)
+        // Pattern excludes: \x00-\x08 (before tab), \x0B-\x0C (between LF and CR), \x0E-\x1F (after CR), \x7F (DEL)
         return truncated.replace(controlCharPattern, "")
     }
 }
