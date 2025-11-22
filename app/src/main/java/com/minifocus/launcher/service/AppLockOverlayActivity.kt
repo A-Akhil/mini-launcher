@@ -41,8 +41,24 @@ import java.util.Locale
 class AppLockOverlayActivity : ComponentActivity() {
 
     companion object {
-        // Compile regex once for better performance
-        // Android package naming: segments must start with lowercase letter, can contain uppercase/numbers/underscores
+        // Android package name validation constants
+        private const val MAX_PACKAGE_NAME_LENGTH = 255
+        
+        /**
+         * Regex pattern for Android package name validation
+         * 
+         * Android package naming rules:
+         * - Must have at least two segments separated by dots
+         * - Each segment must start with a lowercase letter [a-z]
+         * - Segments can contain: lowercase letters, uppercase letters, numbers, underscores
+         * - Pattern: ^[a-z][a-zA-Z0-9_]*(\\.[a-z][a-zA-Z0-9_]*)+$
+         * 
+         * Examples:
+         * - Valid: com.example.app, com.myCompany.myApp, com.example_app
+         * - Invalid: Com.example.app (first segment starts with uppercase)
+         * - Invalid: com (only one segment)
+         * - Invalid: 1com.example (segment starts with number)
+         */
         private val PACKAGE_NAME_PATTERN = Regex("^[a-z][a-zA-Z0-9_]*(\\.[a-z][a-zA-Z0-9_]*)+\$")
     }
 
@@ -107,10 +123,8 @@ class AppLockOverlayActivity : ComponentActivity() {
      * Security: Validate package name format to prevent malicious input
      */
     private fun isValidPackageName(packageName: String): Boolean {
-        // Package names must follow Android conventions: segments start with lowercase letter
-        // Valid examples: com.example.app, com.example.myApp, com.example_app
-        // Invalid examples: Com.Example.App (segments must start with lowercase)
-        return packageName.matches(PACKAGE_NAME_PATTERN) && packageName.length <= 255
+        return packageName.matches(PACKAGE_NAME_PATTERN) && 
+               packageName.length <= MAX_PACKAGE_NAME_LENGTH
     }
 
     private fun getAppName(packageName: String): String {
