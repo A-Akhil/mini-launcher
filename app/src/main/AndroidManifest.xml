@@ -29,7 +29,8 @@
 
     <application
         android:name="com.minifocus.launcher.LauncherApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:icon="@mipmap/ic_launcher"
         android:label="Minimalist Focus"
         android:roundIcon="@mipmap/ic_launcher_round"

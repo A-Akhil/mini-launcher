@@ -186,6 +186,10 @@ class NotificationInboxManager(
             "content pkg=${sbn.packageName} title=${title ?: ""} text=${contentText ?: ""} summary=${sbn.notification.extras?.getCharSequence(Notification.EXTRA_SUMMARY_TEXT) ?: ""}"
         )
 
+        // Security: Sanitize notification content to prevent excessive data storage
+        val sanitizedTitle = sanitizeNotificationText(title)
+        val sanitizedText = sanitizeNotificationText(contentText)
+
         val existing = notificationDao.findByKey(sbn.key)
         val expiresAt = timestamp + TimeUnit.DAYS.toMillis(retentionDays.value.toLong())
 
@@ -194,8 +198,8 @@ class NotificationInboxManager(
             key = sbn.key,
             packageName = sbn.packageName,
             appName = appName,
-            title = title,
-            text = contentText,
+            title = sanitizedTitle,
+            text = sanitizedText,
             timestamp = timestamp,
             isRead = existing?.isRead ?: false,
             smallIcon = null,
@@ -532,5 +536,24 @@ class NotificationInboxManager(
         }
 
         return resolvedPackages
+    }
+
+    /**
+     * Security: Sanitize notification text to prevent excessive data storage and potential issues.
+     * Limits text length and removes control characters.
+     */
+    private fun sanitizeNotificationText(text: String?): String? {
+        if (text == null) return null
+        
+        // Limit text length to prevent excessive storage (max 5000 chars)
+        val maxLength = 5000
+        val truncated = if (text.length > maxLength) {
+            text.substring(0, maxLength) + "..."
+        } else {
+            text
+        }
+        
+        // Remove control characters except newlines and tabs for safety
+        return truncated.replace(Regex("[\\x00-\\x08\\x0B-\\x0C\\x0E-\\x1F\\x7F]"), "")
     }
 }

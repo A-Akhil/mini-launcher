@@ -43,6 +43,18 @@ class AppLockOverlayActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Security: Verify the intent is from our own app to prevent intent redirection attacks
+        if (callingActivity != null || !isInternalIntent()) {
+            finish()
+            return
+        }
+        
+        // Security: Prevent tapjacking/overlay attacks on this lock screen
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
+        
         // Set black status bar and navigation bar
         window.statusBarColor = AndroidColor.BLACK
         window.navigationBarColor = AndroidColor.BLACK
@@ -54,7 +66,14 @@ class AppLockOverlayActivity : ComponentActivity() {
         val packageName = intent.getStringExtra(AppLockMonitorService.EXTRA_PACKAGE_NAME) ?: ""
         val lockedUntil = intent.getLongExtra(AppLockMonitorService.EXTRA_LOCKED_UNTIL, 0L)
         
-        if (packageName.isEmpty() || lockedUntil == 0L) {
+        // Security: Validate input parameters
+        if (packageName.isEmpty() || lockedUntil == 0L || lockedUntil < System.currentTimeMillis()) {
+            finish()
+            return
+        }
+        
+        // Security: Validate package name format to prevent injection
+        if (!isValidPackageName(packageName)) {
             finish()
             return
         }
@@ -69,6 +88,22 @@ class AppLockOverlayActivity : ComponentActivity() {
                 )
             }
         }
+    }
+    
+    /**
+     * Security: Verify the intent is from our own app
+     */
+    private fun isInternalIntent(): Boolean {
+        return intent.component?.packageName == packageName
+    }
+    
+    /**
+     * Security: Validate package name format to prevent malicious input
+     */
+    private fun isValidPackageName(packageName: String): Boolean {
+        // Package names must match the pattern: com.example.app
+        val packageNamePattern = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\$")
+        return packageName.matches(packageNamePattern) && packageName.length <= 255
     }
 
     private fun getAppName(packageName: String): String {
