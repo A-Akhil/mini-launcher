@@ -30,6 +30,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val showDailyTasksOnHome = intPreferencesKey("show_daily_tasks_on_home")
         val permissionOnboardingAcknowledged = intPreferencesKey("permission_onboarding_acknowledged")
         val doubleTapLockScreen = intPreferencesKey("double_tap_lock_screen")
+        val smartSuggestionsEnabled = intPreferencesKey("smart_suggestions_enabled")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -57,6 +58,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeShowDailyTasksOnHome(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.showDailyTasksOnHome]?.let { it == 1 } ?: true
+    }
+
+    fun observeSmartSuggestionsEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.smartSuggestionsEnabled]?.let { it == 1 } ?: true
     }
 
     fun observeNotificationInboxEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -115,6 +120,12 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setShowDailyTasksOnHome(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.showDailyTasksOnHome] = if (enabled) 1 else 0
+        }
+    }
+
+    suspend fun setSmartSuggestionsEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.smartSuggestionsEnabled] = if (enabled) 1 else 0
         }
     }
 

@@ -9,6 +9,7 @@ import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
+import com.minifocus.launcher.manager.AppUsageStatsManager
 
 class LauncherViewModelFactory(
     private val appsManager: AppsManager,
@@ -17,7 +18,8 @@ class LauncherViewModelFactory(
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
     private val settingsManager: SettingsManager,
-    private val searchManager: SearchManager
+    private val searchManager: SearchManager,
+    private val appUsageStatsManager: AppUsageStatsManager
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -30,7 +32,8 @@ class LauncherViewModelFactory(
                 hiddenAppsManager = hiddenAppsManager,
                 lockManager = lockManager,
                 settingsManager = settingsManager,
-                searchManager = searchManager
+                searchManager = searchManager,
+                appUsageStatsManager = appUsageStatsManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")
