@@ -10,6 +10,7 @@ import androidx.compose.animation.core.repeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -45,6 +46,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -99,6 +102,8 @@ import com.minifocus.launcher.model.DailyTaskItem
 import com.minifocus.launcher.model.DailyTaskRepeatMode
 import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.model.patternLabel
+import com.minifocus.launcher.model.AppUsageEventSource
+import com.minifocus.launcher.model.SmartSuggestion
 import com.minifocus.launcher.viewmodel.LauncherUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
@@ -146,6 +151,8 @@ fun LauncherApp(
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
+    onSmartSuggestionsToggle: (Boolean) -> Unit,
+    onResetSmartSuggestions: () -> Unit,
     onShowSecondsChange: (Boolean) -> Unit,
     onShowDailyTasksOnHomeChange: (Boolean) -> Unit,
     onDoubleTapLockScreenChange: (Boolean) -> Unit,
@@ -164,6 +171,7 @@ fun LauncherApp(
     onNotificationFilterQueryChange: (String) -> Unit,
     onNotificationFilterToggle: (NotificationFilterItem) -> Unit,
     onNotificationFilterToggleAll: (Boolean) -> Unit,
+    onRecordAppUsage: (String, AppUsageEventSource, String?) -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
@@ -396,6 +404,7 @@ fun LauncherApp(
                         bottomLeftApp = state.bottomLeft,
                         bottomRightApp = state.bottomRight,
                         keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                        smartSuggestionsEnabled = state.smartSuggestionsEnabled,
                         notificationInboxEnabled = state.notificationInboxEnabled,
                         notificationRetentionDays = state.notificationRetentionDays,
                         logRetentionDays = state.logRetentionDays,
@@ -437,7 +446,10 @@ fun LauncherApp(
                 state.isAppDrawerSettingsVisible -> {
                     AppDrawerSettingsScreen(
                         keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
+                        smartSuggestionsEnabled = state.smartSuggestionsEnabled,
                         onKeyboardToggle = onKeyboardSearchOnSwipeChange,
+                        onSmartSuggestionsToggle = onSmartSuggestionsToggle,
+                        onResetSmartSuggestions = onResetSmartSuggestions,
                         onBack = { closeAppDrawerSettings() }
                     )
                 }
@@ -503,6 +515,7 @@ fun LauncherApp(
                             1 -> HomeScreen(
                                 state = state,
                                 onLaunchApp = { entry ->
+                                    onRecordAppUsage(entry.packageName, AppUsageEventSource.HOME, null)
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
@@ -526,8 +539,12 @@ fun LauncherApp(
                                 searchQuery = state.searchQuery,
                                 shouldFocusSearch = shouldFocusInlineSearch,
                                 unreadCount = notificationInboxState.unreadCount,
+                                smartSuggestionsEnabled = state.smartSuggestionsEnabled,
+                                smartSuggestions = state.smartSuggestions,
+                                usageWeights = state.smartSuggestionWeights,
                                 onQueryChange = onSearchQueryChange,
-                                onLaunchApp = { entry ->
+                                onAppSelected = { entry, source, query ->
+                                    onRecordAppUsage(entry.packageName, source, query)
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
@@ -566,6 +583,7 @@ fun LauncherApp(
                         coroutineScope.launch {
                             if (canLaunch(entry.packageName)) {
                                 onSearchVisibilityChange(false)
+                                onRecordAppUsage(entry.packageName, AppUsageEventSource.SEARCH_OVERLAY, state.searchQuery)
                                 onLaunchApp(entry.packageName)
                             }
                             // If app is locked, simply don't launch (no snackbar message)
@@ -1373,8 +1391,11 @@ private fun AllAppsScreen(
     searchQuery: String,
     shouldFocusSearch: Boolean,
     unreadCount: Int,
+    smartSuggestionsEnabled: Boolean,
+    smartSuggestions: List<SmartSuggestion>,
+    usageWeights: Map<String, Double>,
     onQueryChange: (String) -> Unit,
-    onLaunchApp: (AppEntry) -> Unit,
+    onAppSelected: (AppEntry, AppUsageEventSource, String?) -> Unit,
     onPinApp: (String) -> Unit,
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
@@ -1387,27 +1408,48 @@ private fun AllAppsScreen(
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
     val blinkingApp = remember { mutableStateOf<String?>(null) }
     val appToLaunch = remember { mutableStateOf<AppEntry?>(null) }
+    val appLaunchSource = remember { mutableStateOf(AppUsageEventSource.ALL_APPS_SEARCH) }
     val searchActive = searchQuery.isNotBlank()
-    val filteredApps = remember(apps, searchQuery) {
+    val filteredApps = remember(apps, searchQuery, usageWeights) {
         if (searchActive) {
             apps.filter { fuzzyMatch(it.label, searchQuery) }
-                .sortedWith(compareBy(
-                    { matchScore(it.label, searchQuery) },
-                    { it.label.lowercase() }
-                ))
+                .sortedWith(
+                    compareBy<AppEntry> { matchScore(it.label, searchQuery) }
+                        .thenByDescending { usageWeights[it.packageName] ?: 0.0 }
+                        .thenBy { it.label.lowercase() }
+                )
         } else {
             apps
         }
     }
-    val filteredHiddenApps = remember(hiddenApps, searchQuery) {
+    val filteredHiddenApps = remember(hiddenApps, searchQuery, usageWeights) {
         if (searchActive) {
             hiddenApps.filter { fuzzyMatch(it.label, searchQuery) }
-                .sortedWith(compareBy(
-                    { matchScore(it.label, searchQuery) },
-                    { it.label.lowercase() }
-                ))
+                .sortedWith(
+                    compareBy<AppEntry> { matchScore(it.label, searchQuery) }
+                        .thenByDescending { usageWeights[it.packageName] ?: 0.0 }
+                        .thenBy { it.label.lowercase() }
+                )
         } else {
             hiddenApps
+        }
+    }
+
+    val suggestionEntries = remember(smartSuggestions, searchActive, smartSuggestionsEnabled) {
+        if (!searchActive && smartSuggestionsEnabled && smartSuggestions.isNotEmpty()) {
+            smartSuggestions.take(3).map { it.app }
+        } else {
+            emptyList()
+        }
+    }
+    val suggestionPackages = remember(suggestionEntries) {
+        suggestionEntries.map { it.packageName }.toSet()
+    }
+    val remainingApps = remember(filteredApps, suggestionPackages) {
+        if (suggestionPackages.isEmpty()) {
+            filteredApps
+        } else {
+            filteredApps.filterNot { suggestionPackages.contains(it.packageName) }
         }
     }
 
@@ -1518,6 +1560,7 @@ private fun AllAppsScreen(
                         onDone = {
                             val firstApp = filteredApps.firstOrNull()
                             if (firstApp != null) {
+                                appLaunchSource.value = AppUsageEventSource.ALL_APPS_SEARCH
                                 appToLaunch.value = firstApp
                                 blinkingApp.value = firstApp.packageName
                                 keyboardController?.hide()
@@ -1545,10 +1588,12 @@ private fun AllAppsScreen(
                     blinkingApp.value = null
                     
                     // Launch the app
+                    val queryContext = searchQuery.takeIf { it.isNotBlank() }
                     focusManager.clearFocus(force = true)
                     keyboardController?.hide()
                     onQueryChange("")
-                    onLaunchApp(app)
+                    onAppSelected(app, appLaunchSource.value, queryContext)
+                    appLaunchSource.value = AppUsageEventSource.ALL_APPS_SEARCH
                     appToLaunch.value = null
                 }
             }
@@ -1565,7 +1610,30 @@ private fun AllAppsScreen(
                 )
             }
         } else {
-            items(filteredApps) { app ->
+            if (suggestionEntries.isNotEmpty()) {
+                item { SectionDivider(label = "Frequently opened") }
+                items(suggestionEntries) { app ->
+                    val isBlinking = blinkingApp.value == app.packageName
+                    Text(
+                        text = app.label,
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .alpha(if (isBlinking) 0.3f else 1f)
+                            .combinedClickable(
+                                onClick = {
+                                    val queryContext = if (searchActive) searchQuery else null
+                                    onAppSelected(app, AppUsageEventSource.SMART_SUGGESTION, queryContext)
+                                },
+                                onLongClick = { expandedApp.value = app.packageName }
+                            )
+                    )
+                }
+                item { SectionDivider(label = "All apps") }
+            }
+
+            items(remainingApps) { app ->
                 val isBlinking = blinkingApp.value == app.packageName
                 Text(
                     text = app.label,
@@ -1575,7 +1643,10 @@ private fun AllAppsScreen(
                         .padding(vertical = 8.dp)
                         .alpha(if (isBlinking) 0.3f else 1f)
                         .combinedClickable(
-                            onClick = { onLaunchApp(app) },
+                            onClick = {
+                                val queryContext = if (searchActive) searchQuery else null
+                                onAppSelected(app, AppUsageEventSource.ALL_APPS_LIST, queryContext)
+                            },
                             onLongClick = { expandedApp.value = app.packageName }
                         )
                 )
@@ -1593,7 +1664,10 @@ private fun AllAppsScreen(
                             .fillMaxWidth()
                             .padding(vertical = 6.dp)
                             .combinedClickable(
-                                onClick = { onLaunchApp(app) },
+                                onClick = {
+                                    val queryContext = if (searchActive) searchQuery else null
+                                    onAppSelected(app, AppUsageEventSource.ALL_APPS_LIST, queryContext)
+                                },
                                 onLongClick = { expandedApp.value = app.packageName }
                             )
                     )
@@ -1633,6 +1707,28 @@ private fun AllAppsScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun SectionDivider(label: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF888888),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        HorizontalDivider(
+            color = Color(0x22FFFFFF),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -1743,6 +1839,7 @@ private fun SettingsScreen(
     bottomLeftApp: AppEntry?,
     bottomRightApp: AppEntry?,
     keyboardOnSwipe: Boolean,
+    smartSuggestionsEnabled: Boolean,
     notificationInboxEnabled: Boolean,
     notificationRetentionDays: Int,
     logRetentionDays: Int,
@@ -1791,10 +1888,9 @@ private fun SettingsScreen(
         else -> "Missing ${optionalMissing.joinToString(", ")}"
     }
 
-    val appDrawerSummary = if (keyboardOnSwipe) {
-        "Keyboard opens with swipe"
-    } else {
-        "Keyboard opens manually"
+    val appDrawerSummary = buildString {
+        append(if (keyboardOnSwipe) "Keyboard opens with swipe" else "Keyboard opens manually")
+        append(if (smartSuggestionsEnabled) " · smart suggestions on" else " · smart suggestions off")
     }
 
     val deviceSettingsSummary = "Open Android settings"
@@ -2143,7 +2239,10 @@ private fun ClockSettingsScreen(
 @Composable
 private fun AppDrawerSettingsScreen(
     keyboardOnSwipe: Boolean,
+    smartSuggestionsEnabled: Boolean,
     onKeyboardToggle: (Boolean) -> Unit,
+    onSmartSuggestionsToggle: (Boolean) -> Unit,
+    onResetSmartSuggestions: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -2205,6 +2304,45 @@ private fun AppDrawerSettingsScreen(
             fontSize = 14.sp,
             lineHeight = 20.sp
         )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Smart suggestions",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Show adaptive row",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            }
+            Switch(
+                checked = smartSuggestionsEnabled,
+                onCheckedChange = onSmartSuggestionsToggle
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onResetSmartSuggestions,
+            border = BorderStroke(1.dp, Color.White),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+        ) {
+            Text(text = "Reset learning data")
+        }
     }
 }
 

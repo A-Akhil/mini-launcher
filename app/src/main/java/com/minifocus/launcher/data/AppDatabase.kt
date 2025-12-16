@@ -13,6 +13,7 @@ import com.minifocus.launcher.data.dao.PinnedAppDao
 import com.minifocus.launcher.data.dao.TaskDao
 import com.minifocus.launcher.data.dao.NotificationDao
 import com.minifocus.launcher.data.dao.NotificationFilterDao
+import com.minifocus.launcher.data.dao.AppUsageStatsDao
 import com.minifocus.launcher.data.entity.AppLockEntity
 import com.minifocus.launcher.data.entity.DailyTaskEntity
 import com.minifocus.launcher.data.entity.HiddenAppEntity
@@ -20,6 +21,7 @@ import com.minifocus.launcher.data.entity.PinnedAppEntity
 import com.minifocus.launcher.data.entity.TaskEntity
 import com.minifocus.launcher.data.entity.NotificationEntity
 import com.minifocus.launcher.data.entity.NotificationFilterEntity
+import com.minifocus.launcher.data.entity.AppUsageStatsEntity
 
 @Database(
     entities = [
@@ -29,9 +31,10 @@ import com.minifocus.launcher.data.entity.NotificationFilterEntity
         AppLockEntity::class,
         NotificationEntity::class,
         NotificationFilterEntity::class,
-        DailyTaskEntity::class
+        DailyTaskEntity::class,
+        AppUsageStatsEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -43,6 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun notificationFilterDao(): NotificationFilterDao
     abstract fun dailyTaskDao(): DailyTaskDao
+    abstract fun appUsageStatsDao(): AppUsageStatsDao
 
     companion object {
         fun build(context: Context): AppDatabase = Room.databaseBuilder(
@@ -50,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
             AppDatabase::class.java,
             "minimalist_focus_launcher.db"
         )
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -125,6 +129,26 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "ALTER TABLE `daily_tasks` ADD COLUMN `days_of_week_mask` INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `app_usage_stats` (
+                        `package_name` TEXT NOT NULL,
+                        `total_score` REAL NOT NULL DEFAULT 0,
+                        `morning_score` REAL NOT NULL DEFAULT 0,
+                        `midday_score` REAL NOT NULL DEFAULT 0,
+                        `evening_score` REAL NOT NULL DEFAULT 0,
+                        `late_score` REAL NOT NULL DEFAULT 0,
+                        `last_launch_epoch` INTEGER NOT NULL DEFAULT 0,
+                        `last_decay_day` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`package_name`)
+                    )
+                    """.trimIndent()
                 )
             }
         }

@@ -9,6 +9,9 @@ import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
+import com.minifocus.launcher.manager.AppUsageStatsManager
+import com.minifocus.launcher.manager.AppUsageStats
+import com.minifocus.launcher.manager.AppUsageCohort
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
@@ -18,6 +21,9 @@ import com.minifocus.launcher.model.TaskItem
 import com.minifocus.launcher.model.DailyTaskItem
 import com.minifocus.launcher.model.DailyTaskRepeatMode
 import com.minifocus.launcher.model.DailyTaskWeekdayMask
+import com.minifocus.launcher.model.AppUsageEventSource
+import com.minifocus.launcher.model.SmartSuggestion
+import com.minifocus.launcher.model.SmartSuggestionReason
 import com.minifocus.launcher.data.entity.toItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +55,7 @@ import java.time.format.DateTimeFormatter
 private const val CLOCK_TICK_INTERVAL_MS = 1000L
 private const val DAILY_TASK_COMPLETION_HOLD_MS = 10_000L
 private const val TASK_HISTORY_GRACE_MS = 10_000L
+private const val TIME_OF_DAY_BOOST = 0.4
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LauncherViewModel(
@@ -58,7 +65,8 @@ class LauncherViewModel(
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
     private val settingsManager: SettingsManager,
-    private val searchManager: SearchManager
+    private val searchManager: SearchManager,
+    private val appUsageStatsManager: AppUsageStatsManager
 ) : ViewModel() {
 
     private val zoneId = ZoneId.systemDefault()
@@ -85,6 +93,21 @@ class LauncherViewModel(
 
     private val dailyTaskItemsFlow: Flow<List<DailyTaskItem>> = combine(dailyTasksFlow, todayEpochDayFlow) { entities, epochDay ->
         entities.map { it.toItem(epochDay) }
+    }
+
+    private val smartSuggestionsEnabledFlow = settingsManager.observeSmartSuggestionsEnabled()
+    private val usageStatsFlow = appUsageStatsManager.observeStats()
+    private val cohortFlow: Flow<AppUsageCohort> = timeFlow
+        .map { AppUsageCohort.fromHour(it.hour) }
+        .distinctUntilChanged()
+
+    private val smartUsageState: Flow<SmartUsageState> = combine(
+        smartSuggestionsEnabledFlow,
+        usageStatsFlow,
+        appsManager.observeAllApps(),
+        cohortFlow
+    ) { enabled, stats, apps, cohort ->
+        buildSmartUsageState(enabled, stats, apps, cohort)
     }
 
     private val searchQuery = MutableStateFlow("")
@@ -141,7 +164,8 @@ class LauncherViewModel(
                 notificationInboxEnabled = false,
                 notificationRetentionDays = 0,
                 logRetentionDays = 0,
-                doubleTapLockScreen = false
+                doubleTapLockScreen = false,
+                smartSuggestionsEnabled = true
             )
         }
         .combine(settingsManager.observeBottomIcon(BottomIconSlot.LEFT)) { snapshot, bottomLeft ->
@@ -170,6 +194,9 @@ class LauncherViewModel(
         }
         .combine(settingsManager.observeDoubleTapLockScreen()) { snapshot, doubleTap ->
             snapshot.copy(doubleTapLockScreen = doubleTap)
+        }
+        .combine(smartSuggestionsEnabledFlow) { snapshot, smartEnabled ->
+            snapshot.copy(smartSuggestionsEnabled = smartEnabled)
         }
 
     private val overlaySnapshot = timeFlow
@@ -254,6 +281,9 @@ class LauncherViewModel(
             notificationRetentionDays = prefs.notificationRetentionDays,
             logRetentionDays = prefs.logRetentionDays,
             doubleTapLockScreen = prefs.doubleTapLockScreen,
+            smartSuggestionsEnabled = prefs.smartSuggestionsEnabled,
+            smartSuggestions = emptyList(),
+            smartSuggestionWeights = emptyMap(),
             message = null
         )
     }
@@ -295,6 +325,12 @@ class LauncherViewModel(
         }
         .combine(isEmergencyUnlockVisible) { state, emergencyUnlockVisible ->
             state.copy(isEmergencyUnlockVisible = emergencyUnlockVisible)
+        }
+        .combine(smartUsageState) { state, smartState ->
+            state.copy(
+                smartSuggestions = smartState.suggestions,
+                smartSuggestionWeights = smartState.weights
+            )
         }
         .combine(homeResetTick) { state, resetTick ->
             state.copy(homeResetTick = resetTick)
@@ -673,6 +709,20 @@ class LauncherViewModel(
         viewModelScope.launch { settingsManager.setDoubleTapLockScreen(enabled) }
     }
 
+    fun setSmartSuggestionsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setSmartSuggestionsEnabled(enabled) }
+    }
+
+    fun resetSmartSuggestions() {
+        viewModelScope.launch { appUsageStatsManager.clearAll() }
+    }
+
+    fun recordAppUsage(packageName: String, source: AppUsageEventSource, query: String? = null) {
+        viewModelScope.launch {
+            appUsageStatsManager.recordLaunch(packageName, source.weight)
+        }
+    }
+
     suspend fun canLaunch(packageName: String): Boolean = withContext(Dispatchers.IO) {
         !lockManager.isLocked(packageName)
     }
@@ -728,6 +778,63 @@ class LauncherViewModel(
     }
 }
 
+private data class SmartUsageState(
+    val suggestions: List<SmartSuggestion>,
+    val weights: Map<String, Double>
+)
+
+private fun buildSmartUsageState(
+    enabled: Boolean,
+    stats: Map<String, AppUsageStats>,
+    apps: List<AppEntry>,
+    cohort: AppUsageCohort
+): SmartUsageState {
+    if (!enabled || stats.isEmpty()) {
+        return SmartUsageState(emptyList(), emptyMap())
+    }
+
+    val weights = computeUsageWeights(stats, cohort)
+    val suggestions = apps
+        .filter { !it.isHidden }
+        .sortedByDescending { weights[it.packageName] ?: 0.0 }
+        .filter { (weights[it.packageName] ?: 0.0) > 0.0 }
+        .take(3)
+        .map { app ->
+            val stat = stats[app.packageName]
+            SmartSuggestion(
+                app = app,
+                reason = determineSuggestionReason(stat, cohort)
+            )
+        }
+
+    return SmartUsageState(suggestions, weights)
+}
+
+private fun computeUsageWeights(
+    stats: Map<String, AppUsageStats>,
+    cohort: AppUsageCohort
+): Map<String, Double> {
+    if (stats.isEmpty()) return emptyMap()
+    val index = cohort.index
+    return stats.mapValues { (_, stat) ->
+        val timeScore = stat.cohortScores.getOrNull(index) ?: 0.0
+        stat.totalScore + timeScore * (1.0 + TIME_OF_DAY_BOOST)
+    }
+}
+
+private fun determineSuggestionReason(
+    stat: AppUsageStats?,
+    cohort: AppUsageCohort
+): SmartSuggestionReason {
+    if (stat == null) return SmartSuggestionReason.FREQUENT
+    val timeScore = stat.cohortScores.getOrNull(cohort.index) ?: 0.0
+    return if (timeScore > 0 && timeScore >= stat.totalScore * 0.5) {
+        SmartSuggestionReason.TIME_OF_DAY
+    } else {
+        SmartSuggestionReason.FREQUENT
+    }
+}
+
 private data class DataSnapshot(
     val pinned: List<AppEntry>,
     val all: List<AppEntry>,
@@ -747,7 +854,8 @@ private data class PreferencesSnapshot(
     val notificationInboxEnabled: Boolean,
     val notificationRetentionDays: Int,
     val logRetentionDays: Int,
-    val doubleTapLockScreen: Boolean
+    val doubleTapLockScreen: Boolean,
+    val smartSuggestionsEnabled: Boolean
 )
 
 private data class OverlaySnapshot(
@@ -793,6 +901,9 @@ data class LauncherUiState(
     val notificationRetentionDays: Int = 2,
     val logRetentionDays: Int = 30,
     val doubleTapLockScreen: Boolean = false,
+    val smartSuggestionsEnabled: Boolean = true,
+    val smartSuggestions: List<SmartSuggestion> = emptyList(),
+    val smartSuggestionWeights: Map<String, Double> = emptyMap(),
     val message: String? = null,
     val homeResetTick: Int = 0
 ) {
