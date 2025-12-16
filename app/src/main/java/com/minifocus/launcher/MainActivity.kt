@@ -102,7 +102,8 @@ class MainActivity : ComponentActivity() {
             hiddenAppsManager = app.container.hiddenAppsManager,
             lockManager = app.container.lockManager,
             settingsManager = app.container.settingsManager,
-            searchManager = app.container.searchManager
+            searchManager = app.container.searchManager,
+            appUsageStatsManager = app.container.appUsageStatsManager
         )
     }
 
@@ -196,6 +197,8 @@ class MainActivity : ComponentActivity() {
                         onEmergencyUnlockVisibilityChange = viewModel::setEmergencyUnlockVisibility,
                         onClockFormatChange = viewModel::setClockFormat,
                         onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
+                        onSmartSuggestionsToggle = viewModel::setSmartSuggestionsEnabled,
+                        onResetSmartSuggestions = viewModel::resetSmartSuggestions,
                         onShowSecondsChange = viewModel::setShowSeconds,
                         onShowDailyTasksOnHomeChange = viewModel::setShowDailyTasksOnHome,
                         onDoubleTapLockScreenChange = viewModel::setDoubleTapLockScreen,
@@ -217,6 +220,7 @@ class MainActivity : ComponentActivity() {
                         onOpenDeviceSettings = ::openDeviceSettings,
                         onRequestLockAccessibility = ::requestLockAccessibility,
                         onLockDevice = ::lockDevice,
+                        onRecordAppUsage = viewModel::recordAppUsage,
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },

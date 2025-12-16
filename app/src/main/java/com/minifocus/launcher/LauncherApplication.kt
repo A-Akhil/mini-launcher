@@ -12,6 +12,7 @@ import com.minifocus.launcher.manager.NotificationInboxManager
 import com.minifocus.launcher.manager.SearchManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
+import com.minifocus.launcher.manager.AppUsageStatsManager
 import com.minifocus.launcher.service.AppLockMonitorService
 import com.minifocus.launcher.worker.NotificationMaintenanceWorker
 import kotlinx.coroutines.CoroutineScope
@@ -37,7 +38,8 @@ class LauncherApplication : Application() {
             }
         )
         val tasksManager = TasksManager(database.taskDao(), this)
-    val dailyTasksManager = DailyTasksManager(database.dailyTaskDao())
+        val dailyTasksManager = DailyTasksManager(database.dailyTaskDao())
+        val appUsageStatsManager = AppUsageStatsManager(database.appUsageStatsDao(), appScope)
         val hiddenManager = HiddenAppsManager(database.hiddenAppDao())
         val lockManager = LockManager(database.appLockDao())
         val appsManager = AppsManager(
@@ -64,7 +66,8 @@ class LauncherApplication : Application() {
             dailyTasksManager = dailyTasksManager,
             notificationInboxManager = notificationInboxManager,
             inboxLogger = inboxLogger,
-            applicationScope = appScope
+            applicationScope = appScope,
+            appUsageStatsManager = appUsageStatsManager
         )
 
         appScope.launch {
@@ -125,5 +128,6 @@ class AppContainer(
     val searchManager: SearchManager,
     val notificationInboxManager: NotificationInboxManager,
     val inboxLogger: InboxLogger,
-    val applicationScope: CoroutineScope
+    val applicationScope: CoroutineScope,
+    val appUsageStatsManager: AppUsageStatsManager
 )
