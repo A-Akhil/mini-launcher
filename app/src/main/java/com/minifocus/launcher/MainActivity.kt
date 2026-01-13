@@ -250,7 +250,8 @@ class MainActivity : ComponentActivity() {
                                 settingsManager.setPermissionOnboardingAcknowledged(true)
                                 permissionManagerVisible.value = false
                             }
-                        }
+                        },
+                        onRefreshPermissions = ::updatePermissionsState
                     )
                 }
             }
