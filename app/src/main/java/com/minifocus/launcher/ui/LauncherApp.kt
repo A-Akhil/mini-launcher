@@ -1443,6 +1443,30 @@ private fun matchScore(label: String, query: String): Int {
     return 4
 }
 
+// New multiplier logic consistent with SearchManager
+private fun calculateHybridMatchMultiplier(label: String, query: String): Double {
+    val lowerLabel = label.lowercase()
+    val isSingleChar = query.length == 1
+    
+    // Priority 1: Starts with query
+    if (lowerLabel.startsWith(query)) {
+        return if (isSingleChar) 1000.0 else 4.0
+    }
+
+    // Priority 2: Word starts with query (Check boundaries)
+    // We already lowercased query and label for comparison
+    var index = lowerLabel.indexOf(query)
+    while (index >= 0) {
+        if (index > 0 && !Character.isLetterOrDigit(lowerLabel[index - 1])) {
+            return if (isSingleChar) 500.0 else 3.0
+        }
+        index = lowerLabel.indexOf(query, index + 1)
+    }
+
+    // Priority 3: Just contains
+    return 1.0
+}
+
 @Composable
 private fun AllAppsScreen(
     apps: List<AppEntry>,
@@ -1470,12 +1494,15 @@ private fun AllAppsScreen(
     val searchActive = searchQuery.isNotBlank()
     val filteredApps = remember(apps, searchQuery, usageWeights) {
         if (searchActive) {
+            val query = searchQuery.lowercase().filter { it.isLetterOrDigit() }
+            if (query.isEmpty()) return@remember apps
+
             apps.filter { fuzzyMatch(it.label, searchQuery) }
-                .sortedWith(
-                    compareBy<AppEntry> { matchScore(it.label, searchQuery) }
-                        .thenByDescending { usageWeights[it.packageName] ?: 0.0 }
-                        .thenBy { it.label.lowercase() }
-                )
+                .sortedByDescending { app ->
+                    val usage = usageWeights[app.packageName] ?: 0.0
+                    val multiplier = calculateHybridMatchMultiplier(app.label, query)
+                    (usage + 0.1) * multiplier
+                }
         } else {
             apps
         }
@@ -2316,7 +2343,7 @@ private fun HiddenAppsScreen(
                         progress = { holdProgress },
                         strokeWidth = 6.dp,
                         color = Color.White,
-                        trackColor = Color(0x22FFFFFF),
+                        trackColor = Color(0xFF444444),
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(28.dp)

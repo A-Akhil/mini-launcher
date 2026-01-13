@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.first
 
 class SearchManager(
     private val appsManager: AppsManager,
-    private val tasksManager: TasksManager
+    private val tasksManager: TasksManager,
+    private val appUsageStatsManager: AppUsageStatsManager
 ) {
 
     suspend fun search(query: String): List<SearchResult> {
@@ -41,16 +42,46 @@ class SearchManager(
     private suspend fun combineSearch(query: String): List<SearchResult> {
         val apps = appsManager.observeAllApps().first()
         val tasks = tasksManager.observeTasks().first()
-    val hidden = appsManager.observeHiddenApps().first()
+        val hidden = appsManager.observeHiddenApps().first()
+        val stats = appUsageStatsManager.observeStats().value
+
         val results = mutableListOf<SearchResult>()
 
         results += apps.filter { it.label.contains(query, ignoreCase = true) }
+            .sortedByDescending { app ->
+                val usage = stats[app.packageName]?.totalScore ?: 0.0
+                val multiplier = calculateMatchMultiplier(app.label, query)
+                (usage + 0.1) * multiplier
+            }
             .map { SearchResult.App(it) }
+            
         results += hidden.filter { it.label.contains(query, ignoreCase = true) }
             .map { SearchResult.App(it) }
         results += tasks.filter { it.title.contains(query, ignoreCase = true) }
             .map { SearchResult.Task(it) }
 
         return results
+    }
+
+    private fun calculateMatchMultiplier(label: String, query: String): Double {
+        val isSingleChar = query.length == 1
+        
+        // Priority 1: Starts with query
+        if (label.startsWith(query, ignoreCase = true)) {
+            return if (isSingleChar) 1000.0 else 4.0 // Boosted for strong prefix preference
+        }
+
+        // Priority 2: Word starts with query (e.g. "Proton VPN" matches "vp")
+        // Check for boundary: index > 0 and prev char is not letter/digit
+        var index = label.indexOf(query, ignoreCase = true)
+        while (index >= 0) {
+            if (index > 0 && !Character.isLetterOrDigit(label[index - 1])) {
+                return if (isSingleChar) 500.0 else 3.0 // Significant boost for word start
+            }
+            index = label.indexOf(query, index + 1, ignoreCase = true)
+        }
+
+        // Priority 3: Just contains
+        return 1.0
     }
 }
