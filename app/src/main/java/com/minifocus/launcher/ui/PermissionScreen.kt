@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,8 +47,13 @@ fun PermissionScreen(
     showRestrictedNotificationHint: Boolean,
     onOpenRestrictedSettings: () -> Unit,
     onClose: () -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    onRefreshPermissions: () -> Unit = {}
 ) {
+    LaunchedEffect(Unit) {
+        onRefreshPermissions()
+    }
+    
     BackHandler(enabled = allowDismiss) {
         onClose()
     }
