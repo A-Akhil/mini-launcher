@@ -31,6 +31,11 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.telecom.TelecomManager
 import java.util.concurrent.TimeUnit
+import java.time.Instant
+import java.time.format.DateTimeParseException
+import kotlin.collections.buildMap
+import kotlin.math.abs
+import org.json.JSONObject
 
 class NotificationInboxManager(
     private val context: Context,
@@ -206,11 +211,20 @@ class NotificationInboxManager(
         logger.log(
             event = "intercept",
             message = "Stored notification",
-            metadata = mapOf(
-                "package" to sbn.packageName,
-                "title" to (title ?: ""),
-                "timestamp" to timestamp.toString()
-            )
+            metadata = buildMap {
+                put("package", sbn.packageName)
+                put("timestamp", timestamp.toString())
+                put("key", sbn.key)
+                if (appName.isNotBlank()) {
+                    put("appName", appName)
+                }
+                title?.takeIf { it.isNotBlank() }?.let { value ->
+                    put("title", value)
+                }
+                contentText?.takeIf { it.isNotBlank() }?.let { value ->
+                    put("text", value)
+                }
+            }
         )
         debug("stored pkg=${sbn.packageName} id=${entity.id} key=${entity.key}")
         refreshSummaryNotification()
@@ -484,11 +498,99 @@ class NotificationInboxManager(
     private fun pendingIntentFlags(): Int =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
 
+    suspend fun loadLogHistory(limit: Int = LOG_HISTORY_LIMIT): List<NotificationItem> {
+        if (limit <= 0) return emptyList()
+        val inboxItems = notificationDao.getAll().map { it.toItem() }
+        val seenEntries = inboxItems.mapTo(mutableSetOf()) { it.key to it.timestamp }
+        val archiveItems = logger.readLogs(limit)
+            .asSequence()
+            .mapNotNull { line -> parseLogLine(line) }
+            .filter { item -> seenEntries.add(item.key to item.timestamp) }
+            .toList()
+
+        return (inboxItems + archiveItems)
+            .sortedByDescending { it.timestamp }
+            .take(limit)
+    }
+
+    private fun parseLogLine(line: String): NotificationItem? {
+        return try {
+            val json = JSONObject(line)
+            if (json.optString("event") != "intercept") return null
+            val metadata = json.optJSONObject("metadata") ?: return null
+            val packageName = sanitize(metadata.optString("package")) ?: return null
+            val appName = sanitize(metadata.optString("appName")) ?: packageName
+            val title = sanitize(metadata.optString("title"))
+            val text = sanitize(metadata.optString("text"))
+            val metadataTimestamp = sanitize(metadata.optString("timestamp"))?.toLongOrNull()
+            val logTimestamp = parseIsoTimestamp(json.optString("timestamp"))
+            val resolvedTimestamp = metadataTimestamp ?: logTimestamp
+            val key = sanitize(metadata.optString("key"))
+                ?: syntheticLogKey(packageName, if (resolvedTimestamp != 0L) resolvedTimestamp else logTimestamp, title, text)
+
+            NotificationItem(
+                id = stableLogId(key),
+                key = key,
+                packageName = packageName,
+                appName = appName,
+                title = title,
+                text = text,
+                timestamp = if (resolvedTimestamp != 0L) resolvedTimestamp else logTimestamp,
+                isRead = true,
+                expiresAt = null
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun sanitize(value: String?): String? {
+        val trimmed = value?.trim()
+        if (trimmed.isNullOrEmpty()) return null
+        return if (trimmed.equals("null", ignoreCase = true)) null else trimmed
+    }
+
+    private fun syntheticLogKey(
+        packageName: String,
+        timestamp: Long,
+        title: String?,
+        text: String?
+    ): String {
+        return buildString {
+            append(packageName)
+            append(':')
+            append(timestamp)
+            title?.let {
+                append(':')
+                append(it)
+            }
+            text?.let {
+                append(':')
+                append(it)
+            }
+        }
+    }
+
+    private fun stableLogId(key: String): Long {
+        val magnitude = abs(key.hashCode().toLong())
+        return -magnitude - 1L
+    }
+
+    private fun parseIsoTimestamp(raw: String?): Long {
+        val sanitized = sanitize(raw) ?: return 0L
+        return try {
+            Instant.parse(sanitized).toEpochMilli()
+        } catch (_: DateTimeParseException) {
+            0L
+        }
+    }
+
     companion object {
         private const val LOG_TAG = "NotificationInbox"
         private const val DEFAULT_NOTIFICATION_RETENTION_DAYS = 2
         private const val SUMMARY_NOTIFICATION_ID = 0x4E_54_46
         private const val SUMMARY_CHANNEL_ID = "notification_inbox_summary"
+        private const val LOG_HISTORY_LIMIT = 5000
     }
 
     private fun debug(message: String) {

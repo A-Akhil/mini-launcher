@@ -20,6 +20,7 @@ class NotificationInboxViewModel(
 
     data class NotificationInboxUiState(
         val notifications: List<NotificationItem> = emptyList(),
+        val logEntries: List<NotificationItem> = emptyList(),
         val unreadCount: Int = 0,
         val notificationRetentionDays: Int = DEFAULT_NOTIFICATION_RETENTION,
         val logRetentionDays: Int = DEFAULT_LOG_RETENTION,
@@ -27,9 +28,11 @@ class NotificationInboxViewModel(
     )
 
     private val lastDeleted = MutableStateFlow<NotificationItem?>(null)
+    private val logEntries = MutableStateFlow<List<NotificationItem>>(emptyList())
+    private val notificationsFlow = inboxManager.observeNotifications()
 
-    private val stateFlow = combine(
-        inboxManager.observeNotifications(),
+    private val baseStateFlow = combine(
+        notificationsFlow,
         inboxManager.observeUnreadCount(),
         settingsManager.observeNotificationRetentionDays(),
         settingsManager.observeLogRetentionDays(),
@@ -44,11 +47,27 @@ class NotificationInboxViewModel(
         )
     }
 
-    val uiState = stateFlow.stateIn(
+    val uiState = combine(baseStateFlow, logEntries) { state, logs ->
+        state.copy(logEntries = logs)
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = NotificationInboxUiState()
     )
+
+    init {
+        refreshLogEntries()
+        viewModelScope.launch {
+            notificationsFlow.collect {
+                refreshLogEntries()
+            }
+        }
+        viewModelScope.launch {
+            settingsManager.observeLogRetentionDays().collect {
+                refreshLogEntries()
+            }
+        }
+    }
 
     fun markAsRead(id: Long) {
         viewModelScope.launch {
@@ -96,8 +115,16 @@ class NotificationInboxViewModel(
         }
     }
 
+    fun refreshLogEntries() {
+        viewModelScope.launch {
+            val logs = inboxManager.loadLogHistory(LOG_HISTORY_LIMIT)
+            logEntries.value = logs
+        }
+    }
+
     companion object {
         private const val DEFAULT_NOTIFICATION_RETENTION = 2
         private const val DEFAULT_LOG_RETENTION = 30
+        private const val LOG_HISTORY_LIMIT = 5000
     }
 }

@@ -81,6 +81,36 @@ Here is the new feature added to your backlog as item #5:
 
 ---
 
+## 4.1. Enhanced Hidden Apps UX
+**Status:** Completed (2025-12-16)
+**Priority:** High
+
+### Description
+Provide a secure, gesture-based access method for hidden apps without passcodes or biometrics. Users can hide apps from All Apps/Search and access them only through a dedicated gated screen in App Drawer Settings.
+
+### Implementation Summary
+- Removed inline "Hidden Apps" section from All Apps screen
+- Added dedicated "Hidden Apps" entry in App Drawer Settings
+- Gate entry with 10-second tap-and-hold gesture with circular progress animation
+- Progress resets immediately if user releases early
+- Once unlocked, users can view and unhide apps from the dedicated screen
+- Hidden apps completely removed from All Apps and Search results
+- Clear user guidance during unlock process ("Unlocking hidden apps…")
+
+### Technical Details
+- Extended `LauncherViewModel` with `isHiddenAppsVisible` overlay flag
+- Created `HiddenAppsScreen` composable with press-hold progress tracking (10s duration)
+- Centered hold button UI with 200dp circular progress indicator
+- Migrated `CircularProgressIndicator` to lambda-based progress API
+- All unhide actions moved exclusively to gated screen
+- Integrated back-target handling in `MainActivity`/`LauncherApp`
+- Fixed 4 Kotlin warnings: deprecated CircularProgressIndicator, unused parameters, deprecated Icons.Filled.ArrowBack
+- Removed all "Tip" sections from settings screens (Home Settings, Clock Settings, App Drawer Settings)
+
+**Build Status:** Zero Kotlin warnings (only Gradle 9 deprecation notice remains)
+
+---
+
 ## 5. Notification Filter & Inbox
 **Status:** Not Started
 

@@ -34,6 +34,7 @@ fun NotificationSettingsScreen(
     onOpenNotificationRetention: () -> Unit,
     onOpenLogRetention: () -> Unit,
     onOpenAppFilters: () -> Unit,
+    onOpenLogViewer: () -> Unit,
     onNotificationInboxToggle: (Boolean) -> Unit
 ) {
     Column(
@@ -107,6 +108,14 @@ fun NotificationSettingsScreen(
                 title = "App filters",
                 value = "",
                 onClick = onOpenAppFilters
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsRow(
+                title = "View logs",
+                value = "",
+                onClick = onOpenLogViewer
             )
         } else {
             Text(

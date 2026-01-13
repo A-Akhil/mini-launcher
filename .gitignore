@@ -46,3 +46,7 @@ test_plan.md
 metrics.md
 decision_log.md
 futureplan.txt
+
+*.db*
+*.sql
+*.apk

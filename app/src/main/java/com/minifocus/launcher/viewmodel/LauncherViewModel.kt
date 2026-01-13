@@ -230,8 +230,10 @@ class LauncherViewModel(
     private val isNotificationInboxVisible = MutableStateFlow(false)
     private val isNotificationFilterVisible = MutableStateFlow(false)
     private val isNotificationSettingsVisible = MutableStateFlow(false)
+    private val isLogViewerVisible = MutableStateFlow(false)
     private val isAboutVisible = MutableStateFlow(false)
     private val isEmergencyUnlockVisible = MutableStateFlow(false)
+    private val isHiddenAppsVisible = MutableStateFlow(false)
 
     private val baseUiState = combine(
         dataSnapshot,
@@ -271,8 +273,10 @@ class LauncherViewModel(
             isNotificationInboxVisible = false,
             isNotificationFilterVisible = false,
             isNotificationSettingsVisible = false,
+            isLogViewerVisible = false,
             isAboutVisible = false,
             isEmergencyUnlockVisible = false,
+            isHiddenAppsVisible = false,
             showSeconds = prefs.showSeconds,
             showDailyTasksOnHome = prefs.showDailyTasksOnHome,
             showDailyTasksHomeSection = showHomeDailySection,
@@ -320,11 +324,17 @@ class LauncherViewModel(
         .combine(isNotificationSettingsVisible) { state, notifSettingsVisible ->
             state.copy(isNotificationSettingsVisible = notifSettingsVisible)
         }
+        .combine(isLogViewerVisible) { state, logViewerVisible ->
+            state.copy(isLogViewerVisible = logViewerVisible)
+        }
         .combine(isAboutVisible) { state, aboutVisible ->
             state.copy(isAboutVisible = aboutVisible)
         }
         .combine(isEmergencyUnlockVisible) { state, emergencyUnlockVisible ->
             state.copy(isEmergencyUnlockVisible = emergencyUnlockVisible)
+        }
+        .combine(isHiddenAppsVisible) { state, hiddenAppsVisible ->
+            state.copy(isHiddenAppsVisible = hiddenAppsVisible)
         }
         .combine(smartUsageState) { state, smartState ->
             state.copy(
@@ -504,6 +514,7 @@ class LauncherViewModel(
         isSearchVisible.value = visible
         if (visible) {
             isSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
         }
         if (!visible) {
             searchQuery.value = ""
@@ -520,6 +531,7 @@ class LauncherViewModel(
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -533,6 +545,7 @@ class LauncherViewModel(
             isAppDrawerSettingsVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -547,6 +560,7 @@ class LauncherViewModel(
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
         }
+            isHiddenAppsVisible.value = false
     }
 
     fun setClockSettingsVisibility(visible: Boolean) {
@@ -559,6 +573,7 @@ class LauncherViewModel(
             isAppDrawerSettingsVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -572,6 +587,7 @@ class LauncherViewModel(
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -585,6 +601,7 @@ class LauncherViewModel(
             isAppDrawerSettingsVisible.value = false
             isHistoryVisible.value = false
             isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -599,6 +616,7 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -610,10 +628,29 @@ class LauncherViewModel(
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
+            isLogViewerVisible.value = false
             isAboutVisible.value = false
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+        }
+    }
+
+    fun setLogViewerVisibility(visible: Boolean) {
+        isLogViewerVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -630,6 +667,7 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
         }
     }
 
@@ -646,6 +684,24 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+        }
+    }
+
+    fun setHiddenAppsVisibility(visible: Boolean) {
+        isHiddenAppsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isEmergencyUnlockVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
         }
     }
 
@@ -658,9 +714,11 @@ class LauncherViewModel(
         isNotificationInboxVisible.value = false
         isNotificationFilterVisible.value = false
         isNotificationSettingsVisible.value = false
+        isLogViewerVisible.value = false
         isAboutVisible.value = false
         isEmergencyUnlockVisible.value = false
         isSearchVisible.value = false
+        isHiddenAppsVisible.value = false
         searchQuery.value = ""
         homeResetTick.update { it + 1 }
     }
@@ -717,7 +775,7 @@ class LauncherViewModel(
         viewModelScope.launch { appUsageStatsManager.clearAll() }
     }
 
-    fun recordAppUsage(packageName: String, source: AppUsageEventSource, query: String? = null) {
+    fun recordAppUsage(packageName: String, source: AppUsageEventSource) {
         viewModelScope.launch {
             appUsageStatsManager.recordLaunch(packageName, source.weight)
         }
@@ -891,8 +949,10 @@ data class LauncherUiState(
     val isNotificationInboxVisible: Boolean = false,
     val isNotificationFilterVisible: Boolean = false,
     val isNotificationSettingsVisible: Boolean = false,
+    val isLogViewerVisible: Boolean = false,
     val isAboutVisible: Boolean = false,
     val isEmergencyUnlockVisible: Boolean = false,
+    val isHiddenAppsVisible: Boolean = false,
     val showSeconds: Boolean = false,
     val showDailyTasksOnHome: Boolean = true,
     val showDailyTasksHomeSection: Boolean = true,
