@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 class InboxLogger(
     private val context: Context,
@@ -126,6 +127,41 @@ class InboxLogger(
                     candidate.delete()
                 }
             }
+        }
+    }
+
+    suspend fun readLogs(maxLines: Int = 1000): List<String> = withContext(ioDispatcher) {
+        mutex.withLock {
+            val lines = mutableListOf<String>()
+            val currentLog = File(logDir, LOG_FILE_NAME)
+            if (currentLog.exists()) {
+                currentLog.useLines { sequence ->
+                    lines.addAll(sequence.take(maxLines))
+                }
+            }
+            
+            if (lines.size < maxLines) {
+                val archives = logDir.listFiles { file ->
+                    file.name.startsWith(LOG_FILE_NAME) && file.name.endsWith(".gz")
+                }?.sortedByDescending { it.lastModified() } ?: emptyList()
+                
+                for (archive in archives) {
+                    if (lines.size >= maxLines) break
+                    try {
+                        FileInputStream(archive).use { fis ->
+                            java.util.zip.GZIPInputStream(fis).bufferedReader().use { reader ->
+                                reader.lineSequence().take(maxLines - lines.size).forEach { line ->
+                                    lines.add(line)
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {
+                        // Skip corrupted archives
+                    }
+                }
+            }
+            
+            lines
         }
     }
 
