@@ -152,7 +152,6 @@ fun AppContextMenu(
                 // Menu items
                 actions.forEach { menuAction ->
                     AppMenuItem(
-                        icon = menuAction.icon,
                         label = menuAction.label,
                         color = menuAction.color,
                         onClick = menuAction.action
@@ -166,7 +165,6 @@ fun AppContextMenu(
 
 @Composable
 private fun AppMenuItem(
-    icon: ImageVector,
     label: String,
     color: Color = Color.White,
     onClick: () -> Unit

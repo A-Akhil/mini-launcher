@@ -39,6 +39,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.DropdownMenuItem
@@ -63,6 +64,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -114,6 +116,7 @@ import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
 import com.minifocus.launcher.ui.screens.EmergencyUnlockScreen
+import com.minifocus.launcher.ui.screens.LogViewerScreen
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
 import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
@@ -146,6 +149,7 @@ fun LauncherApp(
     onHomeSettingsVisibilityChange: (Boolean) -> Unit,
     onClockSettingsVisibilityChange: (Boolean) -> Unit,
     onAppDrawerSettingsVisibilityChange: (Boolean) -> Unit,
+    onHiddenAppsVisibilityChange: (Boolean) -> Unit,
     onAboutVisibilityChange: (Boolean) -> Unit,
     onEmergencyUnlockVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
@@ -159,6 +163,7 @@ fun LauncherApp(
     onNotificationInboxEnabledChange: (Boolean) -> Unit,
     onNotificationInboxVisibilityChange: (Boolean) -> Unit,
     onNotificationSettingsVisibilityChange: (Boolean) -> Unit,
+    onLogViewerVisibilityChange: (Boolean) -> Unit,
     onNotificationFilterVisibilityChange: (Boolean) -> Unit,
     onOpenPermissionManager: () -> Unit,
     onOpenDeviceSettings: () -> Unit,
@@ -171,7 +176,7 @@ fun LauncherApp(
     onNotificationFilterQueryChange: (String) -> Unit,
     onNotificationFilterToggle: (NotificationFilterItem) -> Unit,
     onNotificationFilterToggleAll: (Boolean) -> Unit,
-    onRecordAppUsage: (String, AppUsageEventSource, String?) -> Unit,
+    onRecordAppUsage: (String, AppUsageEventSource) -> Unit,
     canLaunch: suspend (String) -> Boolean,
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
@@ -192,9 +197,11 @@ fun LauncherApp(
     val filterBackTarget = remember { mutableStateOf(FilterBackTarget.None) }
     val inboxBackTarget = remember { mutableStateOf(InboxBackTarget.None) }
     val notifSettingsBackTarget = remember { mutableStateOf(NotifSettingsBackTarget.None) }
+    val logViewerBackTarget = remember { mutableStateOf(LogViewerBackTarget.None) }
     val homeSettingsBackTarget = remember { mutableStateOf(HomeSettingsBackTarget.None) }
     val clockSettingsBackTarget = remember { mutableStateOf(ClockSettingsBackTarget.None) }
     val appDrawerSettingsBackTarget = remember { mutableStateOf(AppDrawerSettingsBackTarget.None) }
+    val hiddenAppsBackTarget = remember { mutableStateOf(HiddenAppsBackTarget.None) }
 
     val shouldSnapToHome = state.isSettingsVisible ||
         state.isHomeSettingsVisible ||
@@ -205,7 +212,8 @@ fun LauncherApp(
         state.isAboutVisible ||
         state.isEmergencyUnlockVisible ||
         state.isHistoryVisible ||
-        state.isSearchVisible
+        state.isSearchVisible ||
+        state.isHiddenAppsVisible
 
     LaunchedEffect(state.homeResetTick) {
         if (pagerState.currentPage != 1) {
@@ -261,6 +269,21 @@ fun LauncherApp(
         notifSettingsBackTarget.value = NotifSettingsBackTarget.None
     }
 
+    fun openLogViewer() {
+        logViewerBackTarget.value = LogViewerBackTarget.NotifSettings
+        onNotificationSettingsVisibilityChange(false)
+        onLogViewerVisibilityChange(true)
+    }
+
+    fun closeLogViewer() {
+        onLogViewerVisibilityChange(false)
+        when (logViewerBackTarget.value) {
+            LogViewerBackTarget.NotifSettings -> onNotificationSettingsVisibilityChange(true)
+            LogViewerBackTarget.None -> Unit
+        }
+        logViewerBackTarget.value = LogViewerBackTarget.None
+    }
+
     fun openHomeSettings(from: HomeSettingsBackTarget) {
         homeSettingsBackTarget.value = from
         if (from == HomeSettingsBackTarget.Settings) {
@@ -312,6 +335,26 @@ fun LauncherApp(
         appDrawerSettingsBackTarget.value = AppDrawerSettingsBackTarget.None
     }
 
+    fun openHiddenApps(from: HiddenAppsBackTarget) {
+        hiddenAppsBackTarget.value = from
+        when (from) {
+            HiddenAppsBackTarget.Settings -> onSettingsVisibilityChange(false)
+            HiddenAppsBackTarget.AppDrawerSettings -> onAppDrawerSettingsVisibilityChange(false)
+            HiddenAppsBackTarget.None -> Unit
+        }
+        onHiddenAppsVisibilityChange(true)
+    }
+
+    fun closeHiddenApps() {
+        onHiddenAppsVisibilityChange(false)
+        when (hiddenAppsBackTarget.value) {
+            HiddenAppsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            HiddenAppsBackTarget.AppDrawerSettings -> onAppDrawerSettingsVisibilityChange(true)
+            HiddenAppsBackTarget.None -> Unit
+        }
+        hiddenAppsBackTarget.value = HiddenAppsBackTarget.None
+    }
+
     fun openFilters(from: FilterBackTarget) {
         filterBackTarget.value = from
         when (from) {
@@ -346,6 +389,7 @@ fun LauncherApp(
             state.isHistoryVisible -> onHistoryVisibilityChange(false)
             state.isAboutVisible -> onAboutVisibilityChange(false)
             state.isEmergencyUnlockVisible -> onEmergencyUnlockVisibilityChange(false)
+            state.isHiddenAppsVisible -> closeHiddenApps()
             searchVisible -> onSearchVisibilityChange(false)
             pagerState.currentPage != 1 -> {
                 coroutineScope.launch { pagerState.scrollToPage(1) }
@@ -447,9 +491,11 @@ fun LauncherApp(
                     AppDrawerSettingsScreen(
                         keyboardOnSwipe = state.isKeyboardSearchOnSwipe,
                         smartSuggestionsEnabled = state.smartSuggestionsEnabled,
+                        hiddenAppsCount = state.hiddenApps.size,
                         onKeyboardToggle = onKeyboardSearchOnSwipeChange,
                         onSmartSuggestionsToggle = onSmartSuggestionsToggle,
                         onResetSmartSuggestions = onResetSmartSuggestions,
+                        onOpenHiddenApps = { openHiddenApps(HiddenAppsBackTarget.AppDrawerSettings) },
                         onBack = { closeAppDrawerSettings() }
                     )
                 }
@@ -462,7 +508,14 @@ fun LauncherApp(
                         onOpenAppFilters = { openFilters(FilterBackTarget.NotifSettings) },
                         onOpenNotificationRetention = { showNotificationRetentionDialog.value = true },
                         onOpenLogRetention = { showLogRetentionDialog.value = true },
+                        onOpenLogViewer = { openLogViewer() },
                         onNotificationInboxToggle = onNotificationInboxEnabledChange
+                    )
+                }
+                state.isLogViewerVisible -> {
+                    LogViewerScreen(
+                        notifications = notificationInboxState.logEntries,
+                        onBack = { closeLogViewer() }
                     )
                 }
                 state.isNotificationInboxVisible -> {
@@ -494,6 +547,13 @@ fun LauncherApp(
                         onUnlockApp = lockManager::unlockApp
                     )
                 }
+                state.isHiddenAppsVisible -> {
+                    HiddenAppsScreen(
+                        hiddenApps = state.hiddenApps,
+                        onUnhideApp = onUnhideApp,
+                        onBack = { closeHiddenApps() }
+                    )
+                }
                 else -> {
                     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                         when (page) {
@@ -515,7 +575,7 @@ fun LauncherApp(
                             1 -> HomeScreen(
                                 state = state,
                                 onLaunchApp = { entry ->
-                                    onRecordAppUsage(entry.packageName, AppUsageEventSource.HOME, null)
+                                    onRecordAppUsage(entry.packageName, AppUsageEventSource.HOME)
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
@@ -534,7 +594,6 @@ fun LauncherApp(
                             )
                             else -> AllAppsScreen(
                                 apps = state.allApps,
-                                hiddenApps = state.hiddenApps,
                                 keyboardOnSwipe = shouldShowInlineSearch,
                                 searchQuery = state.searchQuery,
                                 shouldFocusSearch = shouldFocusInlineSearch,
@@ -543,8 +602,8 @@ fun LauncherApp(
                                 smartSuggestions = state.smartSuggestions,
                                 usageWeights = state.smartSuggestionWeights,
                                 onQueryChange = onSearchQueryChange,
-                                onAppSelected = { entry, source, query ->
-                                    onRecordAppUsage(entry.packageName, source, query)
+                                onAppSelected = { entry, source, _ ->
+                                    onRecordAppUsage(entry.packageName, source)
                                     handleAppLaunch(
                                         entry,
                                         coroutineScope,
@@ -559,7 +618,6 @@ fun LauncherApp(
                                 onPinApp = onPinApp,
                                 onUnpinApp = onUnpinApp,
                                 onHideApp = onHideApp,
-                                onUnhideApp = onUnhideApp,
                                 onLockApp = onLockApp,
                                 onOpenNotificationInbox = { openInbox(InboxBackTarget.None) },
                                 onOpenSettings = { onSettingsVisibilityChange(true) }
@@ -583,7 +641,7 @@ fun LauncherApp(
                         coroutineScope.launch {
                             if (canLaunch(entry.packageName)) {
                                 onSearchVisibilityChange(false)
-                                onRecordAppUsage(entry.packageName, AppUsageEventSource.SEARCH_OVERLAY, state.searchQuery)
+                                onRecordAppUsage(entry.packageName, AppUsageEventSource.SEARCH_OVERLAY)
                                 onLaunchApp(entry.packageName)
                             }
                             // If app is locked, simply don't launch (no snackbar message)
@@ -688,9 +746,11 @@ private fun pluralizeDays(days: Int): String = if (days == 1) "1 day" else "$day
 private enum class FilterBackTarget { None, Settings, Inbox, NotifSettings }
 private enum class InboxBackTarget { None, Settings }
 private enum class NotifSettingsBackTarget { None, Settings }
+private enum class LogViewerBackTarget { None, NotifSettings }
 private enum class HomeSettingsBackTarget { None, Settings }
 private enum class ClockSettingsBackTarget { None, Settings }
 private enum class AppDrawerSettingsBackTarget { None, Settings }
+private enum class HiddenAppsBackTarget { None, Settings, AppDrawerSettings }
 
 @Composable
 private fun RetentionPickerDialog(
@@ -1386,7 +1446,6 @@ private fun matchScore(label: String, query: String): Int {
 @Composable
 private fun AllAppsScreen(
     apps: List<AppEntry>,
-    hiddenApps: List<AppEntry>,
     keyboardOnSwipe: Boolean,
     searchQuery: String,
     shouldFocusSearch: Boolean,
@@ -1399,7 +1458,6 @@ private fun AllAppsScreen(
     onPinApp: (String) -> Unit,
     onUnpinApp: (String) -> Unit,
     onHideApp: (String) -> Unit,
-    onUnhideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
     onOpenNotificationInbox: () -> Unit,
     onOpenSettings: () -> Unit
@@ -1422,19 +1480,6 @@ private fun AllAppsScreen(
             apps
         }
     }
-    val filteredHiddenApps = remember(hiddenApps, searchQuery, usageWeights) {
-        if (searchActive) {
-            hiddenApps.filter { fuzzyMatch(it.label, searchQuery) }
-                .sortedWith(
-                    compareBy<AppEntry> { matchScore(it.label, searchQuery) }
-                        .thenByDescending { usageWeights[it.packageName] ?: 0.0 }
-                        .thenBy { it.label.lowercase() }
-                )
-        } else {
-            hiddenApps
-        }
-    }
-
     val suggestionEntries = remember(smartSuggestions, searchActive, smartSuggestionsEnabled) {
         if (!searchActive && smartSuggestionsEnabled && smartSuggestions.isNotEmpty()) {
             smartSuggestions.take(3).map { it.app }
@@ -1600,7 +1645,7 @@ private fun AllAppsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
         }
-        if (filteredApps.isEmpty() && filteredHiddenApps.isEmpty()) {
+        if (filteredApps.isEmpty()) {
             item {
                 Text(
                     text = "No apps match your search",
@@ -1651,28 +1696,6 @@ private fun AllAppsScreen(
                         )
                 )
             }
-            if (filteredHiddenApps.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(text = "Hidden Apps", color = Color.Gray, fontSize = 20.sp)
-                }
-                items(filteredHiddenApps) { app ->
-                    Text(
-                        text = app.label,
-                        color = Color.Gray,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp)
-                            .combinedClickable(
-                                onClick = {
-                                    val queryContext = if (searchActive) searchQuery else null
-                                    onAppSelected(app, AppUsageEventSource.ALL_APPS_LIST, queryContext)
-                                },
-                                onLongClick = { expandedApp.value = app.packageName }
-                            )
-                    )
-                }
-            }
         }
     }
         
@@ -1686,12 +1709,6 @@ private fun AllAppsScreen(
                 onUnpin = if (app.isPinned) ({ onUnpinApp(app.packageName) }) else null,
                 onHide = { onHideApp(app.packageName) },
                 onLock = { lockDialogApp.value = app }
-            )
-        } ?: filteredHiddenApps.find { it.packageName == pkgName }?.let { app ->
-            AppContextMenu(
-                app = app,
-                onDismiss = { expandedApp.value = null },
-                onUnhide = { onUnhideApp(app.packageName) }
             )
         }
     }
@@ -2110,22 +2127,6 @@ private fun HomeSettingsScreen(
             subtitle = bottomRightApp?.label ?: "None",
             onClick = { onBottomIconClick(BottomIconSlot.RIGHT) }
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = "Tip",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Manage the tasks themselves from the Tasks page — this screen only controls visibility on home.",
-            color = Color(0xFFAAAAAA),
-            fontSize = 14.sp,
-            lineHeight = 20.sp
-        )
     }
 }
 
@@ -2217,22 +2218,175 @@ private fun ClockSettingsScreen(
                 onCheckedChange = onShowSecondsToggle
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun HiddenAppsScreen(
+    hiddenApps: List<AppEntry>,
+    onUnhideApp: (String) -> Unit,
+    onBack: () -> Unit
+) {
+    val holdDurationMs = 10_000L
+    var unlocked by remember { mutableStateOf(false) }
+    var isHolding by remember { mutableStateOf(false) }
+    var holdProgress by remember { mutableFloatStateOf(0f) }
 
-        Text(
-            text = "Tip",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
+    LaunchedEffect(isHolding, unlocked) {
+        if (isHolding && !unlocked) {
+            val start = System.currentTimeMillis()
+            while (isHolding && !unlocked) {
+                val elapsed = System.currentTimeMillis() - start
+                val progress = (elapsed / holdDurationMs.toFloat()).coerceIn(0f, 1f)
+                holdProgress = progress
+                if (progress >= 1f) {
+                    unlocked = true
+                    holdProgress = 1f
+                    isHolding = false
+                }
+                kotlinx.coroutines.delay(16)
+            }
+            if (!unlocked && !isHolding) {
+                holdProgress = 0f
+            }
+        } else if (!unlocked) {
+            holdProgress = 0f
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 36.dp)
+    ) {
+        ScreenHeader(
+            title = "Hidden apps",
+            onBack = onBack
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "These preferences also update the tasks screen header so everything matches.",
-            color = Color(0xFFAAAAAA),
-            fontSize = 14.sp,
-            lineHeight = 20.sp
-        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        if (!unlocked) {
+            Text(
+                text = "Press and hold for 10 seconds to reveal your hidden apps.",
+                color = Color.White,
+                fontSize = 16.sp
+            )
+            Text(
+                text = "Releasing early resets the timer immediately.",
+                color = Color(0xFF888888),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x22FFFFFF))
+                        .pointerInput(unlocked) {
+                            if (unlocked) return@pointerInput
+                            detectTapGestures(
+                                onPress = {
+                                    if (unlocked) return@detectTapGestures
+                                    isHolding = true
+                                    try {
+                                        tryAwaitRelease()
+                                    } finally {
+                                        if (!unlocked) {
+                                            isHolding = false
+                                        }
+                                    }
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        progress = { holdProgress },
+                        strokeWidth = 6.dp,
+                        color = Color.White,
+                        trackColor = Color(0x22FFFFFF),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(28.dp)
+                    )
+                Text(
+                    text = when {
+                        unlocked -> "Unlocked"
+                        isHolding -> "Unlocking…"
+                        holdProgress > 0f -> "Keep holding"
+                        else -> "Hold"
+                    },
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "This gate keeps hidden apps out of the drawer. Once unlocked, you can unhide specific apps below.",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        } else {
+            Text(
+                text = "Hidden apps unlocked",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Tap Unhide to return an app to the drawer.",
+                color = Color(0xFFAAAAAA),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (hiddenApps.isEmpty()) {
+                Text(
+                    text = "You haven't hidden any apps yet.",
+                    color = Color(0xFF777777),
+                    fontSize = 16.sp
+                )
+            } else {
+                hiddenApps.forEach { app ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = app.label,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { onUnhideApp(app.packageName) }) {
+                            Text(text = "Unhide")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -2240,9 +2394,11 @@ private fun ClockSettingsScreen(
 private fun AppDrawerSettingsScreen(
     keyboardOnSwipe: Boolean,
     smartSuggestionsEnabled: Boolean,
+    hiddenAppsCount: Int,
     onKeyboardToggle: (Boolean) -> Unit,
     onSmartSuggestionsToggle: (Boolean) -> Unit,
     onResetSmartSuggestions: () -> Unit,
+    onOpenHiddenApps: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -2289,22 +2445,6 @@ private fun AppDrawerSettingsScreen(
             Switch(checked = keyboardOnSwipe, onCheckedChange = onKeyboardToggle)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "Tip",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "When disabled, you can still pull down to focus the search box manually.",
-            color = Color(0xFFAAAAAA),
-            fontSize = 14.sp,
-            lineHeight = 20.sp
-        )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
@@ -2343,6 +2483,28 @@ private fun AppDrawerSettingsScreen(
         ) {
             Text(text = "Reset learning data")
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Hidden apps",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingsRow(
+            title = "Hidden apps",
+            subtitle = if (hiddenAppsCount == 0) "No apps hidden" else "$hiddenAppsCount hidden",
+            onClick = onOpenHiddenApps
+        )
+        Text(
+            text = "Press and hold for 10 seconds to reveal and manage them.",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
