@@ -49,7 +49,7 @@ class LauncherApplication : Application() {
             lockManager = lockManager,
             scope = appScope
         )
-        val searchManager = SearchManager(appsManager, tasksManager)
+        val searchManager = SearchManager(appsManager, tasksManager, appUsageStatsManager)
         val notificationInboxManager = NotificationInboxManager(
             context = this,
             notificationDao = database.notificationDao(),
