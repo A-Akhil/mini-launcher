@@ -29,24 +29,57 @@ class AppLockMonitorService : Service() {
     private lateinit var lockManager: LockManager
     private lateinit var usageStatsManager: UsageStatsManager
 
-    private val checkRunnable = object : Runnable {
-        override fun run() {
-            checkForLockedAppLaunch()
-            handler.postDelayed(this, CHECK_INTERVAL_MS)
+    private val screenStateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> stopMonitoring()
+                Intent.ACTION_SCREEN_ON -> startMonitoring()
+            }
         }
     }
 
+    // Removed polling runnable to prevent high CPU usage (DoS).
+    // AppLock now relies exclusively on LockScreenAccessibilityService.
+    
     override fun onCreate() {
         super.onCreate()
         
         val app = application as com.minifocus.launcher.LauncherApplication
         lockManager = app.container.lockManager
         usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+
+        // Register screen state receiver (keep for cleanup only, or potential future use)
+        val filter = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+        }
+        registerReceiver(screenStateReceiver, filter)
         
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         
-        handler.post(checkRunnable)
+        // No longer starting monitoring loop. 
+        // If Accessibility Service is not enabled, AppLock will simply not function 
+        // until the user enables it. This prevents the "Heat" issue.
+    }
+
+    private fun startMonitoring() {
+       // Loop removed.
+    }
+
+    private fun stopMonitoring() {
+       // Loop removed.
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        stopMonitoring()
+        serviceScope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -121,12 +154,6 @@ class AppLockMonitorService : Service() {
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacks(checkRunnable)
-        serviceScope.cancel()
     }
 
     companion object {

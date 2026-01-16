@@ -386,6 +386,18 @@ Add a polished alphabetical fast-scroll side bar to the All Apps drawer, similar
 
 ---
 
+## 15. Universal Search (Dangling State)
+**Status:** Incomplete / Evaluate
+
+### Description
+I added `SearchOverlay` and `SearchManager` when I started the project thinking I'd need a "search everything" screen. Now I'm not sure if I want it. It's sitting in the code but you can't actually open it right now.
+
+- It searches tasks and hidden stuff too, which is cool.
+- But... does a "minimalist" launcher really need two different search screens? Might just be extra bloat.
+- Need to decide: either wire it up to a gesture or just delete the code later.
+
+---
+
 ## Future Enhancements
 - [ ] Widget support on home screen (But the thing is we need in black and white theme)
 - [ ] Gesture customization (swipe actions)
