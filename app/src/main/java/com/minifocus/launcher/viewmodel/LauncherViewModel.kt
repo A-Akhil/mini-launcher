@@ -80,10 +80,7 @@ class LauncherViewModel(
     private val dailyTaskHoldExpiries = MutableStateFlow<Map<Long, Long>>(emptyMap())
     private val dailyTaskHoldJobs = mutableMapOf<Long, Job>()
 
-    private val tickingTasksFlow: Flow<List<TaskItem>> = combine(
-        tasksManager.observeTasks(),
-        timeFlow
-    ) { tasks, _ -> tasks }
+    private val tickingTasksFlow: Flow<List<TaskItem>> = tasksManager.observeTasks()
 
     private val todayEpochDayFlow: Flow<Long> = timeFlow
         .map { it.toLocalDate().toEpochDay() }

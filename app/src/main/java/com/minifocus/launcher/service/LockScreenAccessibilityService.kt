@@ -3,6 +3,14 @@ package com.minifocus.launcher.service
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
+import com.minifocus.launcher.service.AppLockOverlayActivity
+import com.minifocus.launcher.service.AppLockMonitorService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Accessibility service used to issue a global lock action so the device behaves
@@ -16,12 +24,49 @@ import android.view.accessibility.AccessibilityEvent
  */
 class LockScreenAccessibilityService : AccessibilityService() {
 
+    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null || event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            return
+        }
+        
+        val eventPackageName = event.packageName?.toString() ?: return
+        
+        // Don't lock ourselves or System UI
+        if (eventPackageName == packageName) return
+        
+        // Launch coroutine to check database
+        serviceScope.launch {
+            checkAndLock(eventPackageName)
+        }
+    }
+    
+    private suspend fun checkAndLock(targetPackage: String) {
+        val app = applicationContext as? com.minifocus.launcher.LauncherApplication ?: return
+        val lockManager = app.container.lockManager
+        
+        if (lockManager.isLocked(targetPackage)) {
+            val lockInfo = lockManager.getLockInfo(targetPackage)
+            if (lockInfo != null) {
+                withContext(Dispatchers.Main) {
+                    // Launch overlay
+                    val intent = Intent(this@LockScreenAccessibilityService, AppLockOverlayActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        putExtra(AppLockMonitorService.EXTRA_PACKAGE_NAME, targetPackage)
+                        putExtra(AppLockMonitorService.EXTRA_LOCKED_UNTIL, lockInfo.lockedUntil)
+                    }
+                    startActivity(intent)
+                }
+            }
+        }
+    }
 
     override fun onInterrupt() = Unit
 
@@ -33,6 +78,7 @@ class LockScreenAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
         if (instance === this) {
             instance = null
         }
@@ -52,6 +98,10 @@ class LockScreenAccessibilityService : AccessibilityService() {
         fun lockDevice(): Boolean {
             val service = instance ?: return false
             return service.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+        }
+
+        fun isEnabled(): Boolean {
+            return instance != null
         }
     }
 }
