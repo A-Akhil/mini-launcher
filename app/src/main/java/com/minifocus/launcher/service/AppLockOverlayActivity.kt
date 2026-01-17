@@ -7,6 +7,8 @@ import android.graphics.Color as AndroidColor
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -41,15 +41,11 @@ import java.util.Locale
 class AppLockOverlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
-        
-        // Set black status bar and navigation bar
-        window.statusBarColor = AndroidColor.BLACK
-        window.navigationBarColor = AndroidColor.BLACK
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        val controller = WindowCompat.getInsetsController(window, window.decorView)
-        controller.isAppearanceLightStatusBars = false
-        controller.isAppearanceLightNavigationBars = false
         
         val packageName = intent.getStringExtra(AppLockMonitorService.EXTRA_PACKAGE_NAME) ?: ""
         val lockedUntil = intent.getLongExtra(AppLockMonitorService.EXTRA_LOCKED_UNTIL, 0L)
