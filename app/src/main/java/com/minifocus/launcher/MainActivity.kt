@@ -5,7 +5,6 @@ import android.app.AlarmManager
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
@@ -22,8 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.LauncherApp
@@ -42,6 +39,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.service.LockScreenAccessibilityService
+import androidx.activity.enableEdgeToEdge
 class MainActivity : ComponentActivity() {
 
     private val settingsManager: SettingsManager by lazy {
@@ -124,6 +122,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         
         val initialPermissionsAcknowledged = runBlocking {
@@ -136,7 +135,6 @@ class MainActivity : ComponentActivity() {
             return
         }
         
-        applySystemBarStyling()
         notificationRestrictionHint.value = !isFromTrustedStore()
         updatePermissionsState()
         setContent {
@@ -420,16 +418,6 @@ class MainActivity : ComponentActivity() {
     }
 
     @Suppress("DEPRECATION")
-    private fun applySystemBarStyling() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = false
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         // Re-check default launcher status to prevent bypass
