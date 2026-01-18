@@ -32,6 +32,8 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModelFactory
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModelFactory
+import com.minifocus.launcher.viewmodel.OnboardingViewModel
+import com.minifocus.launcher.viewmodel.OnboardingViewModelFactory
 import com.minifocus.launcher.permissions.PermissionsState
 import com.minifocus.launcher.permissions.PermissionsEvaluator
 import com.minifocus.launcher.permissions.NotificationInboxListenerService
@@ -40,6 +42,7 @@ import kotlinx.coroutines.launch
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.service.LockScreenAccessibilityService
 import androidx.activity.enableEdgeToEdge
+import com.minifocus.launcher.ui.onboarding.OnboardingHost
 class MainActivity : ComponentActivity() {
 
     private val settingsManager: SettingsManager by lazy {
@@ -121,12 +124,23 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val onboardingViewModel: OnboardingViewModel by viewModels {
+        val app = application as LauncherApplication
+        OnboardingViewModelFactory(
+            settingsManager = app.container.settingsManager
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         
         val initialPermissionsAcknowledged = runBlocking {
             settingsManager.getPermissionOnboardingAcknowledged()
+        }
+
+        val setupCompleted = runBlocking {
+            settingsManager.getSetupCompleted()
         }
 
         // Enforce default launcher requirement - app cannot be used otherwise
@@ -148,6 +162,14 @@ class MainActivity : ComponentActivity() {
                     .observePermissionOnboardingAcknowledged()
                     .collectAsStateWithLifecycle(initialPermissionsAcknowledged)
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
+                val isSetupCompleted by settingsManager.observeSetupCompleted()
+                    .collectAsStateWithLifecycle(setupCompleted)
+                
+                // Update launcher role status in onboarding
+                LaunchedEffect(Unit) {
+                    onboardingViewModel.setLauncherRoleGranted(isDefaultLauncher())
+                }
+                
                 val showPermissionScreen = manualPermissionManagerVisible || !permissions.requiredGranted || !permissionsAcknowledged
 
                 LaunchedEffect(showPermissionScreen) {
@@ -163,7 +185,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (!showPermissionScreen) {
+                if (!isSetupCompleted) {
+                    OnboardingHost(
+                        viewModel = onboardingViewModel,
+                        permissionsState = permissions,
+                        onRequestLauncher = ::showDefaultLauncherPrompt,
+                        onRequestNotifications = ::requestPostNotificationsPermission,
+                        onRequestNotificationListener = ::requestNotificationAccess,
+                        onRequestExactAlarms = ::requestExactAlarmPermission,
+                        onRequestLockAccessibility = ::requestLockAccessibility,
+                        onRequestUsageStats = ::requestUsageStatsPermission,
+                        onRequestOverlay = ::requestOverlayPermission,
+                        showRestrictedNotificationHint = restrictedHint,
+                        onOpenRestrictedSettings = ::openRestrictedSettings,
+                        onRefreshPermissions = ::updatePermissionsState,
+                        onComplete = {
+                            // Onboarding completed, recreate activity to show main UI
+                            recreate()
+                        }
+                    )
+                } else if (!showPermissionScreen) {
                     LauncherApp(
                         state = state,
                         notificationInboxState = inboxState,
@@ -224,7 +265,14 @@ class MainActivity : ComponentActivity() {
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },
-                        lockManager = (application as LauncherApplication).container.lockManager
+                        lockManager = (application as LauncherApplication).container.lockManager,
+                        onReplaySetup = {
+                            lifecycleScope.launch {
+                                settingsManager.setSetupCompleted(false)
+                                settingsManager.setOnboardingStep(0)
+                                recreate()
+                            }
+                        }
                     )
                 } else {
                     PermissionScreen(

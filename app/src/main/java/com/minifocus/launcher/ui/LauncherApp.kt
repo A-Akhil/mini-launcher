@@ -181,6 +181,7 @@ fun LauncherApp(
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
     lockManager: com.minifocus.launcher.manager.LockManager,
+    onReplaySetup: () -> Unit = {},
     onRootBack: () -> Unit = {},
     onConsumeMessage: () -> Unit = {}
 ) {
@@ -537,7 +538,8 @@ fun LauncherApp(
                 state.isAboutVisible -> {
                     AboutScreen(
                         onBack = { onAboutVisibilityChange(false) },
-                        onNavigateToEmergencyUnlock = { onEmergencyUnlockVisibilityChange(true) }
+                        onNavigateToEmergencyUnlock = { onEmergencyUnlockVisibilityChange(true) },
+                        onReplaySetup = onReplaySetup
                     )
                 }
                 state.isEmergencyUnlockVisible -> {
