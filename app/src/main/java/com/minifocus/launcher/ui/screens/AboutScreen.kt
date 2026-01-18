@@ -31,7 +31,8 @@ import com.minifocus.launcher.ui.components.ScreenHeader
 @Composable
 fun AboutScreen(
     onBack: () -> Unit,
-    onNavigateToEmergencyUnlock: () -> Unit
+    onNavigateToEmergencyUnlock: () -> Unit,
+    onReplaySetup: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var clickCount by remember { mutableStateOf(0) }
@@ -180,6 +181,35 @@ fun AboutScreen(
                 }
                 context.startActivity(intent)
             }
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Setup wizard replay
+        Text(
+            text = "Setup",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Launch setup wizard",
+            color = Color(0xFF6BB6FF),
+            fontSize = 16.sp,
+            modifier = Modifier.clickable {
+                onReplaySetup()
+            }
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Replay the initial setup to reconfigure your launcher preferences",
+            color = Color(0xFFAAAAAA),
+            fontSize = 14.sp
         )
     }
 }

@@ -31,6 +31,8 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val permissionOnboardingAcknowledged = intPreferencesKey("permission_onboarding_acknowledged")
         val doubleTapLockScreen = intPreferencesKey("double_tap_lock_screen")
         val smartSuggestionsEnabled = intPreferencesKey("smart_suggestions_enabled")
+        val setupCompleted = intPreferencesKey("setup_completed")
+        val onboardingStep = intPreferencesKey("onboarding_step")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -74,6 +76,14 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeDoubleTapLockScreen(): Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[Keys.doubleTapLockScreen]?.let { it == 1 } ?: false
+    }
+
+    fun observeSetupCompleted(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.setupCompleted]?.let { it == 1 } ?: false
+    }
+
+    fun observeOnboardingStep(): Flow<Int> = dataStore.data.map { prefs ->
+        prefs[Keys.onboardingStep] ?: 0
     }
 
     fun observeNotificationRetentionDays(): Flow<Int> = dataStore.data.map { prefs ->
@@ -168,6 +178,23 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { prefs ->
             prefs[Keys.doubleTapLockScreen] = if (enabled) 1 else 0
         }
+    }
+
+    suspend fun setSetupCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.setupCompleted] = if (completed) 1 else 0
+        }
+    }
+
+    suspend fun setOnboardingStep(step: Int) {
+        dataStore.edit { prefs ->
+            prefs[Keys.onboardingStep] = step
+        }
+    }
+
+    suspend fun getSetupCompleted(): Boolean {
+        val prefs = dataStore.data.first()
+        return prefs[Keys.setupCompleted]?.let { it == 1 } ?: false
     }
 
     companion object {
