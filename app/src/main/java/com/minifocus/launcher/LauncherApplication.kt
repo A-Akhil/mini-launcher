@@ -1,10 +1,13 @@
 package com.minifocus.launcher
 
 import android.app.Application
+import android.util.Log
 import com.minifocus.launcher.data.AppDatabase
 import com.minifocus.launcher.data.datastore.launcherSettingsDataStore
 import com.minifocus.launcher.manager.AppsManager
 import com.minifocus.launcher.manager.DailyTasksManager
+import com.minifocus.launcher.manager.HardlockAutoBackup
+import com.minifocus.launcher.manager.HardlockBackupManager
 import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.InboxLogger
 import com.minifocus.launcher.manager.LockManager
@@ -56,6 +59,8 @@ class LauncherApplication : Application() {
             notificationFilterDao = database.notificationFilterDao(),
             logger = inboxLogger
         )
+        val hardlockBackupManager = HardlockBackupManager(this)
+        
         container = AppContainer(
             tasksManager = tasksManager,
             hiddenAppsManager = hiddenManager,
@@ -67,7 +72,8 @@ class LauncherApplication : Application() {
             notificationInboxManager = notificationInboxManager,
             inboxLogger = inboxLogger,
             applicationScope = appScope,
-            appUsageStatsManager = appUsageStatsManager
+            appUsageStatsManager = appUsageStatsManager,
+            hardlockBackupManager = hardlockBackupManager
         )
 
         appScope.launch {
@@ -96,6 +102,30 @@ class LauncherApplication : Application() {
         appScope.launch {
             appsManager.compactPinnedPositions()
         }
+
+        // Restore hardlock state if backup exists
+        appScope.launch {
+            if (hardlockBackupManager.hasBackup()) {
+                val state = hardlockBackupManager.restoreState()
+                if (state != null) {
+                    Log.d("LauncherApp", "Restoring hardlock state: ${state.lockedApps.size} locks, ${state.hiddenApps.size} hidden")
+                    state.lockedApps.forEach { lockedApp ->
+                        if (lockedApp.lockedUntil > System.currentTimeMillis()) {
+                            lockManager.lockApp(lockedApp.packageName, lockedApp.lockedUntil)
+                            Log.d("LauncherApp", "Restored lock: ${lockedApp.packageName} until ${lockedApp.lockedUntil}")
+                        }
+                    }
+                    state.hiddenApps.forEach { packageName ->
+                        hiddenManager.hideApp(packageName)
+                        Log.d("LauncherApp", "Restored hidden: $packageName")
+                    }
+                }
+            }
+        }
+
+        // Start automatic backup monitoring (hardlock branch only)
+        val hardlockAutoBackup = HardlockAutoBackup(this, appScope)
+        hardlockAutoBackup.start()
 
         // Monitor lock state and start/stop monitoring service
         appScope.launch {
@@ -129,5 +159,6 @@ class AppContainer(
     val notificationInboxManager: NotificationInboxManager,
     val inboxLogger: InboxLogger,
     val applicationScope: CoroutineScope,
-    val appUsageStatsManager: AppUsageStatsManager
+    val appUsageStatsManager: AppUsageStatsManager,
+    val hardlockBackupManager: HardlockBackupManager
 )

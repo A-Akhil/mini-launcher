@@ -3,6 +3,7 @@
     <string name="app_name">Minimalist Focus</string>
     <string name="lock_accessibility_service_description">Allow Minimalist Focus to lock the screen when you double-tap the home page.</string>
     <string name="lock_accessibility_service_toast">Enable the double-tap lock service in Accessibility settings.</string>
+    <string name="hardlock_accessibility_service_description">HARDLOCK MODE: Prevents access to app settings, device admin, and default app pages. This is an experimental feature that blocks system controls. To disable, turn off this service in Accessibility settings or use: adb shell pm disable com.minifocus.launcher/.service.HardlockAccessibilityService</string>
     <plurals name="notification_summary_title">
         <item quantity="one">%d notification</item>
         <item quantity="other">%d notifications</item>
