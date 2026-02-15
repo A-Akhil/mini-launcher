@@ -153,6 +153,7 @@ class LauncherViewModel(
             PreferencesSnapshot(
                 theme = theme,
                 clockFormat = clockFormat,
+                textSize = com.minifocus.launcher.model.TextSize.MEDIUM,
                 bottomLeftPackage = null,
                 bottomRightPackage = null,
                 keyboardSearchOnSwipe = false,
@@ -170,6 +171,9 @@ class LauncherViewModel(
         }
         .combine(settingsManager.observeBottomIcon(BottomIconSlot.RIGHT)) { snapshot, bottomRight ->
             snapshot.copy(bottomRightPackage = bottomRight)
+        }
+        .combine(settingsManager.observeTextSize()) { snapshot, textSize ->
+            snapshot.copy(textSize = textSize)
         }
         .combine(settingsManager.observeKeyboardSearchOnSwipe()) { snapshot, keyboardSearch ->
             snapshot.copy(keyboardSearchOnSwipe = keyboardSearch)
@@ -224,6 +228,8 @@ class LauncherViewModel(
     private val isHomeSettingsVisible = MutableStateFlow(false)
     private val isClockSettingsVisible = MutableStateFlow(false)
     private val isAppDrawerSettingsVisible = MutableStateFlow(false)
+    private val isAppearanceSettingsVisible = MutableStateFlow(false)
+    private val isTextSizeSettingsVisible = MutableStateFlow(false)
     private val isNotificationInboxVisible = MutableStateFlow(false)
     private val isNotificationFilterVisible = MutableStateFlow(false)
     private val isNotificationSettingsVisible = MutableStateFlow(false)
@@ -249,6 +255,7 @@ class LauncherViewModel(
         LauncherUiState(
             time = LocalDateTime.now(),
             clockFormat = prefs.clockFormat,
+            textSize = prefs.textSize,
             pinnedApps = data.pinned,
             allApps = data.all,
             hiddenApps = data.hidden,
@@ -266,6 +273,7 @@ class LauncherViewModel(
             isHomeSettingsVisible = false,
             isClockSettingsVisible = false,
             isAppDrawerSettingsVisible = false,
+            isAppearanceSettingsVisible = false,
             isHistoryVisible = false,
             isNotificationInboxVisible = false,
             isNotificationFilterVisible = false,
@@ -311,6 +319,12 @@ class LauncherViewModel(
         }
         .combine(isAppDrawerSettingsVisible) { state, appDrawerVisible ->
             state.copy(isAppDrawerSettingsVisible = appDrawerVisible)
+        }
+        .combine(isAppearanceSettingsVisible) { state, appearanceVisible ->
+            state.copy(isAppearanceSettingsVisible = appearanceVisible)
+        }
+        .combine(isTextSizeSettingsVisible) { state, textSizeVisible ->
+            state.copy(isTextSizeSettingsVisible = textSizeVisible)
         }
         .combine(isNotificationInboxVisible) { state, inboxVisible ->
             state.copy(isNotificationInboxVisible = inboxVisible)
@@ -525,6 +539,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
@@ -540,6 +556,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
             isHiddenAppsVisible.value = false
@@ -554,10 +572,12 @@ class LauncherViewModel(
             isHistoryVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
-        }
             isHiddenAppsVisible.value = false
+        }
     }
 
     fun setClockSettingsVisibility(visible: Boolean) {
@@ -568,6 +588,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isHistoryVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
             isHiddenAppsVisible.value = false
@@ -581,6 +603,40 @@ class LauncherViewModel(
             isSettingsVisible.value = false
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
+        }
+    }
+
+    fun setAppearanceSettingsVisibility(visible: Boolean) {
+        isAppearanceSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isHiddenAppsVisible.value = false
+        }
+    }
+
+    fun setTextSizeSettingsVisibility(visible: Boolean) {
+        isTextSizeSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false // This will be false when opening text size usually, but ensure no overlap
             isHistoryVisible.value = false
             isNotificationInboxVisible.value = false
             isNotificationFilterVisible.value = false
@@ -596,6 +652,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isHistoryVisible.value = false
             isNotificationFilterVisible.value = false
             isHiddenAppsVisible.value = false
@@ -613,6 +671,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isHiddenAppsVisible.value = false
         }
     }
@@ -681,6 +741,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
             isHiddenAppsVisible.value = false
         }
     }
@@ -699,6 +761,8 @@ class LauncherViewModel(
             isHomeSettingsVisible.value = false
             isClockSettingsVisible.value = false
             isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
         }
     }
 
@@ -707,6 +771,8 @@ class LauncherViewModel(
         isHomeSettingsVisible.value = false
     isClockSettingsVisible.value = false
         isAppDrawerSettingsVisible.value = false
+        isAppearanceSettingsVisible.value = false
+        isTextSizeSettingsVisible.value = false
         isHistoryVisible.value = false
         isNotificationInboxVisible.value = false
         isNotificationFilterVisible.value = false
@@ -730,6 +796,10 @@ class LauncherViewModel(
 
     fun setClockFormat(format: ClockFormat) {
         viewModelScope.launch { settingsManager.setClockFormat(format) }
+    }
+
+    fun setTextSize(size: com.minifocus.launcher.model.TextSize) {
+        viewModelScope.launch { settingsManager.setTextSize(size) }
     }
 
     fun setTheme(theme: LauncherTheme) {
@@ -901,6 +971,7 @@ private data class DataSnapshot(
 private data class PreferencesSnapshot(
     val theme: LauncherTheme,
     val clockFormat: ClockFormat,
+    val textSize: com.minifocus.launcher.model.TextSize,
     val bottomLeftPackage: String?,
     val bottomRightPackage: String?,
     val keyboardSearchOnSwipe: Boolean,
@@ -925,6 +996,7 @@ private data class OverlaySnapshot(
 data class LauncherUiState(
     val time: LocalDateTime = LocalDateTime.now(),
     val clockFormat: ClockFormat = ClockFormat.H24,
+    val textSize: com.minifocus.launcher.model.TextSize = com.minifocus.launcher.model.TextSize.MEDIUM,
     val pinnedApps: List<AppEntry> = emptyList(),
     val allApps: List<AppEntry> = emptyList(),
     val hiddenApps: List<AppEntry> = emptyList(),
@@ -942,6 +1014,8 @@ data class LauncherUiState(
     val isHomeSettingsVisible: Boolean = false,
     val isClockSettingsVisible: Boolean = false,
     val isAppDrawerSettingsVisible: Boolean = false,
+    val isAppearanceSettingsVisible: Boolean = false,
+    val isTextSizeSettingsVisible: Boolean = false,
     val isHistoryVisible: Boolean = false,
     val isNotificationInboxVisible: Boolean = false,
     val isNotificationFilterVisible: Boolean = false,
