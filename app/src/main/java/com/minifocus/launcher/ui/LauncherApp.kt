@@ -115,11 +115,16 @@ import com.minifocus.launcher.ui.components.AppContextMenu
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
+import com.minifocus.launcher.ui.screens.AppearanceSettingsScreen
 import com.minifocus.launcher.ui.screens.EmergencyUnlockScreen
 import com.minifocus.launcher.ui.screens.LogViewerScreen
 import com.minifocus.launcher.ui.screens.NotificationFilterScreen
 import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
+import androidx.compose.runtime.CompositionLocalProvider
+import com.minifocus.launcher.ui.screens.TextSizeSettingsScreen
+import com.minifocus.launcher.ui.theme.LocalTextMultiplier
+import com.minifocus.launcher.ui.theme.TextSizeProvider
 import kotlinx.coroutines.launch
 
 @Composable
@@ -149,11 +154,14 @@ fun LauncherApp(
     onHomeSettingsVisibilityChange: (Boolean) -> Unit,
     onClockSettingsVisibilityChange: (Boolean) -> Unit,
     onAppDrawerSettingsVisibilityChange: (Boolean) -> Unit,
+    onAppearanceSettingsVisibilityChange: (Boolean) -> Unit,
+    onTextSizeSettingsVisibilityChange: (Boolean) -> Unit,
     onHiddenAppsVisibilityChange: (Boolean) -> Unit,
     onAboutVisibilityChange: (Boolean) -> Unit,
     onEmergencyUnlockVisibilityChange: (Boolean) -> Unit,
     onHistoryVisibilityChange: (Boolean) -> Unit,
     onClockFormatChange: (ClockFormat) -> Unit,
+    onTextSizeChange: (com.minifocus.launcher.model.TextSize) -> Unit,
     onKeyboardSearchOnSwipeChange: (Boolean) -> Unit,
     onSmartSuggestionsToggle: (Boolean) -> Unit,
     onResetSmartSuggestions: () -> Unit,
@@ -201,11 +209,13 @@ fun LauncherApp(
     val homeSettingsBackTarget = remember { mutableStateOf(HomeSettingsBackTarget.None) }
     val clockSettingsBackTarget = remember { mutableStateOf(ClockSettingsBackTarget.None) }
     val appDrawerSettingsBackTarget = remember { mutableStateOf(AppDrawerSettingsBackTarget.None) }
+    val appearanceSettingsBackTarget = remember { mutableStateOf(AppearanceSettingsBackTarget.None) }
     val hiddenAppsBackTarget = remember { mutableStateOf(HiddenAppsBackTarget.None) }
 
     val shouldSnapToHome = state.isSettingsVisible ||
         state.isHomeSettingsVisible ||
         state.isClockSettingsVisible ||
+        state.isAppearanceSettingsVisible ||
         state.isNotificationSettingsVisible ||
         state.isNotificationFilterVisible ||
         state.isNotificationInboxVisible ||
@@ -335,6 +345,33 @@ fun LauncherApp(
         appDrawerSettingsBackTarget.value = AppDrawerSettingsBackTarget.None
     }
 
+    fun openAppearanceSettings(from: AppearanceSettingsBackTarget) {
+        appearanceSettingsBackTarget.value = from
+        if (from == AppearanceSettingsBackTarget.Settings) {
+            onSettingsVisibilityChange(false)
+        }
+        onAppearanceSettingsVisibilityChange(true)
+    }
+
+    fun closeAppearanceSettings() {
+        onAppearanceSettingsVisibilityChange(false)
+        when (appearanceSettingsBackTarget.value) {
+            AppearanceSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            AppearanceSettingsBackTarget.None -> Unit
+        }
+        appearanceSettingsBackTarget.value = AppearanceSettingsBackTarget.None
+    }
+
+    fun openTextSizeSettings() {
+        onAppearanceSettingsVisibilityChange(false)
+        onTextSizeSettingsVisibilityChange(true)
+    }
+
+    fun closeTextSizeSettings() {
+        onTextSizeSettingsVisibilityChange(false)
+        onAppearanceSettingsVisibilityChange(true)
+    }
+
     fun openHiddenApps(from: HiddenAppsBackTarget) {
         hiddenAppsBackTarget.value = from
         when (from) {
@@ -383,6 +420,8 @@ fun LauncherApp(
             state.isNotificationSettingsVisible -> closeNotifSettings()
             state.isClockSettingsVisible -> closeClockSettings()
             state.isAppDrawerSettingsVisible -> closeAppDrawerSettings()
+            state.isTextSizeSettingsVisible -> closeTextSizeSettings()
+            state.isAppearanceSettingsVisible -> closeAppearanceSettings()
             state.isHomeSettingsVisible -> closeHomeSettings()
             state.isNotificationInboxVisible -> closeInbox()
             state.isSettingsVisible -> onSettingsVisibilityChange(false)
@@ -426,11 +465,12 @@ fun LauncherApp(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize().background(Color.Black)
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when {
+    TextSizeProvider(state.textSize.multiplier) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().background(Color.Black)
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                when {
                 state.isNotificationFilterVisible -> {
                     NotificationFilterScreen(
                         state = notificationFilterState,
@@ -444,6 +484,7 @@ fun LauncherApp(
                     SettingsScreen(
                         clockFormat = state.clockFormat,
                         showSeconds = state.showSeconds,
+                        textSize = state.textSize,
                         showDailyTasksOnHome = state.showDailyTasksOnHome,
                         bottomLeftApp = state.bottomLeft,
                         bottomRightApp = state.bottomRight,
@@ -455,6 +496,7 @@ fun LauncherApp(
                         permissionsState = permissionsState,
                         onOpenHomeSettings = { openHomeSettings(HomeSettingsBackTarget.Settings) },
                         onOpenClockSettings = { openClockSettings(ClockSettingsBackTarget.Settings) },
+                        onOpenAppearanceSettings = { openAppearanceSettings(AppearanceSettingsBackTarget.Settings) },
                         onOpenAppDrawerSettings = { openAppDrawerSettings(AppDrawerSettingsBackTarget.Settings) },
                         onOpenNotificationSettings = { openNotifSettings(NotifSettingsBackTarget.Settings) },
                         onOpenPermissionManager = onOpenPermissionManager,
@@ -497,6 +539,20 @@ fun LauncherApp(
                         onResetSmartSuggestions = onResetSmartSuggestions,
                         onOpenHiddenApps = { openHiddenApps(HiddenAppsBackTarget.AppDrawerSettings) },
                         onBack = { closeAppDrawerSettings() }
+                    )
+                }
+                state.isAppearanceSettingsVisible -> {
+                    AppearanceSettingsScreen(
+                        textSize = state.textSize,
+                        onOpenTextSize = { openTextSizeSettings() },
+                        onBack = { closeAppearanceSettings() }
+                    )
+                }
+                state.isTextSizeSettingsVisible -> {
+                    TextSizeSettingsScreen(
+                        textSize = state.textSize,
+                        onTextSizeChange = onTextSizeChange,
+                        onBack = { closeTextSizeSettings() }
                     )
                 }
                 state.isNotificationSettingsVisible -> {
@@ -687,6 +743,7 @@ fun LauncherApp(
             )
         }
     }
+    }
 }
 
 private fun handleAppLaunch(
@@ -750,6 +807,7 @@ private enum class LogViewerBackTarget { None, NotifSettings }
 private enum class HomeSettingsBackTarget { None, Settings }
 private enum class ClockSettingsBackTarget { None, Settings }
 private enum class AppDrawerSettingsBackTarget { None, Settings }
+private enum class AppearanceSettingsBackTarget { None, Settings }
 private enum class HiddenAppsBackTarget { None, Settings, AppDrawerSettings }
 
 @Composable
@@ -1879,6 +1937,7 @@ private fun BottomIconPickerDialog(
 private fun SettingsScreen(
     clockFormat: ClockFormat,
     showSeconds: Boolean,
+    textSize: com.minifocus.launcher.model.TextSize,
     showDailyTasksOnHome: Boolean,
     bottomLeftApp: AppEntry?,
     bottomRightApp: AppEntry?,
@@ -1890,6 +1949,7 @@ private fun SettingsScreen(
     permissionsState: PermissionsState,
     onOpenHomeSettings: () -> Unit,
     onOpenClockSettings: () -> Unit,
+    onOpenAppearanceSettings: () -> Unit,
     onOpenAppDrawerSettings: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
     onOpenPermissionManager: () -> Unit,
@@ -1937,6 +1997,8 @@ private fun SettingsScreen(
         append(if (smartSuggestionsEnabled) " · smart suggestions on" else " · smart suggestions off")
     }
 
+    val appearanceSummary = "${textSize.label} text"
+
     val deviceSettingsSummary = "Open Android settings"
 
     Column(
@@ -1981,6 +2043,14 @@ private fun SettingsScreen(
             title = "App Drawer",
             subtitle = appDrawerSummary,
             onClick = onOpenAppDrawerSettings
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        SettingsRow(
+            title = "Appearance",
+            subtitle = appearanceSummary,
+            onClick = onOpenAppearanceSettings
         )
 
         Spacer(modifier = Modifier.height(32.dp))

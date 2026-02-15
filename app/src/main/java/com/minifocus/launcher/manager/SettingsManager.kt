@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
 import com.minifocus.launcher.model.LauncherTheme
+import com.minifocus.launcher.model.TextSize
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
@@ -19,6 +20,7 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val theme = stringPreferencesKey("theme")
         val clockFormat = stringPreferencesKey("clock_format")
         val fontChoice = stringPreferencesKey("font_choice")
+        val textSize = stringPreferencesKey("text_size")
         val bottomLeft = stringPreferencesKey("bottom_left_package")
         val bottomRight = stringPreferencesKey("bottom_right_package")
         val keyboardSearchOnSwipe = intPreferencesKey("keyboard_search_on_swipe")
@@ -39,6 +41,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
 
     fun observeClockFormat(): Flow<ClockFormat> = dataStore.data.map { prefs ->
         prefs[Keys.clockFormat]?.let { runCatching { ClockFormat.valueOf(it) }.getOrNull() } ?: ClockFormat.H24
+    }
+
+    fun observeTextSize(): Flow<TextSize> = dataStore.data.map { prefs ->
+        prefs[Keys.textSize]?.let { runCatching { TextSize.valueOf(it) }.getOrNull() } ?: TextSize.MEDIUM
     }
 
     fun observeBottomIcon(slot: BottomIconSlot): Flow<String?> = dataStore.data.map { prefs ->
@@ -95,7 +101,9 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setClockFormat(format: ClockFormat) {
         dataStore.edit { prefs -> prefs[Keys.clockFormat] = format.name }
     }
-
+    suspend fun setTextSize(size: TextSize) {
+        dataStore.edit { prefs -> prefs[Keys.textSize] = size.name }
+    }
     suspend fun setBottomIcon(slot: BottomIconSlot, packageName: String) {
         dataStore.edit { prefs ->
             when (slot) {
