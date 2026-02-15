@@ -7,6 +7,7 @@ import com.minifocus.launcher.manager.DailyTasksManager
 import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
+import com.minifocus.launcher.manager.SettingsBackupManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
@@ -65,6 +66,7 @@ class LauncherViewModel(
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
     private val settingsManager: SettingsManager,
+    private val settingsBackupManager: SettingsBackupManager,
     private val searchManager: SearchManager,
     private val appUsageStatsManager: AppUsageStatsManager
 ) : ViewModel() {
@@ -237,6 +239,7 @@ class LauncherViewModel(
     private val isAboutVisible = MutableStateFlow(false)
     private val isEmergencyUnlockVisible = MutableStateFlow(false)
     private val isHiddenAppsVisible = MutableStateFlow(false)
+    private val isBackupSettingsVisible = MutableStateFlow(false)
 
     private val baseUiState = combine(
         dataSnapshot,
@@ -346,6 +349,9 @@ class LauncherViewModel(
         }
         .combine(isHiddenAppsVisible) { state, hiddenAppsVisible ->
             state.copy(isHiddenAppsVisible = hiddenAppsVisible)
+        }
+        .combine(isBackupSettingsVisible) { state, backupVisible ->
+            state.copy(isBackupSettingsVisible = backupVisible)
         }
         .combine(smartUsageState) { state, smartState ->
             state.copy(
@@ -766,6 +772,26 @@ class LauncherViewModel(
         }
     }
 
+    fun setBackupSettingsVisibility(visible: Boolean) {
+        isBackupSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isEmergencyUnlockVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+        }
+    }
+
     fun resetToHome() {
         isSettingsVisible.value = false
         isHomeSettingsVisible.value = false
@@ -780,6 +806,7 @@ class LauncherViewModel(
         isLogViewerVisible.value = false
         isAboutVisible.value = false
         isEmergencyUnlockVisible.value = false
+        isBackupSettingsVisible.value = false
         isSearchVisible.value = false
         isHiddenAppsVisible.value = false
         searchQuery.value = ""
@@ -895,6 +922,86 @@ class LauncherViewModel(
 
     private fun defaultPackageForSlot(slot: BottomIconSlot, apps: List<AppEntry>): String? {
         return appsManager.resolveDefaultQuickLaunch(slot, apps)
+    }
+
+    fun backupSettings() {
+        viewModelScope.launch {
+            try {
+                val state = uiState.value
+                val success = settingsBackupManager.backupSettings(
+                    textSize = state.textSize.name,
+                    clockFormat = state.clockFormat.name,
+                    bottomLeftPackage = state.bottomLeft?.packageName,
+                    bottomRightPackage = state.bottomRight?.packageName,
+                    keyboardSearchOnSwipe = state.isKeyboardSearchOnSwipe,
+                    showSeconds = state.showSeconds,
+                    showDailyTasksOnHome = state.showDailyTasksOnHome,
+                    smartSuggestionsEnabled = state.smartSuggestionsEnabled,
+                    notificationInboxEnabled = state.notificationInboxEnabled,
+                    notificationRetentionDays = state.notificationRetentionDays,
+                    logRetentionDays = state.logRetentionDays,
+                    doubleTapLockScreen = state.doubleTapLockScreen
+                )
+                if (success) {
+                    snackbarMessage.update { "All settings backed up to Documents/.minilauncher/" }
+                } else {
+                    snackbarMessage.update { "Backup failed" }
+                }
+            } catch (e: Exception) {
+                snackbarMessage.update { "Backup error: ${e.message}" }
+            }
+        }
+    }
+
+    fun restoreSettings() {
+        viewModelScope.launch {
+            try {
+                val backup = settingsBackupManager.restoreSettings()
+                if (backup != null) {
+                    backup.textSize?.let { 
+                        settingsManager.setTextSize(com.minifocus.launcher.model.TextSize.valueOf(it))
+                    }
+                    backup.clockFormat?.let {
+                        settingsManager.setClockFormat(ClockFormat.valueOf(it))
+                    }
+                    backup.bottomLeftPackage?.let {
+                        settingsManager.setBottomIcon(BottomIconSlot.LEFT, it)
+                    }
+                    backup.bottomRightPackage?.let {
+                        settingsManager.setBottomIcon(BottomIconSlot.RIGHT, it)
+                    }
+                    backup.keyboardSearchOnSwipe?.let {
+                        settingsManager.setKeyboardSearchOnSwipe(it)
+                    }
+                    backup.showSeconds?.let {
+                        settingsManager.setShowSeconds(it)
+                    }
+                    backup.showDailyTasksOnHome?.let {
+                        settingsManager.setShowDailyTasksOnHome(it)
+                    }
+                    backup.smartSuggestionsEnabled?.let {
+                        settingsManager.setSmartSuggestionsEnabled(it)
+                    }
+                    backup.notificationInboxEnabled?.let {
+                        settingsManager.setNotificationInboxEnabled(it)
+                    }
+                    backup.notificationRetentionDays?.let {
+                        settingsManager.setNotificationRetentionDays(it)
+                    }
+                    backup.logRetentionDays?.let {
+                        settingsManager.setLogRetentionDays(it)
+                    }
+                    backup.doubleTapLockScreen?.let {
+                        settingsManager.setDoubleTapLockScreen(it)
+                    }
+                    snackbarMessage.update { "All settings restored successfully" }
+                } else {
+                    snackbarMessage.update { "No backup found" }
+                }
+            } catch (e: Exception) {
+                snackbarMessage.update { "Restore error: ${e.message}" }
+            }
+        }
     }
 
     private fun formatTime(timestamp: Long): String {
@@ -1024,6 +1131,7 @@ data class LauncherUiState(
     val isAboutVisible: Boolean = false,
     val isEmergencyUnlockVisible: Boolean = false,
     val isHiddenAppsVisible: Boolean = false,
+    val isBackupSettingsVisible: Boolean = false,
     val showSeconds: Boolean = false,
     val showDailyTasksOnHome: Boolean = true,
     val showDailyTasksHomeSection: Boolean = true,

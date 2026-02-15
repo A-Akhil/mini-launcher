@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
+import android.os.Environment
 import android.provider.AlarmClock
 import android.provider.Settings
 import android.content.ComponentName
@@ -75,6 +76,46 @@ class MainActivity : ComponentActivity() {
         updatePermissionsState()
     }
 
+    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        // Just resumed from settings, proceed with operation if granted
+        if (checkStoragePermission()) {
+            pendingStorageOperation?.invoke()
+        } else {
+            Toast.makeText(this, "Storage permission required for backup", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private var pendingStorageOperation: (() -> Unit)? = null
+
+    private fun checkStoragePermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true 
+        }
+    }
+
+    private fun requestStoragePermission(onGranted: () -> Unit) {
+        if (checkStoragePermission()) {
+            onGranted()
+        } else {
+            pendingStorageOperation = onGranted
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                    intent.data = Uri.parse("package:$packageName")
+                    storagePermissionLauncher.launch(intent)
+                } catch (e: Exception) {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    storagePermissionLauncher.launch(intent)
+                }
+            } else {
+                Toast.makeText(this, "Storage permission required", Toast.LENGTH_SHORT).show()
+                onGranted()
+            }
+        }
+    }
+
     private val permissionsState = MutableStateFlow(
         PermissionsState(
             notificationsGranted = false,
@@ -100,6 +141,7 @@ class MainActivity : ComponentActivity() {
             hiddenAppsManager = app.container.hiddenAppsManager,
             lockManager = app.container.lockManager,
             settingsManager = app.container.settingsManager,
+            settingsBackupManager = app.container.settingsBackupManager,
             searchManager = app.container.searchManager,
             appUsageStatsManager = app.container.appUsageStatsManager
         )
@@ -227,7 +269,14 @@ class MainActivity : ComponentActivity() {
                         canLaunch = viewModel::canLaunch,
                         onLaunchApp = { packageName -> launchPackage(packageName) },
                         onOpenClock = { openClockApp() },
-                        lockManager = (application as LauncherApplication).container.lockManager
+                        lockManager = (application as LauncherApplication).container.lockManager,
+                        onBackupSettingsVisibilityChange = viewModel::setBackupSettingsVisibility,
+                        onBackupSettings = {
+                            requestStoragePermission { viewModel.backupSettings() }
+                        },
+                        onRestoreSettings = {
+                            requestStoragePermission { viewModel.restoreSettings() }
+                        }
                     )
                 } else {
                     PermissionScreen(
