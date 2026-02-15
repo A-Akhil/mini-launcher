@@ -398,6 +398,19 @@ I added `SearchOverlay` and `SearchManager` when I started the project thinking 
 
 ---
 
+## 16. Custom Lock Screen Replacement
+**Status:** Tentative / On Hold
+
+### Description
+Replace the system lock screen with a custom minimalist lock screen to ensure focus from the moment the device wakes up.
+
+### Context
+- **Play Store Approval Dependency:** I am currently holding off on this until the app passes Google Play Store review. I already got rejected once, so I need to be careful with permissions.
+- **Implementation:** I'm not sure if I'll be able to code this right now. I'll see if I can add it later once the app is live.
+- **Technical Challenges:** Custom lock screens require sensitive permissions and complex handling of system overlays/keyguard dismissal.
+
+---
+
 ## Future Enhancements
 - [ ] Widget support on home screen (But the thing is we need in black and white theme)
 - [ ] Gesture customization (swipe actions)
