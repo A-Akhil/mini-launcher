@@ -7,6 +7,7 @@ import com.minifocus.launcher.manager.DailyTasksManager
 import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
+import com.minifocus.launcher.manager.SettingsBackupManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
@@ -18,6 +19,7 @@ class LauncherViewModelFactory(
     private val hiddenAppsManager: HiddenAppsManager,
     private val lockManager: LockManager,
     private val settingsManager: SettingsManager,
+    private val settingsBackupManager: SettingsBackupManager,
     private val searchManager: SearchManager,
     private val appUsageStatsManager: AppUsageStatsManager
 ) : ViewModelProvider.Factory {
@@ -32,6 +34,7 @@ class LauncherViewModelFactory(
                 hiddenAppsManager = hiddenAppsManager,
                 lockManager = lockManager,
                 settingsManager = settingsManager,
+                settingsBackupManager = settingsBackupManager,
                 searchManager = searchManager,
                 appUsageStatsManager = appUsageStatsManager
             ) as T
