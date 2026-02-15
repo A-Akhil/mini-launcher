@@ -189,6 +189,9 @@ fun LauncherApp(
     onLaunchApp: (String) -> Unit,
     onOpenClock: () -> Unit,
     lockManager: com.minifocus.launcher.manager.LockManager,
+    onBackupSettingsVisibilityChange: (Boolean) -> Unit,
+    onBackupSettings: () -> Unit,
+    onRestoreSettings: () -> Unit,
     onRootBack: () -> Unit = {},
     onConsumeMessage: () -> Unit = {}
 ) {
@@ -502,7 +505,15 @@ fun LauncherApp(
                         onOpenPermissionManager = onOpenPermissionManager,
                         onOpenDeviceSettings = onOpenDeviceSettings,
                         onOpenAbout = { onAboutVisibilityChange(true) },
+                        onOpenBackupSettings = { onBackupSettingsVisibilityChange(true) },
                         onBack = { onSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isBackupSettingsVisible -> {
+                    com.minifocus.launcher.ui.screens.BackupSettingsScreen(
+                        onBackup = onBackupSettings,
+                        onRestore = onRestoreSettings,
+                        onBack = { onBackupSettingsVisibilityChange(false) }
                     )
                 }
                 state.isHomeSettingsVisible -> {
@@ -1955,6 +1966,7 @@ private fun SettingsScreen(
     onOpenPermissionManager: () -> Unit,
     onOpenDeviceSettings: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenBackupSettings: () -> Unit,
     onBack: () -> Unit
 ) {
     val homeSummary = buildString {
@@ -2067,6 +2079,14 @@ private fun SettingsScreen(
             title = "Permissions",
             subtitle = permissionSummary,
             onClick = onOpenPermissionManager
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+
+        SettingsRow(
+            title = "Backup & Restore",
+            subtitle = "Manage settings backups",
+            onClick = onOpenBackupSettings
         )
         
         Spacer(modifier = Modifier.height(20.dp))

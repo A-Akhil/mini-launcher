@@ -10,6 +10,7 @@ import com.minifocus.launcher.manager.InboxLogger
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.NotificationInboxManager
 import com.minifocus.launcher.manager.SearchManager
+import com.minifocus.launcher.manager.SettingsBackupManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
@@ -56,12 +57,14 @@ class LauncherApplication : Application() {
             notificationFilterDao = database.notificationFilterDao(),
             logger = inboxLogger
         )
+        val settingsBackupManager = SettingsBackupManager(this)
         container = AppContainer(
             tasksManager = tasksManager,
             hiddenAppsManager = hiddenManager,
             lockManager = lockManager,
             appsManager = appsManager,
             settingsManager = settingsManager,
+            settingsBackupManager = settingsBackupManager,
             searchManager = searchManager,
             dailyTasksManager = dailyTasksManager,
             notificationInboxManager = notificationInboxManager,
@@ -125,6 +128,7 @@ class AppContainer(
     val lockManager: LockManager,
     val appsManager: AppsManager,
     val settingsManager: SettingsManager,
+    val settingsBackupManager: SettingsBackupManager,
     val searchManager: SearchManager,
     val notificationInboxManager: NotificationInboxManager,
     val inboxLogger: InboxLogger,
