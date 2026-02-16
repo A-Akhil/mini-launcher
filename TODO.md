@@ -411,6 +411,41 @@ Replace the system lock screen with a custom minimalist lock screen to ensure fo
 
 ---
 
+## 17. About Screen Polish & Play Store Integration
+**Status:** Not Started
+
+### Description
+Enhance the About screen to make the app feel production-ready and encourage user engagement.
+
+### Requirements
+- **Dynamic Versioning:** Display `VersionName` and `VersionCode` from `BuildConfig` automatically.
+- **Rate App:** Button to open the app's Play Store listing for reviews (`market://details?id=...`).
+- **Share App:** Button to share the app link with friends via system share sheet.
+
+### Technical Approach
+- Use `BuildConfig` fields.
+- Android Intents (`ACTION_VIEW`, `ACTION_SEND`).
+
+---
+
+## 18. Smart Empty States (Zero State Polish)
+**Status:** Not Started
+
+### Description
+Replace blank screens with motivational or aesthetic empty state components when there is no content (e.g., cleared inbox, no tasks).
+
+### Requirements
+- **Visuals:** Minimalist iconography or illustrations for "No Content" states.
+- **Dynamic Content:** Fetch daily motivational quotes or minimalist images from public APIs (e.g., ZenQuotes) to reward the user for clearing their tasks/inbox.
+- **Offline Fallback:** Ensure it degrades gracefully to local assets if offline.
+
+### Locations
+- Daily Tasks (All done for today)
+- Notification Inbox (Zero distractions)
+- Search Results (No matches)
+
+---
+
 ## Future Enhancements
 - [ ] Widget support on home screen (But the thing is we need in black and white theme)
 - [ ] Gesture customization (swipe actions)
