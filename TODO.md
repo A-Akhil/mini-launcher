@@ -1,5 +1,28 @@
 # TODO - Feature Backlog
 
+## 0. Critical Fixes for Google Play Rejection (2026-02-23)
+**Status:** High Priority / In Progress
+
+### Challenge
+The app was rejected due to "Missing description in Play Listing" and "Prominent disclosure Non-compliant design" regarding the `AccessibilityService` API used for the double-tap-to-lock feature.
+
+### Required Actions
+1.  **Update Play Store Description**:
+    - Add explicit disclosure: "This app uses the AccessibilityService API (LockScreenAccessibilityService) to allow users to lock their device screen with a double-tap gesture. It does not collect or read any personal data."
+
+2.  **Implement Prominent Disclosure Dialog**:
+    - **Current Behavior**: Tapping "Grant" in `PermissionScreen` immediately launches system settings. This violates policy.
+    - **Required Behavior**: Show a modal dialog *before* redirecting.
+    - **Dialog Content**:
+        - Title: "Accessibility Permission Needed"
+        - Body: "Mini Launcher uses the Accessibility Service solely to lock your screen when you double-tap. No data is collected. If you decline, this feature will be disabled."
+        - Buttons: Two clear options (e.g., "Not Now" and "Go to Settings").
+    - **Implementation**:
+        - Update `PermissionScreen.kt` (or `MainActivity.kt` logic) to show this `AlertDialog` when the user taps the lock accessibility permission item.
+        - Only launch the intent if the positive button is clicked.
+
+---
+
 ## 1. Double Tap to Turn Off Screen
 **Status:** Not Started
 
