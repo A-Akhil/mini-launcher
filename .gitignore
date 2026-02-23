@@ -50,3 +50,8 @@ futureplan.txt
 *.db*
 *.sql
 *.apk
+
+
+
+# Promotion Video
+promo-video/
