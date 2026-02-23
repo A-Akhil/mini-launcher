@@ -17,14 +17,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,12 +57,50 @@ fun PermissionScreen(
     onContinue: () -> Unit,
     onRefreshPermissions: () -> Unit = {}
 ) {
+    var showAccessibilityDisclosure by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         onRefreshPermissions()
     }
     
     BackHandler(enabled = allowDismiss) {
         onClose()
+    }
+
+    if (showAccessibilityDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showAccessibilityDisclosure = false },
+            title = {
+                Text(
+                    text = "Accessibility Permission Needed",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "Mini Launcher uses the Accessibility Service solely to lock your screen when you double-tap. No data is collected. If you decline, this feature will be disabled.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showAccessibilityDisclosure = false
+                        onRequestLockAccessibility()
+                    }
+                ) {
+                    Text("Go to Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAccessibilityDisclosure = false }) {
+                    Text("Not Now")
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 
     val requiredPermissions = listOf(
@@ -84,7 +129,7 @@ fun PermissionScreen(
             title = "Lock screen shortcut",
             description = "Enable the accessibility service that powers double-tap lock without disabling biometrics.",
             granted = state.lockAccessibilityGranted,
-            onRequest = onRequestLockAccessibility
+            onRequest = { showAccessibilityDisclosure = true }
         ),
         PermissionRequest(
             title = "Usage stats access",
