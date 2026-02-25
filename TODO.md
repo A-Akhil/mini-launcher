@@ -1,7 +1,7 @@
 # TODO - Feature Backlog
 
 ## 0. Critical Fixes for Google Play Rejection (2026-02-23)
-**Status:** High Priority / In Progress
+**Status:** Completed (Released in v1.2.2) - Production Access Received (2026-02-25)
 
 ### Challenge
 The app was rejected due to "Missing description in Play Listing" and "Prominent disclosure Non-compliant design" regarding the `AccessibilityService` API used for the double-tap-to-lock feature.
@@ -24,7 +24,7 @@ The app was rejected due to "Missing description in Play Listing" and "Prominent
 ---
 
 ## 1. Double Tap to Turn Off Screen
-**Status:** Not Started
+**Status:** Completed (Released in v1.0.1)
 
 ### Description
 Implement double-tap gesture on home screen to turn off the device screen.
@@ -49,7 +49,7 @@ Implement double-tap gesture on home screen to turn off the device screen.
 ---
 
 ## 2. Configurable Text Size
-**Status:** Not Started
+**Status:** Completed (Released in v1.1.0)
 
 ### Description
 Allow users to customize font sizes across the launcher interface.
@@ -135,7 +135,7 @@ Provide a secure, gesture-based access method for hidden apps without passcodes 
 ---
 
 ## 5. Notification Filter & Inbox
-**Status:** Not Started
+**Status:** Completed (Released in v1.1.0)
 
 ### Description
 Implement a notification filtering system that blocks all incoming system notifications. All intercepted notifications will be stored in a notification history/inbox within the launcher, which the user must manually open to view.
@@ -178,7 +178,7 @@ The red notification badge (unread count indicator) on the notification bell ico
 ---
 
 ## 7. Long Click to Uninstall in App Options
-**Status:** Not Started
+**Status:** Completed (Released in v1.0.0)
 
 ### Description
 Add "Uninstall" as a long-click option alongside existing actions (e.g., lock, hide, pin) in the app options menu for each app in the launcher.
@@ -435,7 +435,7 @@ Replace the system lock screen with a custom minimalist lock screen to ensure fo
 ---
 
 ## 17. About Screen Polish & Play Store Integration
-**Status:** Not Started
+**Status:** Completed (Released in v1.0.0)
 
 ### Description
 Enhance the About screen to make the app feel production-ready and encourage user engagement.
