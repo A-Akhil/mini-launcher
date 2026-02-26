@@ -16,7 +16,7 @@ fun TextSizeProvider(
     val currentDensity = LocalDensity.current
     val newDensity = Density(
         density = currentDensity.density,
-        fontScale = currentDensity.fontScale * multiplier
+        fontScale = multiplier
     )
 
     CompositionLocalProvider(
