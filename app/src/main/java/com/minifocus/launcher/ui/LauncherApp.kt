@@ -123,6 +123,10 @@ import com.minifocus.launcher.ui.screens.NotificationInboxScreen
 import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.minifocus.launcher.ui.screens.TextSizeSettingsScreen
+import com.minifocus.launcher.ui.screens.AppTimeReminderSettingsScreen
+import com.minifocus.launcher.model.ExpiryAction
+import com.minifocus.launcher.data.entity.AppTimeReminderEntity
+import com.minifocus.launcher.service.AppTimeReminderReceiver
 import com.minifocus.launcher.ui.theme.LocalTextMultiplier
 import com.minifocus.launcher.ui.theme.TextSizeProvider
 import kotlinx.coroutines.launch
@@ -192,6 +196,11 @@ fun LauncherApp(
     onBackupSettingsVisibilityChange: (Boolean) -> Unit,
     onBackupSettings: () -> Unit,
     onRestoreSettings: () -> Unit,
+    onAppTimeReminderSettingsVisibilityChange: (Boolean) -> Unit,
+    onAddTrackedReminderApp: (String, String) -> Unit,
+    onRemoveTrackedReminderApp: (String) -> Unit,
+    onSetPendingTimeIntention: (AppEntry?) -> Unit,
+    onUpdateExpiryAction: (String, ExpiryAction) -> Unit,
     onRootBack: () -> Unit = {},
     onConsumeMessage: () -> Unit = {}
 ) {
@@ -214,6 +223,10 @@ fun LauncherApp(
     val appDrawerSettingsBackTarget = remember { mutableStateOf(AppDrawerSettingsBackTarget.None) }
     val appearanceSettingsBackTarget = remember { mutableStateOf(AppearanceSettingsBackTarget.None) }
     val hiddenAppsBackTarget = remember { mutableStateOf(HiddenAppsBackTarget.None) }
+    val appTimeReminderSettingsBackTarget = remember { mutableStateOf(AppTimeReminderSettingsBackTarget.None) }
+    val trackedPackages = remember(state.trackedReminderApps) {
+        state.trackedReminderApps.map { it.packageName }.toSet()
+    }
 
     val shouldSnapToHome = state.isSettingsVisible ||
         state.isHomeSettingsVisible ||
@@ -226,7 +239,8 @@ fun LauncherApp(
         state.isEmergencyUnlockVisible ||
         state.isHistoryVisible ||
         state.isSearchVisible ||
-        state.isHiddenAppsVisible
+        state.isHiddenAppsVisible ||
+        state.isAppTimeReminderSettingsVisible
 
     LaunchedEffect(state.homeResetTick) {
         if (pagerState.currentPage != 1) {
@@ -395,6 +409,24 @@ fun LauncherApp(
         hiddenAppsBackTarget.value = HiddenAppsBackTarget.None
     }
 
+    fun openAppTimeReminderSettings(from: AppTimeReminderSettingsBackTarget) {
+        appTimeReminderSettingsBackTarget.value = from
+        when (from) {
+            AppTimeReminderSettingsBackTarget.Settings -> onSettingsVisibilityChange(false)
+            AppTimeReminderSettingsBackTarget.None -> Unit
+        }
+        onAppTimeReminderSettingsVisibilityChange(true)
+    }
+
+    fun closeAppTimeReminderSettings() {
+        onAppTimeReminderSettingsVisibilityChange(false)
+        when (appTimeReminderSettingsBackTarget.value) {
+            AppTimeReminderSettingsBackTarget.Settings -> onSettingsVisibilityChange(true)
+            AppTimeReminderSettingsBackTarget.None -> Unit
+        }
+        appTimeReminderSettingsBackTarget.value = AppTimeReminderSettingsBackTarget.None
+    }
+
     fun openFilters(from: FilterBackTarget) {
         filterBackTarget.value = from
         when (from) {
@@ -419,6 +451,7 @@ fun LauncherApp(
 
     BackHandler {
         when {
+            state.pendingTimeIntention != null -> onSetPendingTimeIntention(null)
             state.isNotificationFilterVisible -> closeFilters()
             state.isNotificationSettingsVisible -> closeNotifSettings()
             state.isClockSettingsVisible -> closeClockSettings()
@@ -426,6 +459,7 @@ fun LauncherApp(
             state.isTextSizeSettingsVisible -> closeTextSizeSettings()
             state.isAppearanceSettingsVisible -> closeAppearanceSettings()
             state.isHomeSettingsVisible -> closeHomeSettings()
+            state.isAppTimeReminderSettingsVisible -> closeAppTimeReminderSettings()
             state.isNotificationInboxVisible -> closeInbox()
             state.isSettingsVisible -> onSettingsVisibilityChange(false)
             state.isHistoryVisible -> onHistoryVisibilityChange(false)
@@ -506,6 +540,8 @@ fun LauncherApp(
                         onOpenDeviceSettings = onOpenDeviceSettings,
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onOpenBackupSettings = { onBackupSettingsVisibilityChange(true) },
+                        onOpenAppTimeReminderSettings = { openAppTimeReminderSettings(AppTimeReminderSettingsBackTarget.Settings) },
+                        trackedReminderAppsCount = state.trackedReminderApps.size,
                         onBack = { onSettingsVisibilityChange(false) }
                     )
                 }
@@ -514,6 +550,15 @@ fun LauncherApp(
                         onBackup = onBackupSettings,
                         onRestore = onRestoreSettings,
                         onBack = { onBackupSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isAppTimeReminderSettingsVisible -> {
+                    AppTimeReminderSettingsScreen(
+                        trackedApps = state.trackedReminderApps,
+                        allApps = state.allApps,
+                        onAddApp = onAddTrackedReminderApp,
+                        onRemoveApp = onRemoveTrackedReminderApp,
+                        onBack = { closeAppTimeReminderSettings() }
                     )
                 }
                 state.isHomeSettingsVisible -> {
@@ -647,7 +692,9 @@ fun LauncherApp(
                                         entry,
                                         coroutineScope,
                                         onLaunchApp,
-                                        navigateToHome = { /* Already on home */ }
+                                        navigateToHome = { /* Already on home */ },
+                                        trackedPackages = trackedPackages,
+                                        onSetPendingTimeIntention = onSetPendingTimeIntention
                                     )
                                 },
                                 bottomIconPickerSlot = bottomIconPickerSlot,
@@ -657,7 +704,10 @@ fun LauncherApp(
                                 onOpenClock = onOpenClock,
                                 onDailyTaskCompleted = onDailyTaskCompleted,
                                 onDailyTaskReset = onDailyTaskReset,
-                                onLockDevice = onLockDevice
+                                onLockDevice = onLockDevice,
+                                trackedPackages = trackedPackages,
+                                onAddTrackedReminderApp = onAddTrackedReminderApp,
+                                onRemoveTrackedReminderApp = onRemoveTrackedReminderApp
                             )
                             else -> AllAppsScreen(
                                 apps = state.allApps,
@@ -679,7 +729,9 @@ fun LauncherApp(
                                             coroutineScope.launch {
                                                 pagerState.scrollToPage(1)
                                             }
-                                        }
+                                        },
+                                        trackedPackages = trackedPackages,
+                                        onSetPendingTimeIntention = onSetPendingTimeIntention
                                     )
                                 },
                                 onPinApp = onPinApp,
@@ -687,7 +739,10 @@ fun LauncherApp(
                                 onHideApp = onHideApp,
                                 onLockApp = onLockApp,
                                 onOpenNotificationInbox = { openInbox(InboxBackTarget.None) },
-                                onOpenSettings = { onSettingsVisibilityChange(true) }
+                                onOpenSettings = { onSettingsVisibilityChange(true) },
+                                trackedPackages = trackedPackages,
+                                onAddTrackedReminderApp = onAddTrackedReminderApp,
+                                onRemoveTrackedReminderApp = onRemoveTrackedReminderApp
                             )
                         }
                     }
@@ -752,6 +807,38 @@ fun LauncherApp(
                     bottomIconPickerSlot.value = null
                 }
             )
+
+            // Time intention dialog for tracked apps
+            val pendingApp = state.pendingTimeIntention
+            if (pendingApp != null) {
+                val trackedInfo = state.trackedReminderApps.find { it.packageName == pendingApp.packageName }
+                val defaultAction = trackedInfo?.expiryAction?.let {
+                    runCatching { ExpiryAction.valueOf(it) }.getOrNull()
+                } ?: ExpiryAction.NOTIFICATION
+                TimeIntentionDialog(
+                    app = pendingApp,
+                    defaultDurationMinutes = trackedInfo?.defaultDurationMinutes,
+                    defaultExpiryAction = defaultAction,
+                    onConfirm = { durationMinutes, expiryAction ->
+                        onSetPendingTimeIntention(null)
+                        // Save chosen expiry action for next time
+                        onUpdateExpiryAction(pendingApp.packageName, expiryAction)
+                        // Track this package for alarm cancellation on return
+                        AppTimeReminderReceiver.activeReminderPackage = pendingApp.packageName
+                        AppTimeReminderReceiver.schedule(
+                            _context,
+                            pendingApp.packageName,
+                            pendingApp.label,
+                            durationMinutes,
+                            expiryAction.name
+                        )
+                        onLaunchApp(pendingApp.packageName)
+                    },
+                    onDismiss = {
+                        onSetPendingTimeIntention(null)
+                    }
+                )
+            }
         }
     }
     }
@@ -761,8 +848,16 @@ private fun handleAppLaunch(
     entry: AppEntry,
     coroutineScope: kotlinx.coroutines.CoroutineScope,
     onLaunchApp: (String) -> Unit,
-    navigateToHome: () -> Unit
+    navigateToHome: () -> Unit,
+    trackedPackages: Set<String> = emptySet(),
+    onSetPendingTimeIntention: ((AppEntry?) -> Unit)? = null
 ) {
+    // If this app is tracked for time reminders, show intention dialog first
+    if (trackedPackages.contains(entry.packageName) && onSetPendingTimeIntention != null) {
+        onSetPendingTimeIntention(entry)
+        navigateToHome()
+        return
+    }
     coroutineScope.launch {
         // Always call onLaunchApp - it will handle locked apps by showing overlay
         onLaunchApp(entry.packageName)
@@ -820,6 +915,7 @@ private enum class ClockSettingsBackTarget { None, Settings }
 private enum class AppDrawerSettingsBackTarget { None, Settings }
 private enum class AppearanceSettingsBackTarget { None, Settings }
 private enum class HiddenAppsBackTarget { None, Settings, AppDrawerSettings }
+private enum class AppTimeReminderSettingsBackTarget { None, Settings }
 
 @Composable
 private fun RetentionPickerDialog(
@@ -889,7 +985,10 @@ private fun HomeScreen(
     onOpenClock: () -> Unit,
     onDailyTaskCompleted: (Long) -> Unit,
     onDailyTaskReset: (Long) -> Unit,
-    onLockDevice: () -> Unit
+    onLockDevice: () -> Unit,
+    trackedPackages: Set<String>,
+    onAddTrackedReminderApp: (String, String) -> Unit,
+    onRemoveTrackedReminderApp: (String) -> Unit
 ) {
     val expandedPinned = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
@@ -992,12 +1091,19 @@ private fun HomeScreen(
     // Context menu for pinned apps
     expandedPinned.value?.let { pkgName ->
         state.pinnedApps.find { it.packageName == pkgName }?.let { app ->
+            val isTracked = pkgName in trackedPackages
             AppContextMenu(
                 app = app,
                 onDismiss = { expandedPinned.value = null },
                 onUnpin = { onUnpinApp(app.packageName) },
                 onHide = { onHideApp(app.packageName) },
-                onLock = { lockDialogApp.value = app }
+                onLock = { lockDialogApp.value = app },
+                onAddTimeReminder = if (!isTracked) ({
+                    onAddTrackedReminderApp(app.packageName, app.label)
+                }) else null,
+                onRemoveTimeReminder = if (isTracked) ({
+                    onRemoveTrackedReminderApp(app.packageName)
+                }) else null
             )
         }
     }
@@ -1553,7 +1659,10 @@ private fun AllAppsScreen(
     onHideApp: (String) -> Unit,
     onLockApp: (String, Long) -> Unit,
     onOpenNotificationInbox: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    trackedPackages: Set<String>,
+    onAddTrackedReminderApp: (String, String) -> Unit,
+    onRemoveTrackedReminderApp: (String) -> Unit
 ) {
     val expandedApp = remember { mutableStateOf<String?>(null) }
     val lockDialogApp = remember { mutableStateOf<AppEntry?>(null) }
@@ -1798,13 +1907,20 @@ private fun AllAppsScreen(
     // Context menu for regular apps
     expandedApp.value?.let { pkgName ->
         filteredApps.find { it.packageName == pkgName }?.let { app ->
+            val isTracked = pkgName in trackedPackages
             AppContextMenu(
                 app = app,
                 onDismiss = { expandedApp.value = null },
                 onPin = if (!app.isPinned) ({ onPinApp(app.packageName) }) else null,
                 onUnpin = if (app.isPinned) ({ onUnpinApp(app.packageName) }) else null,
                 onHide = { onHideApp(app.packageName) },
-                onLock = { lockDialogApp.value = app }
+                onLock = { lockDialogApp.value = app },
+                onAddTimeReminder = if (!isTracked) ({
+                    onAddTrackedReminderApp(app.packageName, app.label)
+                }) else null,
+                onRemoveTimeReminder = if (isTracked) ({
+                    onRemoveTrackedReminderApp(app.packageName)
+                }) else null
             )
         }
     }
@@ -1967,6 +2083,8 @@ private fun SettingsScreen(
     onOpenDeviceSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenBackupSettings: () -> Unit,
+    onOpenAppTimeReminderSettings: () -> Unit,
+    trackedReminderAppsCount: Int,
     onBack: () -> Unit
 ) {
     val homeSummary = buildString {
@@ -2055,6 +2173,20 @@ private fun SettingsScreen(
             title = "App Drawer",
             subtitle = appDrawerSummary,
             onClick = onOpenAppDrawerSettings
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        val reminderSummary = if (trackedReminderAppsCount > 0) {
+            "$trackedReminderAppsCount app${if (trackedReminderAppsCount != 1) "s" else ""} tracked"
+        } else {
+            "No apps tracked"
+        }
+
+        SettingsRow(
+            title = "App Reminders",
+            subtitle = reminderSummary,
+            onClick = onOpenAppTimeReminderSettings
         )
 
         Spacer(modifier = Modifier.height(20.dp))

@@ -65,6 +65,14 @@
             android:taskAffinity=""
             android:theme="@style/Theme.MinimalistFocusLauncher" />
 
+        <activity
+            android:name="com.minifocus.launcher.service.TimeExpiredOverlayActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TransparentOverlay" />
+
         <service
             android:name="com.minifocus.launcher.service.LockScreenAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -96,6 +104,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="App Lock Monitor" />
         </service>
+
+        <receiver
+            android:name="com.minifocus.launcher.service.AppTimeReminderReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

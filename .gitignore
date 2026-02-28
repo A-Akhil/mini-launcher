@@ -1,3 +1,7 @@
+# Internal agent notes
+rough_note.md
+promo-video/rough_note.md
+
 # Gradle build output
 .gradle/
 build/
@@ -7,6 +11,7 @@ build/
 local.properties
 keystore/
 keystore.properties
+.env
 
 # IntelliJ / Android Studio
 .idea/
