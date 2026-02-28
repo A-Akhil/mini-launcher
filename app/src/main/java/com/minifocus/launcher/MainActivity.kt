@@ -143,7 +143,8 @@ class MainActivity : ComponentActivity() {
             settingsManager = app.container.settingsManager,
             settingsBackupManager = app.container.settingsBackupManager,
             searchManager = app.container.searchManager,
-            appUsageStatsManager = app.container.appUsageStatsManager
+            appUsageStatsManager = app.container.appUsageStatsManager,
+            appTimeReminderManager = app.container.appTimeReminderManager
         )
     }
 
@@ -276,7 +277,12 @@ class MainActivity : ComponentActivity() {
                         },
                         onRestoreSettings = {
                             requestStoragePermission { viewModel.restoreSettings() }
-                        }
+                        },
+                        onAppTimeReminderSettingsVisibilityChange = viewModel::setAppTimeReminderSettingsVisibility,
+                        onAddTrackedReminderApp = viewModel::addTrackedReminderApp,
+                        onRemoveTrackedReminderApp = viewModel::removeTrackedReminderApp,
+                        onSetPendingTimeIntention = viewModel::setPendingTimeIntention,
+                        onUpdateExpiryAction = viewModel::updateExpiryAction
                     )
                 } else {
                     PermissionScreen(
@@ -479,6 +485,15 @@ class MainActivity : ComponentActivity() {
             return
         }
         updatePermissionsState()
+
+        // Cancel any active time reminder alarm when user returns to launcher.
+        // This handles the case where the user closes the tracked app before the
+        // timer expires, so the alarm does not fire after they have already left.
+        val activePkg = com.minifocus.launcher.service.AppTimeReminderReceiver.activeReminderPackage
+        if (activePkg != null) {
+            com.minifocus.launcher.service.AppTimeReminderReceiver.cancel(this, activePkg)
+            com.minifocus.launcher.service.AppTimeReminderReceiver.activeReminderPackage = null
+        }
     }
 
     private fun openRestrictedSettings() {
