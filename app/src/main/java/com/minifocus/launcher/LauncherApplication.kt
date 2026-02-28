@@ -14,6 +14,7 @@ import com.minifocus.launcher.manager.SettingsBackupManager
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
+import com.minifocus.launcher.manager.AppTimeReminderManager
 import com.minifocus.launcher.service.AppLockMonitorService
 import com.minifocus.launcher.worker.NotificationMaintenanceWorker
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +42,7 @@ class LauncherApplication : Application() {
         val tasksManager = TasksManager(database.taskDao(), this)
         val dailyTasksManager = DailyTasksManager(database.dailyTaskDao())
         val appUsageStatsManager = AppUsageStatsManager(database.appUsageStatsDao(), appScope)
+        val appTimeReminderManager = AppTimeReminderManager(database.appTimeReminderDao())
         val hiddenManager = HiddenAppsManager(database.hiddenAppDao())
         val lockManager = LockManager(database.appLockDao())
         val appsManager = AppsManager(
@@ -70,8 +72,13 @@ class LauncherApplication : Application() {
             notificationInboxManager = notificationInboxManager,
             inboxLogger = inboxLogger,
             applicationScope = appScope,
-            appUsageStatsManager = appUsageStatsManager
+            appUsageStatsManager = appUsageStatsManager,
+            appTimeReminderManager = appTimeReminderManager
         )
+
+        appScope.launch {
+            appTimeReminderManager.seedDefaultsIfEmpty(this@LauncherApplication)
+        }
 
         appScope.launch {
             settingsManager.observeNotificationInboxEnabled().collectLatest { enabled ->
@@ -133,5 +140,6 @@ class AppContainer(
     val notificationInboxManager: NotificationInboxManager,
     val inboxLogger: InboxLogger,
     val applicationScope: CoroutineScope,
-    val appUsageStatsManager: AppUsageStatsManager
+    val appUsageStatsManager: AppUsageStatsManager,
+    val appTimeReminderManager: AppTimeReminderManager
 )

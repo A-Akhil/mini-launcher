@@ -41,7 +41,9 @@ fun AppContextMenu(
     onUnpin: (() -> Unit)? = null,
     onHide: (() -> Unit)? = null,
     onUnhide: (() -> Unit)? = null,
-    onLock: (() -> Unit)? = null
+    onLock: (() -> Unit)? = null,
+    onAddTimeReminder: (() -> Unit)? = null,
+    onRemoveTimeReminder: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     
@@ -97,6 +99,28 @@ fun AppContextMenu(
                 label = "Lock App",
                 action = {
                     onLock()
+                    onDismiss()
+                }
+            ))
+        }
+        
+        // Time Reminder
+        if (onAddTimeReminder != null) {
+            add(AppMenuAction(
+                icon = Icons.Filled.Timer,
+                label = "Add Time Reminder",
+                action = {
+                    onAddTimeReminder()
+                    onDismiss()
+                }
+            ))
+        }
+        if (onRemoveTimeReminder != null) {
+            add(AppMenuAction(
+                icon = Icons.Filled.TimerOff,
+                label = "Remove Time Reminder",
+                action = {
+                    onRemoveTimeReminder()
                     onDismiss()
                 }
             ))
