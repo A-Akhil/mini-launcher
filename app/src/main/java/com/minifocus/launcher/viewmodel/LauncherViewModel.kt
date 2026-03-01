@@ -13,6 +13,7 @@ import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
 import com.minifocus.launcher.manager.AppUsageStats
 import com.minifocus.launcher.manager.AppUsageCohort
+import com.minifocus.launcher.manager.AppTimeReminderManager
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
@@ -25,6 +26,8 @@ import com.minifocus.launcher.model.DailyTaskWeekdayMask
 import com.minifocus.launcher.model.AppUsageEventSource
 import com.minifocus.launcher.model.SmartSuggestion
 import com.minifocus.launcher.model.SmartSuggestionReason
+import com.minifocus.launcher.model.ExpiryAction
+import com.minifocus.launcher.data.entity.AppTimeReminderEntity
 import com.minifocus.launcher.data.entity.toItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +71,8 @@ class LauncherViewModel(
     private val settingsManager: SettingsManager,
     private val settingsBackupManager: SettingsBackupManager,
     private val searchManager: SearchManager,
-    private val appUsageStatsManager: AppUsageStatsManager
+    private val appUsageStatsManager: AppUsageStatsManager,
+    private val appTimeReminderManager: AppTimeReminderManager
 ) : ViewModel() {
 
     private val zoneId = ZoneId.systemDefault()
@@ -240,6 +244,9 @@ class LauncherViewModel(
     private val isEmergencyUnlockVisible = MutableStateFlow(false)
     private val isHiddenAppsVisible = MutableStateFlow(false)
     private val isBackupSettingsVisible = MutableStateFlow(false)
+    private val isAppTimeReminderSettingsVisible = MutableStateFlow(false)
+    private val trackedReminderApps = appTimeReminderManager.observeTrackedApps()
+    private val pendingTimeIntention = MutableStateFlow<AppEntry?>(null)
 
     private val baseUiState = combine(
         dataSnapshot,
@@ -352,6 +359,15 @@ class LauncherViewModel(
         }
         .combine(isBackupSettingsVisible) { state, backupVisible ->
             state.copy(isBackupSettingsVisible = backupVisible)
+        }
+        .combine(isAppTimeReminderSettingsVisible) { state, reminderSettingsVisible ->
+            state.copy(isAppTimeReminderSettingsVisible = reminderSettingsVisible)
+        }
+        .combine(trackedReminderApps) { state, tracked ->
+            state.copy(trackedReminderApps = tracked)
+        }
+        .combine(pendingTimeIntention) { state, pending ->
+            state.copy(pendingTimeIntention = pending)
         }
         .combine(smartUsageState) { state, smartState ->
             state.copy(
@@ -792,6 +808,67 @@ class LauncherViewModel(
         }
     }
 
+    fun setAppTimeReminderSettingsVisibility(visible: Boolean) {
+        isAppTimeReminderSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isEmergencyUnlockVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+            isBackupSettingsVisible.value = false
+        }
+    }
+
+    fun addTrackedReminderApp(packageName: String, appLabel: String) {
+        viewModelScope.launch {
+            appTimeReminderManager.addTrackedApp(packageName, appLabel)
+            snackbarMessage.update { "Time reminder added for $appLabel" }
+        }
+    }
+
+    fun removeTrackedReminderApp(packageName: String) {
+        viewModelScope.launch {
+            appTimeReminderManager.removeTrackedApp(packageName)
+            snackbarMessage.update { "Time reminder removed" }
+        }
+    }
+
+    fun updateTrackedReminderApp(
+        packageName: String,
+        appLabel: String,
+        defaultDurationMinutes: Int?,
+        expiryAction: ExpiryAction
+    ) {
+        viewModelScope.launch {
+            appTimeReminderManager.updateTrackedApp(packageName, appLabel, defaultDurationMinutes, expiryAction)
+        }
+    }
+
+    suspend fun isAppTrackedForReminder(packageName: String): Boolean =
+        withContext(Dispatchers.IO) {
+            appTimeReminderManager.isTracked(packageName)
+        }
+
+    fun setPendingTimeIntention(app: AppEntry?) {
+        pendingTimeIntention.value = app
+    }
+
+    fun updateExpiryAction(packageName: String, expiryAction: ExpiryAction) {
+        viewModelScope.launch {
+            appTimeReminderManager.updateExpiryAction(packageName, expiryAction)
+        }
+    }
+
     fun resetToHome() {
         isSettingsVisible.value = false
         isHomeSettingsVisible.value = false
@@ -807,8 +884,10 @@ class LauncherViewModel(
         isAboutVisible.value = false
         isEmergencyUnlockVisible.value = false
         isBackupSettingsVisible.value = false
+        isAppTimeReminderSettingsVisible.value = false
         isSearchVisible.value = false
         isHiddenAppsVisible.value = false
+        pendingTimeIntention.value = null
         searchQuery.value = ""
         homeResetTick.update { it + 1 }
     }
@@ -1132,6 +1211,9 @@ data class LauncherUiState(
     val isEmergencyUnlockVisible: Boolean = false,
     val isHiddenAppsVisible: Boolean = false,
     val isBackupSettingsVisible: Boolean = false,
+    val isAppTimeReminderSettingsVisible: Boolean = false,
+    val trackedReminderApps: List<AppTimeReminderEntity> = emptyList(),
+    val pendingTimeIntention: AppEntry? = null,
     val showSeconds: Boolean = false,
     val showDailyTasksOnHome: Boolean = true,
     val showDailyTasksHomeSection: Boolean = true,
