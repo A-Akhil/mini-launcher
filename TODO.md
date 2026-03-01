@@ -165,7 +165,7 @@ Implement a notification filtering system that blocks all incoming system notifi
 ---
 
 ## 6. Fix Notification Badge Clipping in All Apps Header
-**Status:** Not Started  
+**Status:** Completed (2026-03-01)
 **Priority:** High
 
 ### Description
@@ -281,7 +281,7 @@ Create configurable "Focus Mode" profiles where user selects a set of apps to bl
 ---
 
 ## 12. App Time Intention Dialog
-**Status:** Not Started
+**Status:** Completed (2026-03-01)
 
 ### Description
 Before opening an app, show a dialog asking "How long do you want to use this app?" User selects a duration (5, 10, 15, 30 min or custom). After the time expires, show a reminder or auto-close the app.

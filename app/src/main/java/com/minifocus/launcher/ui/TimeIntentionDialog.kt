@@ -2,9 +2,6 @@ package com.minifocus.launcher.ui
 
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,10 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -43,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -86,7 +78,6 @@ fun TimeIntentionDialog(
     var selectedAction by remember { mutableStateOf(defaultExpiryAction) }
     var todayUsageMinutes by remember { mutableLongStateOf(0L) }
     var weekUsageMinutes by remember { mutableLongStateOf(0L) }
-    var expiryExpanded by remember { mutableStateOf(false) }
 
     // Cooldown state
     var cooldownProgress by remember { mutableFloatStateOf(1f) }
@@ -122,12 +113,6 @@ fun TimeIntentionDialog(
 
     val presets = listOf(5, 10, 15, 30)
 
-    val expiryLabel = when (selectedAction) {
-        ExpiryAction.NOTIFICATION -> "Notification"
-        ExpiryAction.PROMPT -> "Screen prompt"
-        ExpiryAction.RETURN_HOME -> "Return to home"
-    }
-
     // Scrim background
     Box(
         modifier = Modifier
@@ -153,7 +138,7 @@ fun TimeIntentionDialog(
             Text(
                 text = app.label,
                 color = Color.White,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -161,9 +146,10 @@ fun TimeIntentionDialog(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = if (isTimeExpired) "Your time has ended" else "Set your time intention",
-                color = if (isTimeExpired) Color(0xFFCC6666) else Color(0xFF777777),
-                fontSize = 14.sp
+                text = if (isTimeExpired) "Your time has ended" else "How long do you want to use this?",
+                color = if (isTimeExpired) Color(0xFFCC6666) else Color(0xFF666666),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center
             )
 
             // Cooldown timer (only in time-expired mode with active cooldown)
@@ -176,258 +162,296 @@ fun TimeIntentionDialog(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Usage stats cards
+            // Prominent usage stats reminder
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                UsageStatCard(
-                    label = "Today",
-                    value = formatUsageTime(todayUsageMinutes),
-                    modifier = Modifier.weight(1f)
+                // Today stat
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "TODAY",
+                        color = Color(0xFF555555),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 1.2.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = formatUsageTime(todayUsageMinutes),
+                        color = Color(0xFFE57373),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Vertical divider
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(48.dp)
+                        .background(Color(0xFF2A2A2A))
                 )
-                UsageStatCard(
-                    label = "Past 7 days",
-                    value = formatUsageTime(weekUsageMinutes),
-                    modifier = Modifier.weight(1f)
-                )
+
+                // 7-day stat
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "PAST 7 DAYS",
+                        color = Color(0xFF555555),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 1.2.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = formatUsageTime(weekUsageMinutes),
+                        color = Color(0xFFAAAAAA),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Duration presets
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color(0xFF222222))
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Duration presets -- 2x2 grid
             Text(
-                text = if (isTimeExpired) "Extend by" else "Quick pick",
-                color = Color(0xFF666666),
-                fontSize = 12.sp,
+                text = if (isTimeExpired) "EXTEND BY" else "DURATION",
+                color = Color(0xFF555555),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.5.sp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
             )
 
-            Row(
+            val selectedPreset = customMinutes.toIntOrNull()
+            val presetPairs = presets.chunked(2)
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                presets.forEach { minutes ->
-                    val enabled = !isInCooldown
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (enabled) Color(0xFF1E1E1E) else Color(0xFF111111)
-                            )
-                            .then(
-                                if (enabled) Modifier.clickable {
-                                    onConfirm(minutes, selectedAction)
-                                } else Modifier
-                            )
-                            .padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center
+                presetPairs.forEach { pair ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = "${minutes}m",
-                            color = if (enabled) Color.White else Color(0xFF333333),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        pair.forEach { minutes ->
+                            DurationChip(
+                                label = "${minutes} min",
+                                selected = selectedPreset == minutes,
+                                enabled = !isInCooldown,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                onConfirm(minutes, selectedAction)
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Custom input row
-            Text(
-                text = "Or set custom minutes",
-                color = Color(0xFF666666),
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
+            // Custom minutes input -- field only, no inline Start button
+            TextField(
+                value = customMinutes,
+                onValueChange = { value ->
+                    if (value.all { it.isDigit() } && value.length <= 3) {
+                        customMinutes = value
+                    }
+                },
+                enabled = !isInCooldown,
+                placeholder = {
+                    Text("Custom minutes...", color = Color(0xFF444444), fontSize = 13.sp)
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (!isInCooldown) {
+                            val mins = customMinutes.toIntOrNull()
+                            if (mins != null && mins > 0) {
+                                onConfirm(mins, selectedAction)
+                            }
+                        }
+                    }
+                ),
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFF1A1A1A),
+                    unfocusedContainerColor = Color(0xFF1A1A1A),
+                    disabledContainerColor = Color(0xFF111111),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    disabledTextColor = Color(0xFF333333),
+                    cursorColor = Color.White
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextField(
-                    value = customMinutes,
-                    onValueChange = { value ->
-                        if (value.all { it.isDigit() } && value.length <= 3) {
-                            customMinutes = value
-                        }
-                    },
-                    enabled = !isInCooldown,
-                    placeholder = {
-                        Text("Minutes", color = Color(0xFF444444), fontSize = 14.sp)
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Go
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onGo = {
-                            if (!isInCooldown) {
-                                val mins = customMinutes.toIntOrNull()
-                                if (mins != null && mins > 0) {
-                                    onConfirm(mins, selectedAction)
-                                }
-                            }
-                        }
-                    ),
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFF1E1E1E),
-                        unfocusedContainerColor = Color(0xFF1E1E1E),
-                        disabledContainerColor = Color(0xFF111111),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        disabledTextColor = Color(0xFF333333),
-                        cursorColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
+            // Expiry action chips (hidden during time-expired mode)
+            if (!isTimeExpired) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "ON EXPIRE",
+                    color = Color(0xFF555555),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
                 )
 
-                val isValid = !isInCooldown && customMinutes.isNotBlank() &&
-                    (customMinutes.toIntOrNull() ?: 0) > 0
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    ExpiryAction.entries.forEach { action ->
+                        val label = when (action) {
+                            ExpiryAction.NOTIFICATION -> "Notify"
+                            ExpiryAction.PROMPT -> "Ask me"
+                            ExpiryAction.RETURN_HOME -> "Go home"
+                        }
+                        val isSelected = selectedAction == action
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) Color(0xFF2C2C2C) else Color(0xFF0F0F0F)
+                                )
+                                .clickable { selectedAction = action }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSelected) Color.White else Color(0xFF555555),
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color(0xFF1E1E1E))
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Bottom action row: Go back (left) + Start (right)
+            val isCustomValid = !isInCooldown && customMinutes.isNotBlank() &&
+                (customMinutes.toIntOrNull() ?: 0) > 0
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Go back
+                Text(
+                    text = if (isTimeExpired) "Go back home" else "Go back",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clickable { onDismiss() }
+                        .padding(vertical = 6.dp, horizontal = 2.dp)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Start (only active when custom input has a valid value)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(
-                            if (isValid) {
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF2A2A2A), Color(0xFF3A3A3A))
-                                )
-                            } else {
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF111111), Color(0xFF111111))
-                                )
-                            }
+                            if (isCustomValid) Color(0xFF2C2C2C) else Color(0xFF161616)
                         )
                         .then(
-                            if (isValid) Modifier.clickable {
+                            if (isCustomValid) Modifier.clickable {
                                 val mins = customMinutes.toIntOrNull()
-                                if (mins != null && mins > 0) {
-                                    onConfirm(mins, selectedAction)
-                                }
+                                if (mins != null && mins > 0) onConfirm(mins, selectedAction)
                             } else Modifier
                         )
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = "Start",
-                        color = if (isValid) Color.White else Color(0xFF333333),
-                        fontSize = 14.sp,
+                        color = if (isCustomValid) Color.White else Color(0xFF383838),
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
-
-            // Expiry action selector (hidden during time-expired mode)
-            if (!isTimeExpired) {
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF0F0F0F))
-                        .clickable { expiryExpanded = !expiryExpanded }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "After time expires",
-                            color = Color(0xFF555555),
-                            fontSize = 11.sp
-                        )
-                        Text(
-                            text = expiryLabel,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    Icon(
-                        imageVector = if (expiryExpanded) Icons.Filled.KeyboardArrowUp
-                        else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = if (expiryExpanded) "Collapse" else "Expand",
-                        tint = Color(0xFF555555),
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = expiryExpanded,
-                    enter = expandVertically(),
-                    exit = shrinkVertically()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                    ) {
-                        ExpiryAction.entries.forEach { action ->
-                            if (action != selectedAction) {
-                                val label = when (action) {
-                                    ExpiryAction.NOTIFICATION -> "Notification"
-                                    ExpiryAction.PROMPT -> "Screen prompt"
-                                    ExpiryAction.RETURN_HOME -> "Return to home"
-                                }
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            selectedAction = action
-                                            expiryExpanded = false
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(Color(0xFF444444))
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = label,
-                                        color = Color(0xFFAAAAAA),
-                                        fontSize = 13.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Dismiss / go back (always clickable)
-            Text(
-                text = if (isTimeExpired) "Go back home" else "Go back",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .clickable { onDismiss() }
-                    .padding(6.dp)
-            )
         }
+    }
+}
+
+@Composable
+private fun DurationChip(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                when {
+                    !enabled -> Color(0xFF111111)
+                    selected -> Color(0xFF2C2C2C)
+                    else -> Color(0xFF1E1E1E)
+                }
+            )
+            .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
+            .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = when {
+                !enabled -> Color(0xFF333333)
+                selected -> Color.White
+                else -> Color(0xFFBBBBBB)
+            },
+            fontSize = 15.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+        )
     }
 }
 
@@ -482,33 +506,6 @@ private fun CooldownTimer(
             fontSize = if (isActive) 20.sp else 16.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun UsageStatCard(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF0F0F0F))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
-    ) {
-        Text(
-            text = label,
-            color = Color(0xFF555555),
-            fontSize = 11.sp
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold
         )
     }
 }
