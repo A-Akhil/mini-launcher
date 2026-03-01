@@ -3,6 +3,7 @@ package com.minifocus.launcher.service
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
+import com.minifocus.launcher.LauncherApplication
 import com.minifocus.launcher.service.AppLockOverlayActivity
 import com.minifocus.launcher.service.AppLockMonitorService
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,14 @@ class LockScreenAccessibilityService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
+    /** Package we last intercepted for time-reminder overlay. */
+    @Volatile
+    private var lastInterceptedPackage: String? = null
+
+    /** Timestamp of last interception to debounce rapid re-triggers. */
+    @Volatile
+    private var lastInterceptTime: Long = 0L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -40,6 +49,13 @@ class LockScreenAccessibilityService : AccessibilityService() {
         
         // Don't lock ourselves or System UI
         if (eventPackageName == packageName) return
+
+        // When the launcher (home screen) comes to foreground, clear the
+        // time-reminder debounce so the next recents launch is intercepted.
+        if (eventPackageName == "com.minifocus.launcher") {
+            lastInterceptedPackage = null
+            return
+        }
         
         // Launch coroutine to check database
         serviceScope.launch {
@@ -48,7 +64,7 @@ class LockScreenAccessibilityService : AccessibilityService() {
     }
     
     private suspend fun checkAndLock(targetPackage: String) {
-        val app = applicationContext as? com.minifocus.launcher.LauncherApplication ?: return
+        val app = applicationContext as? LauncherApplication ?: return
         val lockManager = app.container.lockManager
         
         if (lockManager.isLocked(targetPackage)) {
@@ -65,6 +81,57 @@ class LockScreenAccessibilityService : AccessibilityService() {
                     startActivity(intent)
                 }
             }
+            return
+        }
+
+        // If the app is not locked, check whether it is a tracked
+        // time-reminder app opened without an active timer
+        // (e.g. via recent apps or external launch).
+        checkTimeReminder(app, targetPackage)
+    }
+
+    /**
+     * Shows a time-intention dialog overlay when a tracked app is
+     * opened from recents or any non-launcher path while there is
+     * no active alarm running for it.
+     */
+    private suspend fun checkTimeReminder(app: LauncherApplication, targetPackage: String) {
+        // Already has an active timer -- user set time through launcher
+        if (AppTimeReminderReceiver.activeReminderPackage == targetPackage) return
+
+        // An overlay is already being displayed -- avoid stacking
+        if (TimeExpiredOverlayActivity.overlayActive) return
+
+        // Debounce: skip if we very recently intercepted this package
+        // (handles race between overlay dismiss and app re-focus)
+        val now = System.currentTimeMillis()
+        if (targetPackage == lastInterceptedPackage && now - lastInterceptTime < DEBOUNCE_MS) return
+
+        val manager = app.container.appTimeReminderManager
+        val tracked = withContext(Dispatchers.IO) {
+            manager.isTracked(targetPackage)
+        }
+        if (!tracked) return
+
+        val trackedInfo = withContext(Dispatchers.IO) {
+            manager.getTrackedApp(targetPackage)
+        }
+        val appLabel = trackedInfo?.appLabel ?: targetPackage
+
+        lastInterceptedPackage = targetPackage
+        lastInterceptTime = now
+
+        withContext(Dispatchers.Main) {
+            val intent = Intent(
+                this@LockScreenAccessibilityService,
+                TimeExpiredOverlayActivity::class.java
+            ).apply {
+                putExtra(AppTimeReminderReceiver.EXTRA_PACKAGE_NAME, targetPackage)
+                putExtra(AppTimeReminderReceiver.EXTRA_APP_LABEL, appLabel)
+                putExtra(TimeExpiredOverlayActivity.EXTRA_IS_TIME_EXPIRED, false)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
         }
     }
 
@@ -88,6 +155,9 @@ class LockScreenAccessibilityService : AccessibilityService() {
     companion object {
         @Volatile
         private var instance: LockScreenAccessibilityService? = null
+
+        /** Minimum interval between time-reminder overlay triggers for the same package. */
+        private const val DEBOUNCE_MS = 3_000L
 
         /**
          * Attempts to lock the device via a global lock-screen action.
