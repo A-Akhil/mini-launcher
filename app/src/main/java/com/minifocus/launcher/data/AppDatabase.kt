@@ -14,6 +14,7 @@ import com.minifocus.launcher.data.dao.TaskDao
 import com.minifocus.launcher.data.dao.NotificationDao
 import com.minifocus.launcher.data.dao.NotificationFilterDao
 import com.minifocus.launcher.data.dao.AppUsageStatsDao
+import com.minifocus.launcher.data.dao.AppTimeReminderDao
 import com.minifocus.launcher.data.entity.AppLockEntity
 import com.minifocus.launcher.data.entity.DailyTaskEntity
 import com.minifocus.launcher.data.entity.HiddenAppEntity
@@ -22,6 +23,7 @@ import com.minifocus.launcher.data.entity.TaskEntity
 import com.minifocus.launcher.data.entity.NotificationEntity
 import com.minifocus.launcher.data.entity.NotificationFilterEntity
 import com.minifocus.launcher.data.entity.AppUsageStatsEntity
+import com.minifocus.launcher.data.entity.AppTimeReminderEntity
 
 @Database(
     entities = [
@@ -32,9 +34,10 @@ import com.minifocus.launcher.data.entity.AppUsageStatsEntity
         NotificationEntity::class,
         NotificationFilterEntity::class,
         DailyTaskEntity::class,
-        AppUsageStatsEntity::class
+        AppUsageStatsEntity::class,
+        AppTimeReminderEntity::class
     ],
-    version = 6,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -47,6 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationFilterDao(): NotificationFilterDao
     abstract fun dailyTaskDao(): DailyTaskDao
     abstract fun appUsageStatsDao(): AppUsageStatsDao
+    abstract fun appTimeReminderDao(): AppTimeReminderDao
 
     companion object {
         fun build(context: Context): AppDatabase = Room.databaseBuilder(
@@ -54,7 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
             AppDatabase::class.java,
             "minimalist_focus_launcher.db"
         )
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -148,6 +152,36 @@ abstract class AppDatabase : RoomDatabase() {
                         `last_decay_day` INTEGER NOT NULL DEFAULT 0,
                         PRIMARY KEY(`package_name`)
                     )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `app_time_reminders` (
+                        `package_name` TEXT NOT NULL,
+                        `app_label` TEXT NOT NULL,
+                        `default_duration_minutes` INTEGER,
+                        `expiry_action` TEXT NOT NULL DEFAULT 'REMINDER',
+                        PRIMARY KEY(`package_name`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Convert old expiry_action values to new enum names:
+                // REMINDER, CLOSE_APP, RETURN_HOME -> NOTIFICATION
+                db.execSQL(
+                    """
+                    UPDATE app_time_reminders
+                    SET expiry_action = 'NOTIFICATION'
+                    WHERE expiry_action NOT IN ('NOTIFICATION', 'PROMPT')
                     """.trimIndent()
                 )
             }
