@@ -8,6 +8,10 @@ import com.minifocus.launcher.manager.HiddenAppsManager
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.manager.SearchManager
 import com.minifocus.launcher.manager.SettingsBackupManager
+import android.content.ContentResolver
+import android.net.Uri
+import java.io.InputStream
+import java.io.OutputStream
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
@@ -1003,26 +1007,34 @@ class LauncherViewModel(
         return appsManager.resolveDefaultQuickLaunch(slot, apps)
     }
 
-    fun backupSettings() {
+    fun backupSettings(uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
             try {
                 val state = uiState.value
-                val success = settingsBackupManager.backupSettings(
-                    textSize = state.textSize.name,
-                    clockFormat = state.clockFormat.name,
-                    bottomLeftPackage = state.bottomLeft?.packageName,
-                    bottomRightPackage = state.bottomRight?.packageName,
-                    keyboardSearchOnSwipe = state.isKeyboardSearchOnSwipe,
-                    showSeconds = state.showSeconds,
-                    showDailyTasksOnHome = state.showDailyTasksOnHome,
-                    smartSuggestionsEnabled = state.smartSuggestionsEnabled,
-                    notificationInboxEnabled = state.notificationInboxEnabled,
-                    notificationRetentionDays = state.notificationRetentionDays,
-                    logRetentionDays = state.logRetentionDays,
-                    doubleTapLockScreen = state.doubleTapLockScreen
-                )
+                val outputStream = contentResolver.openOutputStream(uri)
+                if (outputStream == null) {
+                    snackbarMessage.update { "Backup failed: could not open file" }
+                    return@launch
+                }
+                val success = outputStream.use { stream ->
+                    settingsBackupManager.backupToStream(
+                        outputStream = stream,
+                        textSize = state.textSize.name,
+                        clockFormat = state.clockFormat.name,
+                        bottomLeftPackage = state.bottomLeft?.packageName,
+                        bottomRightPackage = state.bottomRight?.packageName,
+                        keyboardSearchOnSwipe = state.isKeyboardSearchOnSwipe,
+                        showSeconds = state.showSeconds,
+                        showDailyTasksOnHome = state.showDailyTasksOnHome,
+                        smartSuggestionsEnabled = state.smartSuggestionsEnabled,
+                        notificationInboxEnabled = state.notificationInboxEnabled,
+                        notificationRetentionDays = state.notificationRetentionDays,
+                        logRetentionDays = state.logRetentionDays,
+                        doubleTapLockScreen = state.doubleTapLockScreen
+                    )
+                }
                 if (success) {
-                    snackbarMessage.update { "All settings backed up to Documents/.minilauncher/" }
+                    snackbarMessage.update { "Settings backed up successfully" }
                 } else {
                     snackbarMessage.update { "Backup failed" }
                 }
@@ -1032,10 +1044,15 @@ class LauncherViewModel(
         }
     }
 
-    fun restoreSettings() {
+    fun restoreSettings(uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
             try {
-                val backup = settingsBackupManager.restoreSettings()
+                val inputStream = contentResolver.openInputStream(uri)
+                if (inputStream == null) {
+                    snackbarMessage.update { "Restore failed: could not open file" }
+                    return@launch
+                }
+                val backup = inputStream.use { settingsBackupManager.restoreFromStream(it) }
                 if (backup != null) {
                     backup.textSize?.let { 
                         settingsManager.setTextSize(com.minifocus.launcher.model.TextSize.valueOf(it))
