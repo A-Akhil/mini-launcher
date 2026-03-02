@@ -59,7 +59,7 @@ class LauncherApplication : Application() {
             notificationFilterDao = database.notificationFilterDao(),
             logger = inboxLogger
         )
-        val settingsBackupManager = SettingsBackupManager(this)
+        val settingsBackupManager = SettingsBackupManager()
         container = AppContainer(
             tasksManager = tasksManager,
             hiddenAppsManager = hiddenManager,
