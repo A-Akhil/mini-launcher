@@ -1,30 +1,16 @@
 package com.minifocus.launcher.manager
 
-import android.content.Context
-import android.os.Environment
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 
-class SettingsBackupManager(private val context: Context) {
+class SettingsBackupManager {
 
-    private val backupDir: File
-        get() {
-            // Use public Documents directory so backup survives uninstalls/clear data
-            val documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            val dir = File(documentsDir, ".minilauncher")
-            if (!dir.exists()) {
-                dir.mkdirs()
-            }
-            return dir
-        }
-
-    private val backupFile: File
-        get() = File(backupDir, "settings_backup.json")
-
-    suspend fun backupSettings(
+    suspend fun backupToStream(
+        outputStream: OutputStream,
         textSize: String,
         clockFormat: String,
         bottomLeftPackage: String?,
@@ -37,11 +23,9 @@ class SettingsBackupManager(private val context: Context) {
         notificationRetentionDays: Int,
         logRetentionDays: Int,
         doubleTapLockScreen: Boolean
-    ) = withContext(Dispatchers.IO) {
+    ): Boolean = withContext(Dispatchers.IO) {
         try {
             val json = JSONObject()
-            
-            // All app settings
             json.put("textSize", textSize)
             json.put("clockFormat", clockFormat)
             json.put("bottomLeftPackage", bottomLeftPackage ?: "")
@@ -55,9 +39,8 @@ class SettingsBackupManager(private val context: Context) {
             json.put("logRetentionDays", logRetentionDays)
             json.put("doubleTapLockScreen", doubleTapLockScreen)
             json.put("backupTimestamp", System.currentTimeMillis())
-            
-            backupFile.writeText(json.toString(2))
-            Log.d("SettingsBackup", "Backup successful to ${backupFile.absolutePath}")
+            outputStream.writer().use { it.write(json.toString(2)) }
+            Log.d("SettingsBackup", "Backup written to stream")
             true
         } catch (e: Exception) {
             Log.e("SettingsBackup", "Backup failed", e)
@@ -80,13 +63,11 @@ class SettingsBackupManager(private val context: Context) {
         val doubleTapLockScreen: Boolean?
     )
 
-    suspend fun restoreSettings(): BackupData? = withContext(Dispatchers.IO) {
+    suspend fun restoreFromStream(inputStream: InputStream): BackupData? = withContext(Dispatchers.IO) {
         try {
-            if (!backupFile.exists()) return@withContext null
-            
-            val json = JSONObject(backupFile.readText())
-            Log.d("SettingsBackup", "Restoring from backup")
-            
+            val text = inputStream.reader().use { it.readText() }
+            val json = JSONObject(text)
+            Log.d("SettingsBackup", "Restoring from stream")
             BackupData(
                 textSize = if (json.has("textSize")) json.getString("textSize") else null,
                 clockFormat = if (json.has("clockFormat")) json.getString("clockFormat") else null,
@@ -113,3 +94,4 @@ class SettingsBackupManager(private val context: Context) {
         }
     }
 }
+
