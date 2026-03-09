@@ -4,11 +4,26 @@ Describe the change at a high level. Keep it concise and link to related discuss
 ## Issue
 Closes #<issue-number>
 
+## Scope
+- [ ] Bug fix
+- [ ] Feature
+- [ ] Refactor
+- [ ] Docs
+
 ## Testing
 - [ ] `./gradlew assembleDebug`
 - [ ] `./gradlew lint`
 - [ ] `./gradlew test`
 - [ ] Manual validation (describe scenarios):
+
+## Risk / Impact
+- Risk level: Low / Medium / High
+- Affected areas:
+- Rollback plan:
+
+## Data / Permissions
+- Schema or migration changes? (Yes/No)
+- New permissions or background behavior? (Yes/No)
 
 ## Screenshots / Recordings
 If the change affects UI or UX, attach screenshots or GIFs. If not applicable, state "N/A".

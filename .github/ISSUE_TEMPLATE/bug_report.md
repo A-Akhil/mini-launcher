@@ -14,6 +14,8 @@ Briefly describe the bug.
 - Android version (API level): 
 - App version/commit: 
 - Default launcher set to Mini? (Yes/No)
+- Build type: Debug / Release
+- Installation source: Play Store / GitHub release / Side-load
 
 ## Steps to Reproduce
 1. 
@@ -26,8 +28,17 @@ What should have happened?
 ## Actual Behavior
 What actually happened? Include screenshots or screen recordings if helpful.
 
+## Frequency
+- [ ] Always
+- [ ] Sometimes
+- [ ] Rare
+
 ## Logs / Additional Context
 Attach relevant `logcat` snippets or describe any additional context (permissions, settings, etc.).
+
+## Permission/Settings Notes
+- Relevant permissions granted? (notifications, usage stats, accessibility, overlay)
+- Battery optimizations disabled? (Yes/No)
 
 ## Regression?
 - [ ] This worked in a previous release (specify version): 
