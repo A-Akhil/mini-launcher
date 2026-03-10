@@ -19,6 +19,9 @@ keystore.properties
 *.ipr
 *.iws
 
+# VS Code
+.vscode/
+
 # Android specific
 captures/
 .externalNativeBuild/
