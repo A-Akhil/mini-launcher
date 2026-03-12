@@ -59,6 +59,12 @@
 
 ---
 
+## Promotion Video
+
+[docs/promo-video.mp4](docs/promo-video.mp4)
+
+---
+
 ## Technical Stack
 
 - **Language:** Kotlin
