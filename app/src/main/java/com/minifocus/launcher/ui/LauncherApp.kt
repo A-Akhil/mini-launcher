@@ -876,6 +876,15 @@ private fun handleAppLaunch(
 ) {
     // If this app is tracked for time reminders, show intention dialog first
     if (trackedPackages.contains(entry.packageName) && onSetPendingTimeIntention != null) {
+        if (AppTimeReminderReceiver.hasActiveSession(entry.packageName)) {
+            AppTimeReminderReceiver.consumeGraceIfActive(entry.packageName)
+            coroutineScope.launch {
+                onLaunchApp(entry.packageName)
+                kotlinx.coroutines.delay(50)
+                navigateToHome()
+            }
+            return
+        }
         onSetPendingTimeIntention(entry)
         navigateToHome()
         return
