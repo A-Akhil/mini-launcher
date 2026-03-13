@@ -21,8 +21,10 @@ package com.minifocus.launcher
 import android.Manifest
 import android.app.AlarmManager
 import android.app.role.RoleManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
@@ -59,6 +61,14 @@ import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.service.LockScreenAccessibilityService
 import androidx.activity.enableEdgeToEdge
 class MainActivity : ComponentActivity() {
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                com.minifocus.launcher.service.AppTimeReminderReceiver.forceResetActiveSession(this@MainActivity)
+            }
+        }
+    }
 
     private val settingsManager: SettingsManager by lazy {
         val app = application as LauncherApplication
@@ -166,6 +176,8 @@ class MainActivity : ComponentActivity() {
             showDefaultLauncherPrompt()
             return
         }
+
+        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
         
         notificationRestrictionHint.value = !isFromTrustedStore()
         updatePermissionsState()
@@ -326,6 +338,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(screenOffReceiver)
+        } catch (_: Exception) {
+        }
+        super.onDestroy()
+    }
+
     private fun requestPostNotificationsPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!permissionsState.value.notificationsGranted) {
@@ -476,13 +496,12 @@ class MainActivity : ComponentActivity() {
         }
         updatePermissionsState()
 
-        // Cancel any active time reminder alarm when user returns to launcher.
-        // This handles the case where the user closes the tracked app before the
-        // timer expires, so the alarm does not fire after they have already left.
+        // Start a 60s grace window when user returns to launcher.
+        // If the app is reopened within this window, we keep the same timer session.
+        // If not reopened, the session is reset after the grace period.
         val activePkg = com.minifocus.launcher.service.AppTimeReminderReceiver.activeReminderPackage
         if (activePkg != null) {
-            com.minifocus.launcher.service.AppTimeReminderReceiver.cancel(this, activePkg)
-            com.minifocus.launcher.service.AppTimeReminderReceiver.activeReminderPackage = null
+            com.minifocus.launcher.service.AppTimeReminderReceiver.scheduleGraceReset(this, activePkg)
         }
     }
 

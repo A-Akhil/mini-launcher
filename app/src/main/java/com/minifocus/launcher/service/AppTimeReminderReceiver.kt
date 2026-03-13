@@ -26,6 +26,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.minifocus.launcher.MainActivity
 
@@ -35,6 +37,11 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
         val packageName = intent.getStringExtra(EXTRA_PACKAGE_NAME) ?: return
         val appLabel = intent.getStringExtra(EXTRA_APP_LABEL) ?: return
         val actionName = intent.getStringExtra(EXTRA_EXPIRY_ACTION) ?: "NOTIFICATION"
+
+        // Timer has expired. End any active session/grace state for this package
+        // so next launch asks for intention again.
+        cancelGraceResetForPackage(packageName)
+        clearActiveSessionIfMatches(packageName)
 
         when (actionName) {
             "NOTIFICATION" -> showReminderNotification(context, packageName, appLabel)
@@ -112,10 +119,20 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
 
     companion object {
         private const val CHANNEL_ID = "app_time_reminder"
+        private const val RESET_GRACE_WINDOW_MS = 60_000L
         const val EXTRA_PACKAGE_NAME = "extra_package_name"
         const val EXTRA_APP_LABEL = "extra_app_label"
         const val EXTRA_EXPIRY_ACTION = "extra_expiry_action"
         const val ACTION_TIME_EXPIRED = "com.minifocus.launcher.action.TIME_EXPIRED"
+
+        private val mainHandler = Handler(Looper.getMainLooper())
+        private val graceLock = Any()
+
+        @Volatile
+        private var pendingGraceResetPackage: String? = null
+
+        @Volatile
+        private var pendingGraceResetRunnable: Runnable? = null
 
         /**
          * Tracks which package currently has an active alarm so that
@@ -127,6 +144,94 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
         @Volatile
         var activeReminderPackage: String? = null
 
+        @Volatile
+        private var activeReminderExpiresAtMillis: Long = 0L
+
+        fun hasActiveSession(packageName: String): Boolean {
+            val activePkg = activeReminderPackage ?: return false
+            if (activePkg != packageName) return false
+
+            val now = System.currentTimeMillis()
+            val expiresAt = activeReminderExpiresAtMillis
+            if (expiresAt <= 0L || now >= expiresAt) {
+                clearActiveSessionIfMatches(packageName)
+                return false
+            }
+
+            return true
+        }
+
+        fun consumeGraceIfActive(packageName: String): Boolean {
+            synchronized(graceLock) {
+                if (pendingGraceResetPackage != packageName) return false
+                pendingGraceResetRunnable?.let { mainHandler.removeCallbacks(it) }
+                pendingGraceResetRunnable = null
+                pendingGraceResetPackage = null
+                return true
+            }
+        }
+
+        fun cancelGraceResetForPackage(packageName: String) {
+            synchronized(graceLock) {
+                if (pendingGraceResetPackage != packageName) return
+                pendingGraceResetRunnable?.let { mainHandler.removeCallbacks(it) }
+                pendingGraceResetRunnable = null
+                pendingGraceResetPackage = null
+            }
+        }
+
+        fun scheduleGraceReset(context: Context, packageName: String) {
+            val appContext = context.applicationContext
+            synchronized(graceLock) {
+                pendingGraceResetRunnable?.let { mainHandler.removeCallbacks(it) }
+                pendingGraceResetPackage = packageName
+                val runnable = Runnable {
+                    val shouldReset = synchronized(graceLock) {
+                        val matched = pendingGraceResetPackage == packageName
+                        if (matched) {
+                            pendingGraceResetPackage = null
+                            pendingGraceResetRunnable = null
+                        }
+                        matched
+                    }
+                    if (shouldReset) {
+                        cancel(appContext, packageName)
+                        clearActiveSessionIfMatches(packageName)
+                    }
+                }
+                pendingGraceResetRunnable = runnable
+                mainHandler.postDelayed(runnable, RESET_GRACE_WINDOW_MS)
+            }
+        }
+
+        fun forceResetIfGracePending(context: Context) {
+            val packageToReset = synchronized(graceLock) {
+                val target = pendingGraceResetPackage
+                if (target != null) {
+                    pendingGraceResetRunnable?.let { mainHandler.removeCallbacks(it) }
+                    pendingGraceResetRunnable = null
+                    pendingGraceResetPackage = null
+                }
+                target
+            } ?: return
+
+            cancel(context.applicationContext, packageToReset)
+            clearActiveSessionIfMatches(packageToReset)
+        }
+
+        fun forceResetActiveSession(context: Context) {
+            val activePkg = activeReminderPackage ?: return
+
+            synchronized(graceLock) {
+                pendingGraceResetRunnable?.let { mainHandler.removeCallbacks(it) }
+                pendingGraceResetRunnable = null
+                pendingGraceResetPackage = null
+            }
+
+            cancel(context.applicationContext, activePkg)
+            clearActiveSessionIfMatches(activePkg)
+        }
+
         fun schedule(
             context: Context,
             packageName: String,
@@ -134,6 +239,7 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
             durationMinutes: Int,
             expiryAction: String
         ) {
+            cancelGraceResetForPackage(packageName)
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, AppTimeReminderReceiver::class.java).apply {
                 putExtra(EXTRA_PACKAGE_NAME, packageName)
@@ -148,6 +254,9 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
             )
 
             val triggerAt = System.currentTimeMillis() + durationMinutes * 60_000L
+
+            activeReminderPackage = packageName
+            activeReminderExpiresAtMillis = triggerAt
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
@@ -174,6 +283,14 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             alarmManager.cancel(pendingIntent)
+            clearActiveSessionIfMatches(packageName)
+        }
+
+        private fun clearActiveSessionIfMatches(packageName: String) {
+            if (activeReminderPackage == packageName) {
+                activeReminderPackage = null
+                activeReminderExpiresAtMillis = 0L
+            }
         }
     }
 }

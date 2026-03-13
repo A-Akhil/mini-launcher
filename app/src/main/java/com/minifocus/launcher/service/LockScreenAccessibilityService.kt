@@ -115,7 +115,10 @@ class LockScreenAccessibilityService : AccessibilityService() {
      */
     private suspend fun checkTimeReminder(app: LauncherApplication, targetPackage: String) {
         // Already has an active timer -- user set time through launcher
-        if (AppTimeReminderReceiver.activeReminderPackage == targetPackage) return
+        if (AppTimeReminderReceiver.hasActiveSession(targetPackage)) {
+            AppTimeReminderReceiver.consumeGraceIfActive(targetPackage)
+            return
+        }
 
         // An overlay is already being displayed -- avoid stacking
         if (TimeExpiredOverlayActivity.overlayActive) return
