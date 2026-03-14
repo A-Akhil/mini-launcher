@@ -33,6 +33,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -49,6 +51,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -109,6 +112,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -152,6 +156,7 @@ import com.minifocus.launcher.service.AppTimeReminderReceiver
 import com.minifocus.launcher.ui.theme.LocalTextMultiplier
 import com.minifocus.launcher.ui.theme.TextSizeProvider
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 @Composable
 fun LauncherApp(
@@ -1733,10 +1738,37 @@ private fun AllAppsScreen(
             filteredApps.filterNot { suggestionPackages.contains(it.packageName) }
         }
     }
+    val listState = rememberLazyListState()
+    val alphabet = remember { (('A'..'Z').toList() + listOf('#')) }
+    var fastScrollLetter by remember { mutableStateOf<Char?>(null) }
+    var scrollJob by remember { mutableStateOf<Job?>(null) }
+    val showFastScroll = !searchActive && remainingApps.isNotEmpty()
+    val letterPositions = remember(searchActive, suggestionEntries, remainingApps) {
+        if (searchActive || remainingApps.isEmpty()) {
+            emptyMap()
+        } else {
+            val beforeRemainingCount = 1 + if (suggestionEntries.isNotEmpty()) {
+                suggestionEntries.size + 2 // Frequent section + divider + All apps section + divider
+            } else {
+                0
+            }
+
+            val map = mutableMapOf<Char, Int>()
+            remainingApps.forEachIndexed { index, app ->
+                val letter = app.label.firstOrNull()?.uppercaseChar()?.takeIf { it.isLetter() } ?: '#'
+                if (!map.containsKey(letter)) {
+                    map[letter] = beforeRemainingCount + index
+                }
+            }
+            map
+        }
+    }
+    val availableLetters = remember(letterPositions) { letterPositions.keys }
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(keyboardOnSwipe) {
         if (!keyboardOnSwipe) {
@@ -1761,6 +1793,7 @@ private fun AllAppsScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
@@ -1931,6 +1964,32 @@ private fun AllAppsScreen(
             }
         }
     }
+
+    if (showFastScroll) {
+        FastScrollRail(
+            letters = alphabet,
+            availableLetters = availableLetters,
+            activeLetter = fastScrollLetter,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .fillMaxHeight()
+                .padding(end = 2.dp, top = 160.dp, bottom = 24.dp),
+            onLetterChange = { letter ->
+                fastScrollLetter = letter
+                val targetIndex = letterPositions[letter] ?: return@FastScrollRail
+                scrollJob?.cancel()
+                scrollJob = null
+                scrollJob = coroutineScope.launch {
+                    listState.scrollToItem(targetIndex)
+                }
+            },
+            onInteractionEnd = {
+                fastScrollLetter = null
+                scrollJob?.cancel()
+                scrollJob = null
+            }
+        )
+    }
         
     // Context menu for regular apps
     expandedApp.value?.let { pkgName ->
@@ -1987,6 +2046,60 @@ private fun SectionDivider(label: String) {
             modifier = Modifier.weight(1f)
         )
     }
+}
+
+@Composable
+private fun FastScrollRail(
+    modifier: Modifier = Modifier,
+    letters: List<Char>,
+    availableLetters: Set<Char>,
+    activeLetter: Char?,
+    onLetterChange: (Char) -> Unit,
+    onInteractionEnd: () -> Unit
+) {
+    if (letters.isEmpty()) return
+    var railHeight by remember { mutableStateOf(0f) }
+
+    Column(
+        modifier = modifier
+            .width(32.dp)
+            .onGloballyPositioned { railHeight = it.size.height.toFloat() }
+            .pointerInput(letters) {
+                detectVerticalDragGestures(
+                    onDragStart = { offset ->
+                        letterForOffset(offset.y, railHeight, letters)?.let(onLetterChange)
+                    },
+                    onVerticalDrag = { change, _ ->
+                        letterForOffset(change.position.y, railHeight, letters)?.let(onLetterChange)
+                    },
+                    onDragEnd = onInteractionEnd,
+                    onDragCancel = onInteractionEnd
+                )
+            },
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        letters.forEach { letter ->
+            val color = when {
+                letter == activeLetter -> Color.White
+                availableLetters.contains(letter) -> Color(0xB3FFFFFF)
+                else -> Color(0x40FFFFFF)
+            }
+
+            Text(
+                text = letter.toString(),
+                color = color,
+                fontSize = 12.sp,
+                fontWeight = if (letter == activeLetter) FontWeight.SemiBold else FontWeight.Normal
+            )
+        }
+    }
+}
+
+private fun letterForOffset(y: Float, height: Float, letters: List<Char>): Char? {
+    if (height <= 0f || letters.isEmpty()) return null
+    val index = ((y / height) * letters.size).toInt().coerceIn(0, letters.lastIndex)
+    return letters.getOrNull(index)
 }
 
 @Composable
