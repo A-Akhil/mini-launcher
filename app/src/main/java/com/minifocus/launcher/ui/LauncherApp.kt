@@ -1988,7 +1988,7 @@ private fun AllAppsScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .fillMaxHeight()
-                .padding(end = 2.dp, top = 160.dp, bottom = 24.dp),
+                .padding(end = 2.dp, top = if (suggestionEntries.isNotEmpty()) 192.dp else 160.dp, bottom = 24.dp),
             onDragPosition = { fraction, letter ->
                 fastScrollLetter = letter
                 focusManager.clearFocus(force = true)
