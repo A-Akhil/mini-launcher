@@ -157,6 +157,7 @@ import com.minifocus.launcher.ui.theme.LocalTextMultiplier
 import com.minifocus.launcher.ui.theme.TextSizeProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlin.math.roundToInt
 
 @Composable
 fun LauncherApp(
@@ -1744,6 +1745,7 @@ private fun AllAppsScreen(
     val alphabet = remember { (('A'..'Z').toList() + listOf('#')) }
     var fastScrollLetter by remember { mutableStateOf<Char?>(null) }
     var scrollJob by remember { mutableStateOf<Job?>(null) }
+    var lastFastScrollTargetIndex by remember { mutableStateOf(-1) }
     val showFastScroll = !searchActive && remainingApps.isNotEmpty()
     val letterPositions = remember(searchActive, suggestionEntries, remainingApps) {
         if (searchActive || remainingApps.isEmpty()) {
@@ -1987,20 +1989,32 @@ private fun AllAppsScreen(
                 .align(Alignment.TopEnd)
                 .fillMaxHeight()
                 .padding(end = 2.dp, top = 160.dp, bottom = 24.dp),
-            onLetterChange = { letter ->
-                if (fastScrollLetter == letter) return@FastScrollRail
+            onDragPosition = { fraction, letter ->
                 fastScrollLetter = letter
                 focusManager.clearFocus(force = true)
                 keyboardController?.hide()
-                val targetIndex = letterPositions[letter] ?: return@FastScrollRail
+
+                val remainingStartIndex = 1 + if (suggestionEntries.isNotEmpty()) {
+                    suggestionEntries.size + 2 // Frequent + divider + All apps + divider
+                } else {
+                    0
+                }
+                val targetWithinRemaining =
+                    ((remainingApps.size - 1) * fraction).roundToInt().coerceIn(0, remainingApps.lastIndex)
+                val targetIndex = remainingStartIndex + targetWithinRemaining
+
+                if (targetIndex == lastFastScrollTargetIndex) return@FastScrollRail
+                lastFastScrollTargetIndex = targetIndex
+
                 scrollJob?.cancel()
                 scrollJob = null
                 scrollJob = coroutineScope.launch {
-                    listState.animateScrollToItem(targetIndex)
+                    listState.scrollToItem(targetIndex)
                 }
             },
             onInteractionEnd = {
                 fastScrollLetter = null
+                lastFastScrollTargetIndex = -1
                 scrollJob?.cancel()
                 scrollJob = null
             }
@@ -2070,7 +2084,7 @@ private fun FastScrollRail(
     letters: List<Char>,
     availableLetters: Set<Char>,
     activeLetter: Char?,
-    onLetterChange: (Char) -> Unit,
+    onDragPosition: (fraction: Float, letter: Char) -> Unit,
     onInteractionEnd: () -> Unit
 ) {
     if (letters.isEmpty()) return
@@ -2083,10 +2097,14 @@ private fun FastScrollRail(
             .pointerInput(letters) {
                 detectVerticalDragGestures(
                     onDragStart = { offset ->
-                        letterForOffset(offset.y, railHeight, letters)?.let(onLetterChange)
+                        val letter = letterForOffset(offset.y, railHeight, letters) ?: return@detectVerticalDragGestures
+                        val fraction = fractionForOffset(offset.y, railHeight)
+                        onDragPosition(fraction, letter)
                     },
                     onVerticalDrag = { change, _ ->
-                        letterForOffset(change.position.y, railHeight, letters)?.let(onLetterChange)
+                        val letter = letterForOffset(change.position.y, railHeight, letters) ?: return@detectVerticalDragGestures
+                        val fraction = fractionForOffset(change.position.y, railHeight)
+                        onDragPosition(fraction, letter)
                     },
                     onDragEnd = onInteractionEnd,
                     onDragCancel = onInteractionEnd
@@ -2116,6 +2134,11 @@ private fun letterForOffset(y: Float, height: Float, letters: List<Char>): Char?
     if (height <= 0f || letters.isEmpty()) return null
     val index = ((y / height) * letters.size).toInt().coerceIn(0, letters.lastIndex)
     return letters.getOrNull(index)
+}
+
+private fun fractionForOffset(y: Float, height: Float): Float {
+    if (height <= 0f) return 0f
+    return (y / height).coerceIn(0f, 1f)
 }
 
 @Composable
