@@ -738,6 +738,7 @@ fun LauncherApp(
                             )
                             else -> AllAppsScreen(
                                 apps = state.allApps,
+                                isDrawerVisible = pagerState.currentPage == 2,
                                 keyboardOnSwipe = shouldShowInlineSearch,
                                 searchQuery = state.searchQuery,
                                 shouldFocusSearch = shouldFocusInlineSearch,
@@ -1681,6 +1682,7 @@ private fun calculateHybridMatchMultiplier(label: String, query: String): Double
 @Composable
 private fun AllAppsScreen(
     apps: List<AppEntry>,
+    isDrawerVisible: Boolean,
     keyboardOnSwipe: Boolean,
     searchQuery: String,
     shouldFocusSearch: Boolean,
@@ -1769,6 +1771,7 @@ private fun AllAppsScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
+    var wasDrawerVisible by remember { mutableStateOf(isDrawerVisible) }
 
     LaunchedEffect(keyboardOnSwipe) {
         if (!keyboardOnSwipe) {
@@ -1789,6 +1792,16 @@ private fun AllAppsScreen(
         } else if (!shouldFocusSearch) {
             keyboardController?.hide()
         }
+    }
+
+    LaunchedEffect(isDrawerVisible) {
+        if (wasDrawerVisible && !isDrawerVisible) {
+            scrollJob?.cancel()
+            scrollJob = null
+            fastScrollLetter = null
+            listState.scrollToItem(0)
+        }
+        wasDrawerVisible = isDrawerVisible
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -1975,12 +1988,15 @@ private fun AllAppsScreen(
                 .fillMaxHeight()
                 .padding(end = 2.dp, top = 160.dp, bottom = 24.dp),
             onLetterChange = { letter ->
+                if (fastScrollLetter == letter) return@FastScrollRail
                 fastScrollLetter = letter
+                focusManager.clearFocus(force = true)
+                keyboardController?.hide()
                 val targetIndex = letterPositions[letter] ?: return@FastScrollRail
                 scrollJob?.cancel()
                 scrollJob = null
                 scrollJob = coroutineScope.launch {
-                    listState.scrollToItem(targetIndex)
+                    listState.animateScrollToItem(targetIndex)
                 }
             },
             onInteractionEnd = {
