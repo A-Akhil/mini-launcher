@@ -1994,14 +1994,30 @@ private fun AllAppsScreen(
                 focusManager.clearFocus(force = true)
                 keyboardController?.hide()
 
-                val remainingStartIndex = 1 + if (suggestionEntries.isNotEmpty()) {
-                    suggestionEntries.size + 2 // Frequent + divider + All apps + divider
-                } else {
-                    0
+                // Use letterPositions to find the exact index for this letter
+                // or the next available letter
+                var targetIndex: Int? = letterPositions[letter]
+                
+                // If letter not found, find the next available letter
+                if (targetIndex == null) {
+                    for (nextLetter in (alphabet.indexOf(letter) + 1) until alphabet.size) {
+                        val candidate = alphabet[nextLetter]
+                        targetIndex = letterPositions[candidate]
+                        if (targetIndex != null) break
+                    }
                 }
-                val targetWithinRemaining =
-                    ((remainingApps.size - 1) * fraction).roundToInt().coerceIn(0, remainingApps.lastIndex)
-                val targetIndex = remainingStartIndex + targetWithinRemaining
+                
+                // Fallback to proportional position if no letter found
+                if (targetIndex == null) {
+                    val remainingStartIndex = 1 + if (suggestionEntries.isNotEmpty()) {
+                        suggestionEntries.size + 2
+                    } else {
+                        0
+                    }
+                    val targetWithinRemaining =
+                        ((remainingApps.size - 1) * fraction).roundToInt().coerceIn(0, remainingApps.lastIndex)
+                    targetIndex = remainingStartIndex + targetWithinRemaining
+                }
 
                 if (targetIndex == lastFastScrollTargetIndex) return@FastScrollRail
                 lastFastScrollTargetIndex = targetIndex
@@ -2009,7 +2025,7 @@ private fun AllAppsScreen(
                 scrollJob?.cancel()
                 scrollJob = null
                 scrollJob = coroutineScope.launch {
-                    listState.scrollToItem(targetIndex)
+                    listState.animateScrollToItem(targetIndex, scrollOffset = 0)
                 }
             },
             onInteractionEnd = {
