@@ -18,6 +18,7 @@
 
 package com.minifocus.launcher.ui
 
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.compose.foundation.Canvas
@@ -102,6 +103,7 @@ fun TimeIntentionDialog(
     var cooldownSecondsLeft by remember { mutableStateOf(0) }
     val isInCooldown = isTimeExpired && cooldownSecondsLeft > 0
 
+    // Keep this as one-shot on dialog open (optimized); no periodic polling.
     LaunchedEffect(app.packageName) {
         val stats = queryUsageStats(context, app.packageName)
         todayUsageMinutes = stats.first
@@ -543,25 +545,105 @@ private fun queryUsageStats(context: Context, packageName: String): Pair<Long, L
             set(Calendar.MILLISECOND, 0)
         }
         val todayStart = calendar.timeInMillis
-        val todayStats = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY, todayStart, now
-        )
-        val todayMinutes = todayStats
-            .filter { it.packageName == packageName }
-            .sumOf { it.totalTimeInForeground } / 60_000L
+        val past7DaysStartCal = Calendar.getInstance().apply {
+            timeInMillis = todayStart
+            add(Calendar.DAY_OF_YEAR, -7)
+        }
+        val past7DaysStart = past7DaysStartCal.timeInMillis
 
-        val weekStart = now - 7 * 24 * 60 * 60 * 1000L
-        val weekStats = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_WEEKLY, weekStart, now
-        )
-        val weekMinutes = weekStats
-            .filter { it.packageName == packageName }
-            .sumOf { it.totalTimeInForeground } / 60_000L
+        // Notes for future maintenance (attempt history):
+        // 1) Tried simple queryUsageStats(INTERVAL_DAILY/WEEKLY) with rolling windows.
+        //    Result: inconsistent totals across devices (boundary expansion/interval mismatch).
+        // 2) Tried calendar-bounded weekly windows + lastTimeUsed filtering.
+        //    Result: still leaked/shifted buckets on some OEM builds.
+        // 3) Tried pure event pairing (ACTIVITY_RESUMED -> PAUSED/STOPPED).
+        //    Result: often closest for TODAY, but can undercount in some app flows.
+        // 4) Tried blending TODAY with max(events, aggregate).
+        //    Result: severe overcount on devices where daily aggregate bucket is not midnight-aligned.
+        // 5) Tried per-day summation for previous 7 days (7 separate windows).
+        //    Result: duplicate/expanded totals on some devices.
+        // 6) Current stable compromise:
+        //    - TODAY: event-based foreground sessions only.
+        //    - PAST 7 DAYS: one bounded aggregate query over previous 7 full days,
+        //      ending at (todayStart - 1) to strictly exclude today.
 
-        todayMinutes to weekMinutes
+        // Today: use event pairing only.
+        // Aggregate buckets can be OEM-shifted (not midnight-aligned) and can overcount today.
+        val todayEventMinutes = queryForegroundMinutesFromEvents(
+            usageStatsManager = usageStatsManager,
+            packageName = packageName,
+            startTime = todayStart,
+            endTime = now
+        )
+
+        // Past 7 Days: one exact bounded aggregate range for previous 7 full days only.
+        // End at todayStart - 1 to avoid any overlap with today's bucket.
+        val past7DaysAggregate =
+            usageStatsManager.queryAndAggregateUsageStats(past7DaysStart, todayStart - 1L)
+        val past7DaysMinutes = (past7DaysAggregate[packageName]?.totalTimeInForeground ?: 0L) / 60_000L
+
+        todayEventMinutes to past7DaysMinutes
     } catch (_: Exception) {
         0L to 0L
     }
+}
+
+private fun queryForegroundMinutesFromEvents(
+    usageStatsManager: UsageStatsManager,
+    packageName: String,
+    startTime: Long,
+    endTime: Long
+): Long {
+    // Event-stream strategy details:
+    // - Track the target app's active foreground session start.
+    // - Close session when target app pauses/stops.
+    // - Also close session when any other package resumes, which protects against
+    //   intra-app overlays and activity handoff edge cases.
+    val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
+    val event = UsageEvents.Event()
+
+    var totalForegroundMs = 0L
+    var activeStartMs: Long? = null
+    var isTargetForeground = false
+
+    fun closeTargetSession(at: Long) {
+        val start = activeStartMs
+        if (isTargetForeground && start != null && at > start) {
+            totalForegroundMs += (at - start)
+        }
+        activeStartMs = null
+        isTargetForeground = false
+    }
+
+    while (usageEvents.hasNextEvent()) {
+        usageEvents.getNextEvent(event)
+        when (event.eventType) {
+            UsageEvents.Event.ACTIVITY_RESUMED -> {
+                if (event.packageName == packageName) {
+                    if (!isTargetForeground) {
+                        activeStartMs = event.timeStamp
+                        isTargetForeground = true
+                    }
+                } else {
+                    closeTargetSession(event.timeStamp)
+                }
+            }
+
+            UsageEvents.Event.ACTIVITY_PAUSED,
+            UsageEvents.Event.ACTIVITY_STOPPED -> {
+                if (event.packageName == packageName) {
+                    closeTargetSession(event.timeStamp)
+                }
+            }
+        }
+    }
+
+    val ongoingStart = activeStartMs
+    if (isTargetForeground && ongoingStart != null && endTime > ongoingStart) {
+        totalForegroundMs += (endTime - ongoingStart)
+    }
+
+    return totalForegroundMs / 60_000L
 }
 
 private fun formatUsageTime(minutes: Long): String {
