@@ -22,6 +22,12 @@ A minimalist Android launcher designed to reduce digital noise and promote inten
 - **Productivity first** - Built-in task manager and app locks
 - **Battery efficient** - Pure black OLED-optimized design
 
+<div align="center" style="margin: 20px 0;">
+  <a href="https://play.google.com/store/apps/details?id=com.minifocus.launcher">
+    <img src="https://raw.githubusercontent.com/steverichey/google-play-badge-svg/266d2b2df26f10d3c00b8129a0bd9f6da6b19f00/img/en_get.svg" alt="Get it on Google Play" height="80"/>
+  </a>
+</div>
+
 ---
 
 ## Features
@@ -86,12 +92,6 @@ A minimalist Android launcher designed to reduce digital noise and promote inten
 ---
 
 ## Installation
-
-### Download
-
-<a href="https://play.google.com/store/apps/details?id=com.minifocus.launcher">
-  <img src="https://raw.githubusercontent.com/steverichey/google-play-badge-svg/266d2b2df26f10d3c00b8129a0bd9f6da6b19f00/img/en_get.svg" alt="Get it on Google Play" height="80"/>
-</a>
 
 ### Build from Source
 
