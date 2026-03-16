@@ -1,4 +1,4 @@
-# Mini - Minimalist Focus Launcher
+# Minimalist Focus Launcher
 
 <div align="center">
   <img src="logo_export/mini_launcher_logo.png" alt="Mini Launcher Logo" width="128"/>
@@ -14,7 +14,7 @@
 
 ## Overview
 
-**Mini** is a minimalist Android launcher designed to reduce digital noise and promote intentional device usage. With a pure black background and text-only interface, it helps you focus on what matters most.
+A minimalist Android launcher designed to reduce digital noise and promote intentional device usage. With a pure black background and text-only interface, it helps you focus on what matters most.
 
 ### Core Philosophy
 - **No visual clutter** - Just text, time, and tasks
@@ -87,6 +87,12 @@
 
 ## Installation
 
+### Download
+
+<a href="https://play.google.com/store/apps/details?id=com.minifocus.launcher">
+  <img src="https://raw.githubusercontent.com/steverichey/google-play-badge-svg/266d2b2df26f10d3c00b8129a0bd9f6da6b19f00/img/en_get.svg" alt="Get it on Google Play" height="80"/>
+</a>
+
 ### Build from Source
 
 1. **Clone the repository**
@@ -107,7 +113,7 @@
 4. **Install on device**
    - Connect your Android device via USB
    - Run the app from Android Studio
-   - Set as default launcher when prompted
+   - Set as your default launcher when prompted
 
 ---
 
