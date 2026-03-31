@@ -23,15 +23,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import com.minifocus.launcher.LauncherApplication
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.ExpiryAction
+import com.minifocus.launcher.model.LauncherTheme
 import com.minifocus.launcher.ui.TimeIntentionDialog
+import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -72,6 +74,7 @@ class TimeExpiredOverlayActivity : ComponentActivity() {
 
         val container = (application as LauncherApplication).container
         val manager = container.appTimeReminderManager
+        val settingsManager = container.settingsManager
 
         // Read tracked app info from DB (expiry action, default duration)
         val trackedInfo = runBlocking(Dispatchers.IO) {
@@ -90,35 +93,44 @@ class TimeExpiredOverlayActivity : ComponentActivity() {
             0L
         }
 
+        // Get initial theme synchronously
+        val initialTheme = runBlocking(Dispatchers.IO) {
+            settingsManager.observeTheme().first()
+        }
+
         setContent {
-            TimeIntentionDialog(
-                app = AppEntry(packageName = packageName, label = appLabel),
-                defaultDurationMinutes = defaultDuration,
-                defaultExpiryAction = defaultAction,
-                isTimeExpired = isTimeExpired,
-                cooldownEndTime = cooldownEnd,
-                onConfirm = { durationMinutes, expiryAction ->
-                    // Save chosen expiry action for next time
-                    CoroutineScope(Dispatchers.IO).launch {
-                        manager.updateExpiryAction(packageName, expiryAction)
+            val currentTheme by settingsManager.observeTheme().collectAsState(initial = initialTheme)
+            
+            MinimalistFocusTheme(theme = currentTheme) {
+                TimeIntentionDialog(
+                    app = AppEntry(packageName = packageName, label = appLabel),
+                    defaultDurationMinutes = defaultDuration,
+                    defaultExpiryAction = defaultAction,
+                    isTimeExpired = isTimeExpired,
+                    cooldownEndTime = cooldownEnd,
+                    onConfirm = { durationMinutes, expiryAction ->
+                        // Save chosen expiry action for next time
+                        CoroutineScope(Dispatchers.IO).launch {
+                            manager.updateExpiryAction(packageName, expiryAction)
+                        }
+                        // Track this package so alarm can be cancelled if user returns
+                        // to launcher before the new timer expires
+                        AppTimeReminderReceiver.activeReminderPackage = packageName
+                        // Schedule the new alarm
+                        AppTimeReminderReceiver.schedule(
+                            this@TimeExpiredOverlayActivity,
+                            packageName,
+                            appLabel,
+                            durationMinutes,
+                            expiryAction.name
+                        )
+                        finish()
+                    },
+                    onDismiss = {
+                        navigateHome()
                     }
-                    // Track this package so alarm can be cancelled if user returns
-                    // to launcher before the new timer expires
-                    AppTimeReminderReceiver.activeReminderPackage = packageName
-                    // Schedule the new alarm
-                    AppTimeReminderReceiver.schedule(
-                        this@TimeExpiredOverlayActivity,
-                        packageName,
-                        appLabel,
-                        durationMinutes,
-                        expiryAction.name
-                    )
-                    finish()
-                },
-                onDismiss = {
-                    navigateHome()
-                }
-            )
+                )
+            }
         }
     }
 

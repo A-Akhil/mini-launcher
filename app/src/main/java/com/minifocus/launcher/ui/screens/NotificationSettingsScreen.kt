@@ -32,12 +32,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +58,7 @@ fun NotificationSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -71,7 +71,7 @@ fun NotificationSettingsScreen(
 
         Text(
             text = "Notification inbox",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium
         )
@@ -87,12 +87,12 @@ fun NotificationSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Capture notifications",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
                     text = "Store notifications in the in-app inbox and post a single summary alert.",
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -106,7 +106,7 @@ fun NotificationSettingsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         if (notificationInboxEnabled) {
-            SettingsRow(
+            NotificationSettingsRow(
                 title = "Auto-clear notifications",
                 value = "$notificationRetentionDays days",
                 onClick = onOpenNotificationRetention
@@ -114,7 +114,7 @@ fun NotificationSettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsRow(
+            NotificationSettingsRow(
                 title = "Log retention",
                 value = "$logRetentionDays days",
                 onClick = onOpenLogRetention
@@ -122,7 +122,7 @@ fun NotificationSettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsRow(
+            NotificationSettingsRow(
                 title = "App filters",
                 value = "",
                 onClick = onOpenAppFilters
@@ -130,7 +130,7 @@ fun NotificationSettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            SettingsRow(
+            NotificationSettingsRow(
                 title = "View logs",
                 value = "",
                 onClick = onOpenLogViewer
@@ -138,7 +138,7 @@ fun NotificationSettingsScreen(
         } else {
             Text(
                 text = "Turn on the inbox to manage retention and filters.",
-                color = Color(0xFFAAAAAA),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )
@@ -147,7 +147,7 @@ fun NotificationSettingsScreen(
 }
 
 @Composable
-private fun SettingsRow(
+private fun NotificationSettingsRow(
     title: String,
     value: String,
     onClick: () -> Unit
@@ -162,7 +162,7 @@ private fun SettingsRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -170,7 +170,7 @@ private fun SettingsRow(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = value,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )
             }
@@ -178,7 +178,7 @@ private fun SettingsRow(
         Icon(
             imageVector = Icons.Filled.ChevronRight,
             contentDescription = null,
-            tint = Color(0xFFAAAAAA)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

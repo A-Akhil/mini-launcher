@@ -60,7 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,7 +83,7 @@ fun NotificationInboxScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         Row(
@@ -98,14 +97,14 @@ fun NotificationInboxScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Notification Inbox",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     if (state.unreadCount > 0) {
                         Text(
                             text = "${state.unreadCount} unread",
-                            color = Color(0xFFAAAAAA),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -115,7 +114,7 @@ fun NotificationInboxScreen(
                 Icon(
                     imageVector = Icons.Filled.MarkEmailRead,
                     contentDescription = "Mark all read",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -160,8 +159,8 @@ private fun NotificationRow(
         state = dismissState,
         background = {
             val color = when (dismissState.dismissDirection) {
-                DismissDirection.EndToStart, DismissDirection.StartToEnd -> Color(0xFF660000)
-                else -> Color.Transparent
+                DismissDirection.EndToStart, DismissDirection.StartToEnd -> MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+                else -> MaterialTheme.colorScheme.background
             }
             Box(
                 modifier = Modifier
@@ -177,7 +176,7 @@ private fun NotificationRow(
                     Icon(
                         imageVector = Icons.Filled.DeleteSweep,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f)
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -202,7 +201,7 @@ private fun NotificationCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .background(Color(0xFF111111))
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { isExpanded = !isExpanded }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -214,7 +213,7 @@ private fun NotificationCard(
             ) {
                 Text(
                     text = item.appName,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -223,7 +222,7 @@ private fun NotificationCard(
                 )
                 Text(
                     text = formattedTimestamp,
-                    color = Color(0xFF777777),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -231,7 +230,7 @@ private fun NotificationCard(
             if (!item.title.isNullOrBlank()) {
                 Text(
                     text = item.title,
-                    color = Color(0xFFDDDDDD),
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp),
@@ -242,7 +241,7 @@ private fun NotificationCard(
             if (!item.text.isNullOrBlank()) {
                 Text(
                     text = item.text,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(top = 2.dp),
                     maxLines = if (isExpanded) Int.MAX_VALUE else 2,
@@ -257,10 +256,10 @@ private fun NotificationCard(
 private fun RetentionChip(label: String, onClick: () -> Unit) {
     TextButton(
         onClick = onClick,
-        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onBackground),
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(Color(0x22FFFFFF))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Text(text = label, fontSize = 12.sp)
     }
@@ -276,13 +275,13 @@ private fun EmptyInboxState() {
     ) {
         Text(
             text = "No notifications yet",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = "Notifications you intercept will show up here.",
-            color = Color(0xFF777777),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)
         )

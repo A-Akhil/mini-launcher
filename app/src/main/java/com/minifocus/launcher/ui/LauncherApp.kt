@@ -97,6 +97,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.focusRequester
@@ -118,6 +119,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
@@ -125,6 +127,7 @@ import java.time.format.DateTimeFormatter
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.BottomIconSlot
 import com.minifocus.launcher.model.ClockFormat
+import com.minifocus.launcher.model.LauncherTheme
 import com.minifocus.launcher.model.SearchResult
 import com.minifocus.launcher.model.DailyTaskItem
 import com.minifocus.launcher.model.DailyTaskRepeatMode
@@ -229,6 +232,7 @@ fun LauncherApp(
     onRemoveTrackedReminderApp: (String) -> Unit,
     onSetPendingTimeIntention: (AppEntry?) -> Unit,
     onUpdateExpiryAction: (String, ExpiryAction) -> Unit,
+    onThemeChange: (com.minifocus.launcher.model.LauncherTheme) -> Unit,
     onRootBack: () -> Unit = {},
     onConsumeMessage: () -> Unit = {}
 ) {
@@ -532,7 +536,7 @@ fun LauncherApp(
 
     TextSizeProvider(state.textSize.multiplier) {
         Scaffold(
-            modifier = Modifier.fillMaxSize().background(Color.Black)
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                 when {
@@ -550,6 +554,7 @@ fun LauncherApp(
                         clockFormat = state.clockFormat,
                         showSeconds = state.showSeconds,
                         textSize = state.textSize,
+                        theme = state.theme,
                         showDailyTasksOnHome = state.showDailyTasksOnHome,
                         bottomLeftApp = state.bottomLeft,
                         bottomRightApp = state.bottomRight,
@@ -628,7 +633,9 @@ fun LauncherApp(
                 state.isAppearanceSettingsVisible -> {
                     AppearanceSettingsScreen(
                         textSize = state.textSize,
+                        theme = state.theme,
                         onOpenTextSize = { openTextSizeSettings() },
+                        onThemeChange = onThemeChange,
                         onBack = { closeAppearanceSettings() }
                     )
                 }
@@ -923,20 +930,20 @@ private fun SettingsRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
                     text = subtitle,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             }
         }
         Text(
             text = "→",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 20.sp
         )
     }
@@ -965,11 +972,11 @@ private fun RetentionPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.Black,
+        containerColor = MaterialTheme.colorScheme.background,
         title = {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -985,12 +992,12 @@ private fun RetentionPickerDialog(
                     TextButton(
                         onClick = { onSelect(option) },
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (isSelected) Color.Black else Color.White
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) Color.White else Color(0x22FFFFFF))
+                            .background(if (isSelected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.13f))
                             .padding(vertical = 8.dp)
                     ) {
                         Text(
@@ -1006,7 +1013,7 @@ private fun RetentionPickerDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )
@@ -1047,7 +1054,7 @@ private fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .pointerInput(state.doubleTapLockScreen) {
                 if (state.doubleTapLockScreen) {
                     detectTapGestures(
@@ -1072,7 +1079,7 @@ private fun HomeScreen(
                 text = state.timeFormatted,
                 fontSize = 72.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.combinedClickable(
                     onClick = { onOpenClock() }
@@ -1081,7 +1088,7 @@ private fun HomeScreen(
             Text(
                 text = state.dateFormatted,
                 fontSize = 18.sp,
-                color = Color(0xFFAAAAAA),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -1204,7 +1211,7 @@ private fun DailyTasksHomeSection(
                 )
                 Text(
                     text = task.title,
-                    color = if (task.isCompletedToday) Color(0xFF777777) else Color.White,
+                    color = if (task.isCompletedToday) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                     fontSize = 22.sp,
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -1230,7 +1237,7 @@ private fun PinnedAppsHomeSection(
             Text(
                 text = app.label,
                 fontSize = 22.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .fillMaxWidth()
                     .combinedClickable(
@@ -1290,9 +1297,9 @@ private fun DailyTaskManagerRow(
             Text(
                 text = task.title,
                 color = when {
-                    !task.isEnabled -> Color(0xFF555555)
-                    task.isCompletedToday -> Color(0xFF777777)
-                    else -> Color.White
+                    !task.isEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                    task.isCompletedToday -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> MaterialTheme.colorScheme.onBackground
                 },
                 fontSize = 16.sp
             )
@@ -1300,13 +1307,13 @@ private fun DailyTaskManagerRow(
             val pattern = task.patternLabel()
             Text(
                 text = status,
-                color = Color(0xFF888888),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
             Text(
                 text = pattern,
-                color = Color(0xFF666666),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
@@ -1315,10 +1322,10 @@ private fun DailyTaskManagerRow(
             checked = task.isEnabled,
             onCheckedChange = { enabled -> onDailyTaskEnabledChange(task.id, enabled) },
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF444444),
-                uncheckedThumbColor = Color(0xFF666666),
-                uncheckedTrackColor = Color(0xFF222222)
+                checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
             )
         )
     }
@@ -1356,7 +1363,7 @@ private fun BottomIconButton(
 ) {
     Text(
         text = label.uppercase(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier
             .padding(16.dp)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
@@ -1386,7 +1393,7 @@ private fun TasksScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -1400,7 +1407,7 @@ private fun TasksScreen(
             ) {
                 Text(
                     text = "Tasks",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -1408,7 +1415,7 @@ private fun TasksScreen(
                     Icon(
                         imageVector = Icons.Filled.History,
                         contentDescription = "History",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -1447,50 +1454,19 @@ private fun TasksScreen(
                     }
                 }
                 items(tasks, key = { "task-${it.id}" }) { task ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .combinedClickable(
-                                onClick = { onToggleTask(task.id) },
-                                onLongClick = {
-                                    showEditDialog.value = task
-                                }
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        MinimalCheckbox(
-                            checked = task.isCompleted,
-                            onCheckedChange = { onToggleTask(task.id) }
-                        )
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 16.dp)
-                        ) {
-                            Text(
-                                text = task.title,
-                                color = if (task.isCompleted) Color(0xFF777777) else Color.White,
-                                fontSize = 16.sp
-                            )
-                            task.scheduledFor?.let { timestamp ->
-                                Text(
-                                    text = formatScheduledTime(timestamp),
-                                    color = Color(0xFF888888),
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
-                        }
-                    }
+                    TaskItemRow(
+                        task = task,
+                        onToggle = { onToggleTask(task.id) },
+                        onLongClick = { showEditDialog.value = task }
+                    )
                 }
             }
         }
 
         FloatingActionButton(
             onClick = { showAddDialog.value = true },
-            containerColor = Color.White,
-            contentColor = Color.Black,
+            containerColor = MaterialTheme.colorScheme.onBackground,
+            contentColor = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
@@ -1571,6 +1547,70 @@ private fun formatScheduledTime(timestamp: Long): String {
         taskDate == today.plusDays(1) -> "Tomorrow at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
         timestamp < now -> "⚠ ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))}"
         else -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
+    }
+}
+
+@Composable
+private fun TaskItemRow(
+    task: TaskItem,
+    onToggle: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    val isCompleted = task.isCompleted
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (isCompleted) 
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) 
+                else 
+                    Color.Transparent
+            )
+            .combinedClickable(
+                onClick = onToggle,
+                onLongClick = onLongClick
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MinimalCheckbox(
+            checked = isCompleted,
+            onCheckedChange = { onToggle() }
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
+        ) {
+            Text(
+                text = task.title,
+                color = if (isCompleted) 
+                    MaterialTheme.colorScheme.onSurfaceVariant 
+                else 
+                    MaterialTheme.colorScheme.onBackground,
+                fontSize = 16.sp,
+                textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+            )
+            task.scheduledFor?.let { timestamp ->
+                Text(
+                    text = formatScheduledTime(timestamp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+        if (isCompleted) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = "Completed",
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
@@ -1811,14 +1851,14 @@ private fun AllAppsScreen(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "All Apps",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
@@ -1831,7 +1871,7 @@ private fun AllAppsScreen(
                         Icon(
                             imageVector = Icons.Filled.Notifications,
                             contentDescription = "Notification inbox",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     if (unreadCount > 0) {
@@ -1840,12 +1880,12 @@ private fun AllAppsScreen(
                                 .align(Alignment.TopEnd)
                                 .offset(x = (-2).dp, y = 6.dp)
                                 .size(18.dp)
-                                .background(Color.Red, CircleShape)
+                                .background(MaterialTheme.colorScheme.error, CircleShape)
                                 .wrapContentSize(Alignment.Center),
                         ) {
                             Text(
                                 text = unreadCountLabel(unreadCount),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onError,
                                 fontSize = 10.sp,
                                 lineHeight = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1858,7 +1898,7 @@ private fun AllAppsScreen(
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = "Settings",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -1867,19 +1907,19 @@ private fun AllAppsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0x33FFFFFF))
+                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 if (searchQuery.isBlank()) {
                     Text(
                         text = "Search apps",
-                        color = Color(0x88FFFFFF)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.53f)
                     )
                 }
                 BasicTextField(
                     value = searchQuery,
                     onValueChange = onQueryChange,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
@@ -1930,7 +1970,7 @@ private fun AllAppsScreen(
             item {
                 Text(
                     text = "No apps match your search",
-                    color = Color(0xFF666666),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     textAlign = TextAlign.Center
                 )
@@ -1942,7 +1982,7 @@ private fun AllAppsScreen(
                     val isBlinking = blinkingApp.value == app.packageName
                     Text(
                         text = app.label,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
@@ -1963,7 +2003,7 @@ private fun AllAppsScreen(
                 val isBlinking = blinkingApp.value == app.packageName
                 Text(
                     text = app.label,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
@@ -2082,13 +2122,13 @@ private fun SectionDivider(label: String) {
     ) {
         Text(
             text = label,
-            color = Color(0xFF888888),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
         )
         Spacer(modifier = Modifier.width(12.dp))
         HorizontalDivider(
-            color = Color(0x22FFFFFF),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.13f),
             modifier = Modifier.weight(1f)
         )
     }
@@ -2131,9 +2171,9 @@ private fun FastScrollRail(
     ) {
         letters.forEach { letter ->
             val color = when {
-                letter == activeLetter -> Color.White
-                availableLetters.contains(letter) -> Color(0xB3FFFFFF)
-                else -> Color(0x40FFFFFF)
+                letter == activeLetter -> MaterialTheme.colorScheme.onBackground
+                availableLetters.contains(letter) -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                else -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.25f)
             }
 
             Text(
@@ -2168,7 +2208,7 @@ private fun SearchOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xE6000000))
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f))
             .padding(24.dp)
     ) {
         Column(modifier = Modifier.align(Alignment.TopCenter)) {
@@ -2177,7 +2217,7 @@ private fun SearchOverlay(
             BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                textStyle = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+                textStyle = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onBackground),
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
@@ -2203,7 +2243,7 @@ private fun SearchOverlay(
                     when (result) {
                         is SearchResult.App -> Text(
                             text = result.entry.label,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
@@ -2214,7 +2254,7 @@ private fun SearchOverlay(
                         )
                         is SearchResult.Task -> Text(
                             text = result.item.title,
-                            color = Color(0xFF888888),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                         )
                         is SearchResult.Command -> {}
@@ -2261,6 +2301,7 @@ private fun SettingsScreen(
     clockFormat: ClockFormat,
     showSeconds: Boolean,
     textSize: com.minifocus.launcher.model.TextSize,
+    theme: LauncherTheme,
     showDailyTasksOnHome: Boolean,
     bottomLeftApp: AppEntry?,
     bottomRightApp: AppEntry?,
@@ -2323,14 +2364,18 @@ private fun SettingsScreen(
         append(if (smartSuggestionsEnabled) " · smart suggestions on" else " · smart suggestions off")
     }
 
-    val appearanceSummary = "${textSize.label} text"
+    val themeName = when (theme) {
+        LauncherTheme.AMOLED -> "Dark"
+        LauncherTheme.LIGHT -> "Light"
+    }
+    val appearanceSummary = "$themeName theme · ${textSize.label} text"
 
     val deviceSettingsSummary = "Open Android settings"
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -2444,7 +2489,7 @@ private fun HomeSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -2457,7 +2502,7 @@ private fun HomeSettingsScreen(
 
         Text(
             text = "Daily tasks module",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2471,7 +2516,7 @@ private fun HomeSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Show daily tasks on home",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 val description = buildString {
@@ -2484,7 +2529,7 @@ private fun HomeSettingsScreen(
                 }
                 Text(
                     text = description,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -2499,7 +2544,7 @@ private fun HomeSettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Daily tasks stay visible for 10 seconds after completion, then hide automatically.",
-                color = Color(0xFF888888),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 lineHeight = 18.sp
             )
@@ -2509,7 +2554,7 @@ private fun HomeSettingsScreen(
 
         Text(
             text = "Gestures",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2523,7 +2568,7 @@ private fun HomeSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Double-tap to lock screen",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 val description = if (!lockAccessibilityGranted) {
@@ -2533,7 +2578,7 @@ private fun HomeSettingsScreen(
                 }
                 Text(
                     text = description,
-                    color = if (!lockAccessibilityGranted) Color(0xFFFFAA00) else Color(0xFFAAAAAA),
+                    color = if (!lockAccessibilityGranted) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -2555,7 +2600,7 @@ private fun HomeSettingsScreen(
 
         Text(
             text = "Bottom quick launch",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2586,7 +2631,7 @@ private fun ClockSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -2599,7 +2644,7 @@ private fun ClockSettingsScreen(
 
         Text(
             text = "Time format",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2622,7 +2667,7 @@ private fun ClockSettingsScreen(
                         ClockFormat.H24 -> "24-hour"
                         ClockFormat.H12 -> "12-hour"
                     },
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -2633,7 +2678,7 @@ private fun ClockSettingsScreen(
 
         Text(
             text = "Seconds",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2648,12 +2693,12 @@ private fun ClockSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Show seconds",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
                     text = "Add a seconds indicator to the clock on the home screen.",
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -2702,7 +2747,7 @@ private fun HiddenAppsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -2716,12 +2761,12 @@ private fun HiddenAppsScreen(
         if (!unlocked) {
             Text(
                 text = "Press and hold for 10 seconds to reveal your hidden apps.",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp
             )
             Text(
                 text = "Releasing early resets the timer immediately.",
-                color = Color(0xFF888888),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -2738,7 +2783,7 @@ private fun HiddenAppsScreen(
                     modifier = Modifier
                         .size(200.dp)
                         .clip(CircleShape)
-                        .background(Color(0x22FFFFFF))
+                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.13f))
                         .pointerInput(unlocked) {
                             if (unlocked) return@pointerInput
                             detectTapGestures(
@@ -2760,8 +2805,8 @@ private fun HiddenAppsScreen(
                     CircularProgressIndicator(
                         progress = { holdProgress },
                         strokeWidth = 6.dp,
-                        color = Color.White,
-                        trackColor = Color(0xFF444444),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(28.dp)
@@ -2773,7 +2818,7 @@ private fun HiddenAppsScreen(
                         holdProgress > 0f -> "Keep holding"
                         else -> "Hold"
                     },
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -2784,20 +2829,20 @@ private fun HiddenAppsScreen(
 
             Text(
                 text = "This gate keeps hidden apps out of the drawer. Once unlocked, you can unhide specific apps below.",
-                color = Color(0xFFAAAAAA),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )
         } else {
             Text(
                 text = "Hidden apps unlocked",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "Tap Unhide to return an app to the drawer.",
-                color = Color(0xFFAAAAAA),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -2807,7 +2852,7 @@ private fun HiddenAppsScreen(
             if (hiddenApps.isEmpty()) {
                 Text(
                     text = "You haven't hidden any apps yet.",
-                    color = Color(0xFF777777),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )
             } else {
@@ -2821,7 +2866,7 @@ private fun HiddenAppsScreen(
                     ) {
                         Text(
                             text = app.label,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             fontSize = 16.sp,
                             modifier = Modifier.weight(1f)
                         )
@@ -2849,7 +2894,7 @@ private fun AppDrawerSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -2862,7 +2907,7 @@ private fun AppDrawerSettingsScreen(
 
         Text(
             text = "Keyboard",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2877,12 +2922,12 @@ private fun AppDrawerSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Open keyboard on swipe",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
                     text = "Automatically show the search field and keyboard when you enter All Apps.",
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -2894,7 +2939,7 @@ private fun AppDrawerSettingsScreen(
 
         Text(
             text = "Smart suggestions",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2909,7 +2954,7 @@ private fun AppDrawerSettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Show adaptive row",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
             }
@@ -2923,8 +2968,8 @@ private fun AppDrawerSettingsScreen(
 
         OutlinedButton(
             onClick = onResetSmartSuggestions,
-            border = BorderStroke(1.dp, Color.White),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
         ) {
             Text(text = "Reset learning data")
         }
@@ -2933,7 +2978,7 @@ private fun AppDrawerSettingsScreen(
 
         Text(
             text = "Hidden apps",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -2946,7 +2991,7 @@ private fun AppDrawerSettingsScreen(
         )
         Text(
             text = "Press and hold for 10 seconds to reveal and manage them.",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 4.dp)
         )
@@ -2985,13 +3030,13 @@ private fun LockDurationDialog(
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFF1A1A1A))
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Lock $appName",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 24.dp)
@@ -2999,7 +3044,7 @@ private fun LockDurationDialog(
                 
                 Text(
                     text = predefinedDurations[sliderPosition.floatValue.toInt()].first,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 32.dp)
@@ -3011,9 +3056,9 @@ private fun LockDurationDialog(
                     valueRange = 0f..(predefinedDurations.size - 1).toFloat(),
                     steps = predefinedDurations.size - 2,
                     colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White,
-                        inactiveTrackColor = Color(0xFF444444)
+                        thumbColor = MaterialTheme.colorScheme.onBackground,
+                        activeTrackColor = MaterialTheme.colorScheme.onBackground,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -3022,7 +3067,7 @@ private fun LockDurationDialog(
                 
                 Text(
                     text = "Custom duration (hours)",
-                    color = Color(0xFF999999),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3033,13 +3078,13 @@ private fun LockDurationDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF2A2A2A))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
                     if (customHours.value.isEmpty()) {
                         Text(
                             text = "e.g., 5",
-                            color = Color(0xFF666666),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp
                         )
                     }
@@ -3051,7 +3096,7 @@ private fun LockDurationDialog(
                             }
                         },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             fontSize = 16.sp
                         ),
                         keyboardOptions = KeyboardOptions(
@@ -3073,14 +3118,14 @@ private fun LockDurationDialog(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF2A2A2A))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable(onClick = onDismiss)
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "Cancel",
-                            color = Color(0xFF999999),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -3090,7 +3135,7 @@ private fun LockDurationDialog(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.onBackground)
                             .clickable {
                                 val minutes = if (customHours.value.isNotEmpty()) {
                                     customHours.value.toLongOrNull()?.times(60) ?: 0L
@@ -3106,7 +3151,7 @@ private fun LockDurationDialog(
                     ) {
                         Text(
                             text = "Lock",
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.background,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
                         )

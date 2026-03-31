@@ -41,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,7 +68,7 @@ fun LogViewerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         Row(
@@ -83,14 +82,14 @@ fun LogViewerScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Notification Logs",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     if (notifications.isNotEmpty()) {
                         Text(
                             text = "${notifications.size} entries",
-                            color = Color(0xFFAAAAAA),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
                     }
@@ -101,7 +100,7 @@ fun LogViewerScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (notifications.isEmpty()) {
-            EmptyLogsState()
+            LogEmptyState()
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -124,7 +123,7 @@ private fun LogCard(item: NotificationItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
-            .background(Color(0xFF111111))
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { isExpanded = !isExpanded }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -136,7 +135,7 @@ private fun LogCard(item: NotificationItem) {
             ) {
                 Text(
                     text = item.appName,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -145,7 +144,7 @@ private fun LogCard(item: NotificationItem) {
                 )
                 Text(
                     text = formattedTimestamp,
-                    color = Color(0xFF777777),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -153,7 +152,7 @@ private fun LogCard(item: NotificationItem) {
             if (!item.title.isNullOrBlank()) {
                 Text(
                     text = item.title,
-                    color = Color(0xFFDDDDDD),
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp),
@@ -164,7 +163,7 @@ private fun LogCard(item: NotificationItem) {
             if (!item.text.isNullOrBlank()) {
                 Text(
                     text = item.text,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(top = 2.dp),
                     maxLines = if (isExpanded) Int.MAX_VALUE else 2,
@@ -176,7 +175,7 @@ private fun LogCard(item: NotificationItem) {
 }
 
 @Composable
-private fun EmptyLogsState() {
+private fun LogEmptyState() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,13 +184,13 @@ private fun EmptyLogsState() {
     ) {
         Text(
             text = "No notifications yet",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = "Notifications you intercept will show up here.",
-            color = Color(0xFF777777),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)
         )

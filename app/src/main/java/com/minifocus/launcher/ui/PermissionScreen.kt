@@ -168,7 +168,7 @@ fun PermissionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp, vertical = 48.dp),
         verticalArrangement = Arrangement.Top,
@@ -178,13 +178,13 @@ fun PermissionScreen(
             text = "Permissions required",
             fontSize = 28.sp,
             fontWeight = FontWeight.Light,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "We need a few permissions to keep everything minimal and under your control.",
             fontSize = 16.sp,
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 12.dp)
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -192,7 +192,7 @@ fun PermissionScreen(
         Text(
             text = "Required",
             fontSize = 18.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.fillMaxWidth()
         )
@@ -212,7 +212,7 @@ fun PermissionScreen(
         Text(
             text = "Optional",
             fontSize = 18.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.fillMaxWidth()
         )
@@ -233,13 +233,13 @@ fun PermissionScreen(
             Text(
                 text = "This build is restricted by Android. Open App Info → three dots → Allow restricted settings before enabling notification access.",
                 fontSize = 14.sp,
-                color = Color(0xFF888888)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = onOpenRestrictedSettings,
-                border = BorderStroke(1.5.dp, Color.White),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
             ) {
                 Text(text = "Open App Info")
             }
@@ -257,7 +257,7 @@ fun PermissionScreen(
         Text(
             text = statusMessage,
             fontSize = 16.sp,
-            color = Color(0xFF888888)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -266,8 +266,8 @@ fun PermissionScreen(
             onClick = onContinue,
             enabled = state.requiredGranted,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
             )
         ) {
             Text(text = if (optionalPending) "Continue" else "Continue")
@@ -293,7 +293,7 @@ private fun PermissionCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(18.dp)
     ) {
         Row(
@@ -306,14 +306,14 @@ private fun PermissionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = description,
-                    color = Color(0xFF858585),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     lineHeight = 18.sp
                 )
@@ -323,13 +323,13 @@ private fun PermissionCard(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF4CAF50)
+                    tint = MaterialTheme.colorScheme.tertiary
                 )
             } else {
                 OutlinedButton(
                     onClick = onClick,
-                    border = BorderStroke(1.5.dp, Color.White),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                 ) {
                     Text(text = "Grant")
                 }

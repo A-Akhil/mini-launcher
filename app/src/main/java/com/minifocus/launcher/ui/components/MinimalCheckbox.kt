@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +41,8 @@ fun MinimalCheckbox(
     enabled: Boolean = true
 ) {
     val shape = RoundedCornerShape(5.dp)
-    val borderColor = if (enabled) Color.White else Color(0xFF555555)
-    val fillColor = if (checked) Color.White else Color.Transparent
+    val borderColor = if (enabled) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
+    val fillColor = if (checked) MaterialTheme.colorScheme.onBackground else Color.Transparent
 
     Box(
         modifier = modifier
@@ -61,7 +62,7 @@ fun MinimalCheckbox(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.Black)
+                    .background(MaterialTheme.colorScheme.background)
             )
         }
     }

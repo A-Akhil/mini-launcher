@@ -39,6 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -50,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,7 +71,6 @@ fun AppTimeReminderSettingsScreen(
         trackedApps.map { it.packageName }.toSet()
     }
 
-    // Build a merged list: all installed apps with tracked status
     val appRows = remember(allApps, trackedPackages, searchQuery) {
         val query = searchQuery.lowercase().trim()
         allApps
@@ -88,12 +87,11 @@ fun AppTimeReminderSettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp)
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -105,7 +103,7 @@ fun AppTimeReminderSettingsScreen(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -116,14 +114,14 @@ fun AppTimeReminderSettingsScreen(
             ) {
                 Text(
                     text = "App Reminders",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
                     text = "${trackedApps.size} app${if (trackedApps.size != 1) "s" else ""} tracked",
-                    color = Color(0x66FFFFFF),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 2.dp)
                 )
@@ -132,26 +130,25 @@ fun AppTimeReminderSettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Search
         TextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search apps", color = Color(0x55FFFFFF)) },
+            placeholder = { Text("Search apps", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             singleLine = true,
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0x0AFFFFFF),
-                unfocusedContainerColor = Color(0x05FFFFFF),
-                disabledContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedPlaceholderColor = Color(0x55FFFFFF),
-                unfocusedPlaceholderColor = Color(0x55FFFFFF),
-                cursorColor = Color.White
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                disabledContainerColor = MaterialTheme.colorScheme.background,
+                errorContainerColor = MaterialTheme.colorScheme.background,
+                focusedIndicatorColor = MaterialTheme.colorScheme.background,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.background,
+                disabledIndicatorColor = MaterialTheme.colorScheme.background,
+                errorIndicatorColor = MaterialTheme.colorScheme.background,
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.onBackground
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,10 +157,9 @@ fun AppTimeReminderSettingsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Hint text
         Text(
             text = "Enabled apps will show a time intention prompt before launching. You can also toggle from any app's long-press menu.",
-            color = Color(0xFF555555),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
         )
@@ -177,7 +173,7 @@ fun AppTimeReminderSettingsScreen(
             ) {
                 Text(
                     text = "No matching apps",
-                    color = Color(0xFF777777),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )
             }
@@ -217,7 +213,7 @@ private fun ReminderAppRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = if (isTracked) Color(0x08FFFFFF) else Color.Transparent,
+                color = if (isTracked) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.background,
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { onToggle() }
@@ -227,7 +223,7 @@ private fun ReminderAppRow(
     ) {
         Text(
             text = appLabel,
-            color = if (isTracked) Color.White else Color(0xAAFFFFFF),
+            color = if (isTracked) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 17.sp,
             fontWeight = if (isTracked) FontWeight.Medium else FontWeight.Normal
         )

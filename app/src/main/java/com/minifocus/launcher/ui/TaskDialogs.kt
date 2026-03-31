@@ -117,7 +117,7 @@ fun FancyAddTaskDialog(
                 .fillMaxWidth(0.9f)
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
@@ -135,7 +135,7 @@ fun FancyAddTaskDialog(
                     text = "Add New Task",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
 
@@ -144,13 +144,13 @@ fun FancyAddTaskDialog(
                 OutlinedTextField(
                     value = taskName.value,
                     onValueChange = { taskName.value = it },
-                    label = { Text("What needs to be done?", color = Color(0xFFAAAAAA)) },
+                    label = { Text("What needs to be done?", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color(0xFF555555)
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     singleLine = false,
                     maxLines = 3
@@ -166,7 +166,7 @@ fun FancyAddTaskDialog(
                     Text(
                         text = "Repeat every day",
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Switch(
                         checked = repeatDaily.value,
@@ -183,10 +183,10 @@ fun FancyAddTaskDialog(
                             }
                         },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF444444),
-                            uncheckedThumbColor = Color(0xFF777777),
-                            uncheckedTrackColor = Color(0xFF222222)
+                            checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                            checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     )
                 }
@@ -194,7 +194,7 @@ fun FancyAddTaskDialog(
                 if (repeatDaily.value) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(text = "Repeat pattern", color = Color.White, fontSize = 16.sp)
+                    Text(text = "Repeat pattern", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -231,7 +231,7 @@ fun FancyAddTaskDialog(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Repeats every 2 days",
-                            color = Color(0xFF888888),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                     }
@@ -240,7 +240,7 @@ fun FancyAddTaskDialog(
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "Choose days",
-                            color = Color(0xFF888888),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -276,10 +276,10 @@ fun FancyAddTaskDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(text = "Task enabled", color = Color.White, fontSize = 16.sp)
+                            Text(text = "Task enabled", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             Text(
                                 text = if (dailyEnabled.value) "Will show on scheduled days" else "Hidden until re-enabled",
-                                color = Color(0xFF888888),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp
                             )
                         }
@@ -290,10 +290,10 @@ fun FancyAddTaskDialog(
                                 dailyEnabled.value = it
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF444444),
-                                uncheckedThumbColor = Color(0xFF666666),
-                                uncheckedTrackColor = Color(0xFF222222)
+                                checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                                checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                             )
                         )
                     }
@@ -306,10 +306,10 @@ fun FancyAddTaskDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(text = "Limit to date range", color = Color.White, fontSize = 16.sp)
+                            Text(text = "Limit to date range", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                             Text(
                                 text = if (limitDailyRange.value) "Visible only within the window" else "Repeats indefinitely",
-                                color = Color(0xFF888888),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp
                             )
                         }
@@ -327,10 +327,10 @@ fun FancyAddTaskDialog(
                                 }
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF444444),
-                                uncheckedThumbColor = Color(0xFF666666),
-                                uncheckedTrackColor = Color(0xFF222222)
+                                checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                                checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                             )
                         )
                     }
@@ -344,7 +344,7 @@ fun FancyAddTaskDialog(
                                 showDailyStartPicker.value = true
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                         ) {
                             Text(
                                 text = dailyStartDate.value?.format(dateFormatter) ?: "Select start date",
@@ -360,7 +360,7 @@ fun FancyAddTaskDialog(
                                 showDailyEndPicker.value = true
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                         ) {
                             Text(
                                 text = dailyEndDate.value?.format(dateFormatter) ?: "Select end date (optional)",
@@ -373,7 +373,7 @@ fun FancyAddTaskDialog(
                                 clearFocus()
                                 dailyEndDate.value = null
                             }) {
-                                Text(text = "Clear end date", color = Color(0xFFAAAAAA))
+                                Text(text = "Clear end date", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -386,7 +386,7 @@ fun FancyAddTaskDialog(
                         Text(
                             text = "Set Reminder",
                             fontSize = 16.sp,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Switch(
                             checked = enableReminder.value,
@@ -395,10 +395,10 @@ fun FancyAddTaskDialog(
                                 enableReminder.value = it
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF444444),
-                                uncheckedThumbColor = Color(0xFF777777),
-                                uncheckedTrackColor = Color(0xFF222222)
+                                checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                                checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                             )
                         )
                     }
@@ -413,7 +413,7 @@ fun FancyAddTaskDialog(
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.White
+                                contentColor = MaterialTheme.colorScheme.onBackground
                             )
                         ) {
                             Text(
@@ -436,7 +436,7 @@ fun FancyAddTaskDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFAAAAAA)
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
                         Text("Cancel", fontSize = 16.sp)
@@ -489,8 +489,8 @@ fun FancyAddTaskDialog(
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
+                            containerColor = MaterialTheme.colorScheme.onBackground,
+                            contentColor = MaterialTheme.colorScheme.background
                         ),
                         enabled = taskName.value.trim().isNotEmpty()
                     ) {
@@ -531,17 +531,17 @@ fun FancyAddTaskDialog(
                         showDailyStartPicker.value = false
                     }
                 ) {
-                    Text(text = "Set", color = Color.White)
+                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDailyStartPicker.value = false }) {
-                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface))
         }
     }
 
@@ -565,17 +565,17 @@ fun FancyAddTaskDialog(
                         showDailyEndPicker.value = false
                     }
                 ) {
-                    Text(text = "Set", color = Color.White)
+                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDailyEndPicker.value = false }) {
-                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface))
         }
     }
 }
@@ -606,35 +606,35 @@ fun DateTimePickerDialog(
                     },
                     enabled = datePickerState.selectedDateMillis != null
                 ) {
-                    Text("Next", color = Color.White)
+                    Text("Next", color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = Color(0xFFAAAAAA))
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             colors = DatePickerDefaults.colors(
-                containerColor = Color(0xFF1A1A1A)
+                containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
             DatePicker(
                 state = datePickerState,
                 colors = DatePickerDefaults.colors(
-                    containerColor = Color(0xFF1A1A1A),
-                    titleContentColor = Color.White,
-                    headlineContentColor = Color.White,
-                    weekdayContentColor = Color(0xFFAAAAAA),
-                    subheadContentColor = Color.White,
-                    yearContentColor = Color.White,
-                    currentYearContentColor = Color.White,
-                    selectedYearContentColor = Color.Black,
-                    selectedYearContainerColor = Color.White,
-                    dayContentColor = Color.White,
-                    selectedDayContentColor = Color.Black,
-                    selectedDayContainerColor = Color.White,
-                    todayContentColor = Color.White,
-                    todayDateBorderColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    headlineContentColor = MaterialTheme.colorScheme.onBackground,
+                    weekdayContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    subheadContentColor = MaterialTheme.colorScheme.onBackground,
+                    yearContentColor = MaterialTheme.colorScheme.onBackground,
+                    currentYearContentColor = MaterialTheme.colorScheme.onBackground,
+                    selectedYearContentColor = MaterialTheme.colorScheme.background,
+                    selectedYearContainerColor = MaterialTheme.colorScheme.onBackground,
+                    dayContentColor = MaterialTheme.colorScheme.onBackground,
+                    selectedDayContentColor = MaterialTheme.colorScheme.background,
+                    selectedDayContainerColor = MaterialTheme.colorScheme.onBackground,
+                    todayContentColor = MaterialTheme.colorScheme.onBackground,
+                    todayDateBorderColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         }
@@ -678,36 +678,36 @@ fun TimePickerDialog(
                     onConfirm(timePickerState.hour, timePickerState.minute)
                 }
             ) {
-                Text("Confirm", color = Color.White)
+                Text("Confirm", color = MaterialTheme.colorScheme.onBackground)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color(0xFFAAAAAA))
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         text = {
             TimePicker(
                 state = timePickerState,
                 colors = TimePickerDefaults.colors(
-                    clockDialColor = Color(0xFF2A2A2A),
-                    clockDialSelectedContentColor = Color.Black,
-                    clockDialUnselectedContentColor = Color.White,
-                    selectorColor = Color.White,
-                    containerColor = Color(0xFF1A1A1A),
-                    periodSelectorBorderColor = Color(0xFF444444),
-                    periodSelectorSelectedContainerColor = Color.White,
-                    periodSelectorUnselectedContainerColor = Color(0xFF2A2A2A),
-                    periodSelectorSelectedContentColor = Color.Black,
-                    periodSelectorUnselectedContentColor = Color.White,
-                    timeSelectorSelectedContainerColor = Color.White,
-                    timeSelectorUnselectedContainerColor = Color(0xFF2A2A2A),
-                    timeSelectorSelectedContentColor = Color.Black,
-                    timeSelectorUnselectedContentColor = Color.White
+                    clockDialColor = MaterialTheme.colorScheme.surfaceVariant,
+                    clockDialSelectedContentColor = MaterialTheme.colorScheme.background,
+                    clockDialUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
+                    selectorColor = MaterialTheme.colorScheme.onBackground,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    periodSelectorBorderColor = MaterialTheme.colorScheme.surfaceVariant,
+                    periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.onBackground,
+                    periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    periodSelectorSelectedContentColor = MaterialTheme.colorScheme.background,
+                    periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onBackground,
+                    timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.onBackground,
+                    timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    timeSelectorSelectedContentColor = MaterialTheme.colorScheme.background,
+                    timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
-        containerColor = Color(0xFF1A1A1A)
+        containerColor = MaterialTheme.colorScheme.surface
     )
 }
 
@@ -732,18 +732,18 @@ fun EditTaskDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Task", color = Color.White) },
+        title = { Text("Edit Task", color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = inputText.value,
                     onValueChange = { inputText.value = it },
-                    label = { Text("Task name", color = Color(0xFFAAAAAA)) },
+                    label = { Text("Task name", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color(0xFF555555)
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -759,7 +759,7 @@ fun EditTaskDialog(
                     Text(
                         text = "Reminder",
                         fontSize = 14.sp,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Switch(
                         checked = enableReminder.value,
@@ -768,10 +768,10 @@ fun EditTaskDialog(
                             if (!it) selectedDate.value = null
                         },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF444444),
-                            uncheckedThumbColor = Color(0xFF777777),
-                            uncheckedTrackColor = Color(0xFF222222)
+                            checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                            checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     )
                 }
@@ -783,7 +783,7 @@ fun EditTaskDialog(
                         onClick = { showDatePicker.value = true },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onBackground
                         )
                     ) {
                         Text(
@@ -810,21 +810,21 @@ fun EditTaskDialog(
                     }
                 }
             ) {
-                Text("Save", color = Color.White)
+                Text("Save", color = MaterialTheme.colorScheme.onBackground)
             }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = onDelete) {
-                    Text("Delete", color = Color(0xFFFFFFFF))
+                    Text("Delete", color = MaterialTheme.colorScheme.onBackground)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel", color = Color(0xFFAAAAAA))
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
-        containerColor = Color(0xFF1A1A1A)
+        containerColor = MaterialTheme.colorScheme.surface
     )
     
     if (showDatePicker.value) {
@@ -848,7 +848,7 @@ fun HistoryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
@@ -865,7 +865,7 @@ fun HistoryScreen(
             ) {
                 Text(
                     text = "No completed tasks yet",
-                    color = Color(0xFF666666),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center
                 )
@@ -892,13 +892,13 @@ fun HistoryScreen(
                         Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(
                                 text = task.title,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontSize = 16.sp
                             )
                             task.completedAt?.let { timestamp ->
                                 Text(
                                     text = "Completed: ${formatTimestamp(timestamp)}",
-                                    color = Color(0xFF777777),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
@@ -908,11 +908,11 @@ fun HistoryScreen(
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = "Delete",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
-                    androidx.compose.material3.HorizontalDivider(color = Color(0xFF222222), thickness = 1.dp)
+                    androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer, thickness = 1.dp)
                 }
             }
         }
@@ -936,13 +936,13 @@ internal fun dayLabel(day: DayOfWeek): String = when (day) {
 
 @Composable
 internal fun RepeatOption(label: String, selected: Boolean, onClick: () -> Unit) {
-    val background = if (selected) Color.White else Color.Transparent
-    val textColor = if (selected) Color.Black else Color.White
+    val background = if (selected) MaterialTheme.colorScheme.onBackground else Color.Transparent
+    val textColor = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(background)
-            .border(BorderStroke(1.dp, Color.White), RoundedCornerShape(12.dp))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
@@ -952,13 +952,13 @@ internal fun RepeatOption(label: String, selected: Boolean, onClick: () -> Unit)
 
 @Composable
 internal fun WeekdayToggle(label: String, selected: Boolean, onClick: () -> Unit) {
-    val background = if (selected) Color.White else Color.Transparent
-    val textColor = if (selected) Color.Black else Color.White
+    val background = if (selected) MaterialTheme.colorScheme.onBackground else Color.Transparent
+    val textColor = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(background)
-            .border(BorderStroke(1.dp, Color.White), RoundedCornerShape(12.dp))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {

@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,7 +54,6 @@ fun AboutScreen(
     val context = LocalContext.current
     var clickCount by remember { mutableStateOf(0) }
     
-    // Get version info from package manager
     val packageInfo = remember {
         try {
             context.packageManager.getPackageInfo(context.packageName, 0)
@@ -67,7 +66,7 @@ fun AboutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -78,10 +77,9 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // App name
         Text(
             text = "Mini Launcher",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
@@ -90,7 +88,7 @@ fun AboutScreen(
 
         Text(
             text = "Version $versionName",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
 
@@ -98,16 +96,15 @@ fun AboutScreen(
 
         Text(
             text = "A minimalist focus launcher",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Rate & Share section
         Text(
             text = "Support the App",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -118,11 +115,10 @@ fun AboutScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
         ) {
-            // Rate button
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .background(Color(0xFF1A1A1A), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                     .clickable {
                         val intent = Intent(Intent.ACTION_VIEW).apply {
                             data = Uri.parse("market://details?id=com.minifocus.launcher")
@@ -138,23 +134,22 @@ fun AboutScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "⭐",
+                    text = "\u2B50",
                     fontSize = 24.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Rate on Play Store",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
 
-            // Share button
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .background(Color(0xFF1A1A1A), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                     .clickable {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
@@ -167,13 +162,13 @@ fun AboutScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "📤",
+                    text = "\uD83D\uDCE4",
                     fontSize = 24.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Share App",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -182,10 +177,9 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Developer info
         Text(
             text = "Developer",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -194,7 +188,7 @@ fun AboutScreen(
 
         Text(
             text = "A Akhil",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize= 16.sp,
             modifier = Modifier.clickable {
                 clickCount++
@@ -207,20 +201,18 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Contact section
         Text(
             text = "Contact",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Email
         Text(
             text = "akhil@devakhil.com",
-            color = Color(0xFF6BB6FF),
+            color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
@@ -232,10 +224,9 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Website
         Text(
             text = "devakhil.com",
-            color = Color(0xFF6BB6FF),
+            color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://devakhil.com"))
@@ -245,10 +236,9 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Feedback section
         Text(
             text = "Feedback & Issues",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -257,16 +247,15 @@ fun AboutScreen(
 
         Text(
             text = "For bug reports and feature requests:",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // GitHub link
         Text(
             text = "github.com/A-Akhil/mini-launcher",
-            color = Color(0xFF6BB6FF),
+            color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/A-Akhil/mini-launcher"))
@@ -278,7 +267,7 @@ fun AboutScreen(
 
         Text(
             text = "Or send an email to:",
-            color = Color(0xFFAAAAAA),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
 
@@ -286,7 +275,7 @@ fun AboutScreen(
 
         Text(
             text = "akhil@devakhil.com",
-            color = Color(0xFF6BB6FF),
+            color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {

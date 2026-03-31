@@ -21,24 +21,57 @@ package com.minifocus.launcher.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.minifocus.launcher.model.LauncherTheme
 
 private val AmoledColorScheme = darkColorScheme(
     primary = White,
     onPrimary = Black,
-    secondary = DimGray,
+    secondary = AmoledSecondaryText,
     onSecondary = White,
-    background = Black,
-    onBackground = White,
-    surface = Black,
-    onSurface = White
+    tertiary = AmoledAccent,
+    onTertiary = Black,
+    background = AmoledBackground,
+    onBackground = AmoledPrimaryText,
+    surface = AmoledSurface,
+    onSurface = AmoledPrimaryText,
+    surfaceVariant = AmoledSurface,
+    onSurfaceVariant = AmoledSecondaryText,
+    error = AmoledError,
+    onError = Black
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = Black,
+    onPrimary = White,
+    secondary = LightSecondaryText,
+    onSecondary = White,
+    tertiary = LightAccent,
+    onTertiary = White,
+    background = LightBackground,
+    onBackground = LightPrimaryText,
+    surface = LightSurface,
+    onSurface = LightPrimaryText,
+    surfaceVariant = LightSurface,
+    onSurfaceVariant = LightSecondaryText,
+    error = LightError,
+    onError = White
 )
 
 @Composable
-fun MinimalistFocusTheme(content: @Composable () -> Unit) {
+fun MinimalistFocusTheme(
+    theme: LauncherTheme = LauncherTheme.AMOLED,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = when (theme) {
+        LauncherTheme.AMOLED -> AmoledColorScheme
+        LauncherTheme.LIGHT -> LightColorScheme
+    }
+
     MaterialTheme(
-        colorScheme = AmoledColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

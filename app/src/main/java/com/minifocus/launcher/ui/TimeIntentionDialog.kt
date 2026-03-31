@@ -21,8 +21,10 @@ package com.minifocus.launcher.ui
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,9 +41,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -137,7 +140,7 @@ fun TimeIntentionDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.85f))
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
@@ -150,14 +153,14 @@ fun TimeIntentionDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF141414))
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header: app name and subtitle
             Text(
                 text = app.label,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -167,7 +170,7 @@ fun TimeIntentionDialog(
 
             Text(
                 text = if (isTimeExpired) "Your time has ended" else "How long do you want to use this?",
-                color = if (isTimeExpired) Color(0xFFCC6666) else Color(0xFF666666),
+                color = if (isTimeExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
@@ -196,7 +199,7 @@ fun TimeIntentionDialog(
                 ) {
                     Text(
                         text = "TODAY",
-                        color = Color(0xFF555555),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 1.2.sp
@@ -204,7 +207,7 @@ fun TimeIntentionDialog(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = formatUsageTime(todayUsageMinutes),
-                        color = Color(0xFFE57373),
+                        color = MaterialTheme.colorScheme.error,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -215,7 +218,7 @@ fun TimeIntentionDialog(
                     modifier = Modifier
                         .width(1.dp)
                         .height(48.dp)
-                        .background(Color(0xFF2A2A2A))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
 
                 // 7-day stat
@@ -225,7 +228,7 @@ fun TimeIntentionDialog(
                 ) {
                     Text(
                         text = "PAST 7 DAYS",
-                        color = Color(0xFF555555),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 1.2.sp
@@ -233,7 +236,7 @@ fun TimeIntentionDialog(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = formatUsageTime(weekUsageMinutes),
-                        color = Color(0xFFAAAAAA),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -246,7 +249,7 @@ fun TimeIntentionDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFF222222))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -254,7 +257,7 @@ fun TimeIntentionDialog(
             // Duration presets -- 2x2 grid
             Text(
                 text = if (isTimeExpired) "EXTEND BY" else "DURATION",
-                color = Color(0xFF555555),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 1.5.sp,
@@ -291,7 +294,7 @@ fun TimeIntentionDialog(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Custom minutes input -- field only, no inline Start button
-            TextField(
+            OutlinedTextField(
                 value = customMinutes,
                 onValueChange = { value ->
                     if (value.all { it.isDigit() } && value.length <= 3) {
@@ -300,7 +303,7 @@ fun TimeIntentionDialog(
                 },
                 enabled = !isInCooldown,
                 placeholder = {
-                    Text("Custom minutes...", color = Color(0xFF444444), fontSize = 13.sp)
+                    Text("Custom minutes...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -317,17 +320,17 @@ fun TimeIntentionDialog(
                     }
                 ),
                 singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFF1A1A1A),
-                    unfocusedContainerColor = Color(0xFF1A1A1A),
-                    disabledContainerColor = Color(0xFF111111),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    disabledTextColor = Color(0xFF333333),
-                    cursorColor = Color.White
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    focusedBorderColor = MaterialTheme.colorScheme.outline,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    cursorColor = MaterialTheme.colorScheme.onBackground
                 ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -339,7 +342,7 @@ fun TimeIntentionDialog(
 
                 Text(
                     text = "ON EXPIRE",
-                    color = Color(0xFF555555),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.5.sp,
@@ -364,7 +367,12 @@ fun TimeIntentionDialog(
                                 .weight(1f)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
-                                    if (isSelected) Color(0xFF2C2C2C) else Color(0xFF0F0F0F)
+                                    if (isSelected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(10.dp)
                                 )
                                 .clickable { selectedAction = action }
                                 .padding(vertical = 10.dp),
@@ -372,7 +380,7 @@ fun TimeIntentionDialog(
                         ) {
                             Text(
                                 text = label,
-                                color = if (isSelected) Color.White else Color(0xFF555555),
+                                color = if (isSelected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                 textAlign = TextAlign.Center
@@ -388,7 +396,7 @@ fun TimeIntentionDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFF1E1E1E))
+                    .background(MaterialTheme.colorScheme.surfaceDim)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -403,7 +411,7 @@ fun TimeIntentionDialog(
                 // Go back
                 Text(
                     text = if (isTimeExpired) "Go back home" else "Go back",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
@@ -418,7 +426,7 @@ fun TimeIntentionDialog(
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
                         .background(
-                            if (isCustomValid) Color(0xFF2C2C2C) else Color(0xFF161616)
+                            if (isCustomValid) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceContainer
                         )
                         .then(
                             if (isCustomValid) Modifier.clickable {
@@ -430,7 +438,7 @@ fun TimeIntentionDialog(
                 ) {
                     Text(
                         text = "Start",
-                        color = if (isCustomValid) Color.White else Color(0xFF383838),
+                        color = if (isCustomValid) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -453,9 +461,9 @@ private fun DurationChip(
             .clip(RoundedCornerShape(12.dp))
             .background(
                 when {
-                    !enabled -> Color(0xFF111111)
-                    selected -> Color(0xFF2C2C2C)
-                    else -> Color(0xFF1E1E1E)
+                    !enabled -> MaterialTheme.colorScheme.surfaceContainer
+                    selected -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> MaterialTheme.colorScheme.surfaceDim
                 }
             )
             .then(if (enabled) Modifier.clickable { onClick() } else Modifier)
@@ -465,9 +473,9 @@ private fun DurationChip(
         Text(
             text = label,
             color = when {
-                !enabled -> Color(0xFF333333)
-                selected -> Color.White
-                else -> Color(0xFFBBBBBB)
+                !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                selected -> MaterialTheme.colorScheme.onBackground
+                else -> MaterialTheme.colorScheme.onSurface
             },
             fontSize = 15.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
@@ -490,8 +498,8 @@ private fun CooldownTimer(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(72.dp)
     ) {
-        val trackColor = Color(0xFF222222)
-        val arcColor = if (isActive) Color(0xFFCC6666) else Color(0xFF44AA44)
+        val trackColor = MaterialTheme.colorScheme.surfaceVariant
+        val arcColor = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
         Canvas(modifier = Modifier.size(72.dp)) {
             val strokeWidth = 5.dp.toPx()
             val padding = strokeWidth / 2f
@@ -522,7 +530,7 @@ private fun CooldownTimer(
         }
         Text(
             text = if (isActive) "$secondsLeft" else "OK",
-            color = if (isActive) Color(0xFFCC6666) else Color(0xFF44AA44),
+            color = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
             fontSize = if (isActive) 20.sp else 16.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center

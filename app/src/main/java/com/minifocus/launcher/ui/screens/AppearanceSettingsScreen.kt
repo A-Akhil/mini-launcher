@@ -30,29 +30,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.model.LauncherTheme
 import com.minifocus.launcher.model.TextSize
 import com.minifocus.launcher.ui.components.ScreenHeader
 
 @Composable
 fun AppearanceSettingsScreen(
     textSize: TextSize,
+    theme: LauncherTheme,
     onOpenTextSize: () -> Unit,
+    onThemeChange: (LauncherTheme) -> Unit,
     onBack: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
@@ -65,7 +70,7 @@ fun AppearanceSettingsScreen(
 
         Text(
             text = "Text",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium
         )
@@ -81,10 +86,22 @@ fun AppearanceSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "More appearance options coming soon",
-            color = Color(0xFF666666),
-            fontSize = 14.sp
+            text = "Theme",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LauncherTheme.entries.forEach { themeOption ->
+            ThemeOption(
+                theme = themeOption,
+                isSelected = theme == themeOption,
+                onClick = { onThemeChange(themeOption) }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
     }
 }
 
@@ -104,7 +121,7 @@ private fun SettingsRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -112,7 +129,7 @@ private fun SettingsRow(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = value,
-                    color = Color(0xFFAAAAAA),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp
                 )
             }
@@ -120,7 +137,41 @@ private fun SettingsRow(
         Icon(
             imageVector = Icons.Filled.ChevronRight,
             contentDescription = null,
-            tint = Color(0xFFAAAAAA)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ThemeOption(
+    theme: LauncherTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val themeName = when (theme) {
+        LauncherTheme.AMOLED -> "Dark"
+        LauncherTheme.LIGHT -> "Light"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = themeName,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        Icon(
+            imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+            contentDescription = null,
+            tint = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

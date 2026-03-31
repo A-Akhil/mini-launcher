@@ -60,7 +60,27 @@ import kotlinx.coroutines.launch
 import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.service.LockScreenAccessibilityService
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
+import android.graphics.Color as AndroidColor
+import com.minifocus.launcher.model.LauncherTheme
+
 class MainActivity : ComponentActivity() {
+
+    private fun updateSystemBars(theme: LauncherTheme) {
+        val isLight = theme == LauncherTheme.LIGHT
+        enableEdgeToEdge(
+            statusBarStyle = if (isLight) {
+                SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+            } else {
+                SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+            },
+            navigationBarStyle = if (isLight) {
+                SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+            } else {
+                SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+            }
+        )
+    }
 
     private val screenOffReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -164,7 +184,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        // Initial edge-to-edge with AMOLED default; will be updated by LaunchedEffect
+        updateSystemBars(LauncherTheme.AMOLED)
         super.onCreate(savedInstanceState)
         
         val initialPermissionsAcknowledged = runBlocking {
@@ -182,8 +203,14 @@ class MainActivity : ComponentActivity() {
         notificationRestrictionHint.value = !isFromTrustedStore()
         updatePermissionsState()
         setContent {
-            MinimalistFocusTheme {
-                val state by viewModel.uiState.collectAsStateWithLifecycle()
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            
+            // Update system bars when theme changes
+            LaunchedEffect(state.theme) {
+                updateSystemBars(state.theme)
+            }
+            
+            MinimalistFocusTheme(theme = state.theme) {
                 val inboxState by notificationInboxViewModel.uiState.collectAsStateWithLifecycle()
                 val filterState by notificationFilterViewModel.uiState.collectAsStateWithLifecycle()
                 val permissions by permissionsState.collectAsStateWithLifecycle()
@@ -284,7 +311,8 @@ class MainActivity : ComponentActivity() {
                         onAddTrackedReminderApp = viewModel::addTrackedReminderApp,
                         onRemoveTrackedReminderApp = viewModel::removeTrackedReminderApp,
                         onSetPendingTimeIntention = viewModel::setPendingTimeIntention,
-                        onUpdateExpiryAction = viewModel::updateExpiryAction
+                        onUpdateExpiryAction = viewModel::updateExpiryAction,
+                        onThemeChange = viewModel::setTheme
                     )
                 } else {
                     PermissionScreen(

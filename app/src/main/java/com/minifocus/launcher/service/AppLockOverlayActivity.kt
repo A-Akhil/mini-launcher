@@ -134,7 +134,7 @@ fun AppLockOverlayScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -146,14 +146,14 @@ fun AppLockOverlayScreen(
                 text = appName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
             
             Text(
                 text = "Locked",
                 fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
             )
             
@@ -167,7 +167,7 @@ fun AppLockOverlayScreen(
                 },
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
             
@@ -176,7 +176,7 @@ fun AppLockOverlayScreen(
             Text(
                 text = "Unlocks at $unlockTimeText",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
             )
             
@@ -186,7 +186,7 @@ fun AppLockOverlayScreen(
                 text = "You chose to focus\nRespect your decision",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Light,
-                color = Color.White.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
                 lineHeight = 24.sp
             )

@@ -41,6 +41,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -104,7 +105,7 @@ fun DailyTaskEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, color = Color.White) },
+        title = { Text(text = title, color = MaterialTheme.colorScheme.onBackground) },
         text = {
             Column(
                 modifier = Modifier
@@ -115,12 +116,12 @@ fun DailyTaskEditorDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Title", color = Color(0xFFAAAAAA)) },
+                    label = { Text("Title", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color(0xFF555555),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                     ),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -128,7 +129,7 @@ fun DailyTaskEditorDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = "Repeat pattern", color = Color.White, fontSize = 16.sp)
+                Text(text = "Repeat pattern", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -156,7 +157,7 @@ fun DailyTaskEditorDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Repeats every 2 days",
-                        color = Color(0xFF888888),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -165,7 +166,7 @@ fun DailyTaskEditorDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Repeats every 2 days",
-                        color = Color(0xFF888888),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -174,7 +175,7 @@ fun DailyTaskEditorDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Choose days",
-                        color = Color(0xFF888888),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -209,10 +210,10 @@ fun DailyTaskEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Task enabled", color = Color.White, fontSize = 16.sp)
+                        Text(text = "Task enabled", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                         Text(
                             text = if (enabled) "Will appear on eligible days" else "Will be hidden everywhere",
-                            color = Color(0xFF888888),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
                     }
@@ -220,10 +221,10 @@ fun DailyTaskEditorDialog(
                         checked = enabled,
                         onCheckedChange = { enabled = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF444444),
-                            uncheckedThumbColor = Color(0xFF666666),
-                            uncheckedTrackColor = Color(0xFF222222)
+                            checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                            checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     )
                 }
@@ -236,10 +237,10 @@ fun DailyTaskEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Limit to date range", color = Color.White, fontSize = 16.sp)
+                        Text(text = "Limit to date range", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                         Text(
                             text = if (limitRange) "Task only appears within the window" else "Follows repeat pattern indefinitely",
-                            color = Color(0xFF888888),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
                     }
@@ -256,10 +257,10 @@ fun DailyTaskEditorDialog(
                             }
                         },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF444444),
-                            uncheckedThumbColor = Color(0xFF666666),
-                            uncheckedTrackColor = Color(0xFF222222)
+                            checkedThumbColor = MaterialTheme.colorScheme.onBackground,
+                            checkedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainer
                         )
                     )
                 }
@@ -270,7 +271,7 @@ fun DailyTaskEditorDialog(
                     OutlinedButton(
                         onClick = { showStartPicker = true },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                     ) {
                         Text(
                             text = startDate?.format(dateFormatter) ?: "Select start date",
@@ -283,7 +284,7 @@ fun DailyTaskEditorDialog(
                     OutlinedButton(
                         onClick = { showEndPicker = true },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                     ) {
                         Text(
                             text = endDate?.format(dateFormatter) ?: "Select end date (optional)",
@@ -293,7 +294,7 @@ fun DailyTaskEditorDialog(
 
                     if (endDate != null) {
                         TextButton(onClick = { endDate = null }) {
-                            Text(text = "Clear end date", color = Color(0xFFAAAAAA))
+                            Text(text = "Clear end date", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -317,22 +318,22 @@ fun DailyTaskEditorDialog(
                 },
                 enabled = name.trim().isNotEmpty()
             ) {
-                Text(text = "Save", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(text = "Save", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             Row {
                 onDelete?.let {
                     TextButton(onClick = it) {
-                        Text(text = "Delete", color = Color(0xFFFF6666))
+                        Text(text = "Delete", color = MaterialTheme.colorScheme.error)
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
-        containerColor = Color(0xFF1A1A1A)
+        containerColor = MaterialTheme.colorScheme.surface
     )
 
     if (showStartPicker) {
@@ -353,17 +354,17 @@ fun DailyTaskEditorDialog(
                         showStartPicker = false
                     }
                 ) {
-                    Text(text = "Set", color = Color.White)
+                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartPicker = false }) {
-                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface))
         }
     }
 
@@ -386,17 +387,17 @@ fun DailyTaskEditorDialog(
                         showEndPicker = false
                     }
                 ) {
-                    Text(text = "Set", color = Color.White)
+                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndPicker = false }) {
-                    Text(text = "Cancel", color = Color(0xFFAAAAAA))
+                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A))
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color(0xFF1A1A1A)))
+            DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface))
         }
     }
 }

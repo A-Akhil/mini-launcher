@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,7 +48,7 @@ import com.minifocus.launcher.model.AppEntry
 data class AppMenuAction(
     val icon: ImageVector,
     val label: String,
-    val color: Color = Color.White,
+    val color: Color? = null,
     val action: () -> Unit
 )
 
@@ -66,7 +67,6 @@ fun AppContextMenu(
     val context = LocalContext.current
     
     val actions = buildList {
-        // Pin/Unpin
         if (onPin != null) {
             add(AppMenuAction(
                 icon = Icons.Filled.PushPin,
@@ -88,7 +88,6 @@ fun AppContextMenu(
             ))
         }
         
-        // Hide/Unhide
         if (onHide != null) {
             add(AppMenuAction(
                 icon = Icons.Filled.VisibilityOff,
@@ -110,7 +109,6 @@ fun AppContextMenu(
             ))
         }
         
-        // Lock
         if (onLock != null) {
             add(AppMenuAction(
                 icon = Icons.Filled.Lock,
@@ -122,7 +120,6 @@ fun AppContextMenu(
             ))
         }
         
-        // Time Reminder
         if (onAddTimeReminder != null) {
             add(AppMenuAction(
                 icon = Icons.Filled.Timer,
@@ -144,7 +141,6 @@ fun AppContextMenu(
             ))
         }
         
-        // App Info
         add(AppMenuAction(
             icon = Icons.Filled.Info,
             label = "App Info",
@@ -154,11 +150,10 @@ fun AppContextMenu(
             }
         ))
         
-        // Uninstall
         add(AppMenuAction(
             icon = Icons.Filled.Delete,
             label = "Uninstall",
-            color = Color(0xFFFF6B6B),
+            color = MaterialTheme.colorScheme.error,
             action = {
                 uninstallApp(context, app.packageName)
                 onDismiss()
@@ -177,13 +172,12 @@ fun AppContextMenu(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1A1A1A))
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(vertical = 16.dp)
             ) {
-                // App name header
                 Text(
                     text = app.label,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -191,11 +185,10 @@ fun AppContextMenu(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Menu items
                 actions.forEach { menuAction ->
                     AppMenuItem(
                         label = menuAction.label,
-                        color = menuAction.color,
+                        color = menuAction.color ?: MaterialTheme.colorScheme.onBackground,
                         onClick = menuAction.action
                     )
                 }
@@ -208,7 +201,7 @@ fun AppContextMenu(
 @Composable
 private fun AppMenuItem(
     label: String,
-    color: Color = Color.White,
+    color: Color,
     onClick: () -> Unit
 ) {
     Row(
@@ -243,7 +236,6 @@ private fun uninstallApp(context: Context, packageName: String) {
         }
         context.startActivity(intent)
     } catch (e: Exception) {
-        // If uninstall fails (system app, etc.), try opening app info instead
         try {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.fromParts("package", packageName, null)
@@ -251,7 +243,6 @@ private fun uninstallApp(context: Context, packageName: String) {
             }
             context.startActivity(intent)
         } catch (ex: Exception) {
-            // Silently fail if both attempts fail
         }
     }
 }
