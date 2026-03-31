@@ -21,8 +21,8 @@ android {
         applicationId = "com.minifocus.launcher"
     minSdk = 29
     targetSdk = 35
-    versionCode = 14
-    versionName = "2.1.1"
+    versionCode = 15
+    versionName = "2.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
