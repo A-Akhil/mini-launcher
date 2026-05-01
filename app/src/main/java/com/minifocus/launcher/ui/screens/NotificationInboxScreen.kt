@@ -60,11 +60,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.minifocus.launcher.R
 import com.minifocus.launcher.model.NotificationItem
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
@@ -91,19 +93,19 @@ fun NotificationInboxScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ScreenHeader(
-                title = "Notification Inbox",
+                title = stringResource(R.string.notif_inbox_title),
                 onBack = onBack
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Notification Inbox",
+                        text = stringResource(R.string.notif_inbox_title),
                         color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     if (state.unreadCount > 0) {
                         Text(
-                            text = "${state.unreadCount} unread",
+                            text = stringResource(R.string.label_unread_count, state.unreadCount),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -113,7 +115,7 @@ fun NotificationInboxScreen(
             IconButton(onClick = onMarkAllRead) {
                 Icon(
                     imageVector = Icons.Filled.MarkEmailRead,
-                    contentDescription = "Mark all read",
+                    contentDescription = stringResource(R.string.notif_inbox_mark_all_read),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -274,13 +276,13 @@ private fun EmptyInboxState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "No notifications yet",
+            text = stringResource(R.string.notif_inbox_empty),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = "Notifications you intercept will show up here.",
+            text = stringResource(R.string.notif_inbox_empty_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)

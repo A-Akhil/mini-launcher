@@ -54,8 +54,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.minifocus.launcher.data.entity.AppTimeReminderEntity
 import com.minifocus.launcher.model.AppEntry
+import com.minifocus.launcher.R
 
 @Composable
 fun AppTimeReminderSettingsScreen(
@@ -102,7 +104,7 @@ fun AppTimeReminderSettingsScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.label_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -113,14 +115,14 @@ fun AppTimeReminderSettingsScreen(
                     .padding(start = 4.dp)
             ) {
                 Text(
-                    text = "App Reminders",
+                    text = stringResource(R.string.app_reminders_title),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = (-0.5).sp
                 )
                 Text(
-                    text = "${trackedApps.size} app${if (trackedApps.size != 1) "s" else ""} tracked",
+                    text = stringResource(R.string.label_apps_tracked_count, trackedApps.size, if (trackedApps.size != 1) stringResource(R.string.label_plural_suffix) else ""),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 2.dp)
@@ -133,7 +135,7 @@ fun AppTimeReminderSettingsScreen(
         TextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search apps", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+            placeholder = { Text(stringResource(R.string.label_search_apps), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             singleLine = true,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -158,7 +160,7 @@ fun AppTimeReminderSettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Enabled apps will show a time intention prompt before launching. You can also toggle from any app's long-press menu.",
+            text = stringResource(R.string.app_reminders_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
@@ -172,7 +174,7 @@ fun AppTimeReminderSettingsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No matching apps",
+                    text = stringResource(R.string.app_reminders_no_matching),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )

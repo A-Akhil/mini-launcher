@@ -30,6 +30,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.minifocus.launcher.MainActivity
+import com.minifocus.launcher.R
 
 class AppTimeReminderReceiver : BroadcastReceiver() {
 
@@ -54,13 +55,15 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        val localizedContext = com.minifocus.launcher.LocaleUtils.getLocalizedContext(context)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "App Time Reminders",
+                localizedContext.getString(R.string.time_reminder_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Reminders when your intended app usage time expires"
+                description = localizedContext.getString(R.string.time_reminder_channel_description)
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -75,8 +78,8 @@ class AppTimeReminderReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Time is up")
-            .setContentText("Your intended time for $appLabel has expired")
+            .setContentTitle(localizedContext.getString(R.string.time_reminder_title))
+            .setContentText(localizedContext.getString(R.string.time_reminder_text_format, appLabel))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

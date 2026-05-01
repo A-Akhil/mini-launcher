@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
     <string name="app_name">Minimalist Focus</string>
+    <string name="app_description">A minimalist focus launcher</string>
+
+    <!-- System / Accessibility -->
     <string name="lock_accessibility_service_description">Allow Minimalist Focus to lock the screen when you double-tap the home page.</string>
     <string name="lock_accessibility_service_toast">Enable the double-tap lock service in Accessibility settings.</string>
+
+    <!-- Notifications -->
     <plurals name="notification_summary_title">
         <item quantity="one">%d notification</item>
         <item quantity="other">%d notifications</item>
@@ -14,4 +20,375 @@
     </plurals>
     <string name="notification_inbox_channel_name">Launcher Inbox</string>
     <string name="notification_inbox_channel_description">Summary of intercepted notifications</string>
+
+    <!-- Navigation / Common -->
+    <string name="nav_home">Home</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_all_apps">All Apps</string>
+    <string name="nav_settings">Settings</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_grant">Grant</string>
+    <string name="action_set">Set</string>
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+    <string name="action_unlock">Unlock</string>
+    <string name="action_unhide">Unhide</string>
+    <string name="label_none">None</string>
+    <string name="label_optional">Optional</string>
+    <string name="label_required">Required</string>
+    <string name="label_back">Back</string>
+    <string name="label_more">More</string>
+    <string name="label_search_apps">Search apps</string>
+    <string name="label_days_format">%1$d days</string>
+    <string name="label_unread_count">%1$d unread</string>
+    <string name="label_entries_count">%1$d entries</string>
+    <string name="label_apps_tracked_count">%1$d app%2$s tracked</string>
+    <string name="label_plural_suffix">s</string>
+    <plurals name="label_day_count">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="label_week_count">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
+    <string name="label_all_apps">All Apps</string>
+    <string name="label_hours_format">%1$d hour</string>
+    <string name="label_hours_format_plural">%1$d hours</string>
+    <string name="label_example_hours">e.g., 5</string>
+
+    <!-- Home Screen -->
+    <string name="home_search_apps">Search apps</string>
+    <string name="home_no_apps_match">No apps match your search</string>
+    <string name="home_frequently_opened">Frequently opened</string>
+    <string name="home_all_apps_section">All apps</string>
+    <string name="home_assign_app">Assign App</string>
+    <string name="home_bottom_quick_launch">Bottom quick launch</string>
+    <string name="home_left_icon">Left icon</string>
+    <string name="home_right_icon">Right icon</string>
+    <string name="home_default_left_label">Phone</string>
+    <string name="home_default_right_label">Camera</string>
+    <string name="home_daily_tasks_visible">Daily tasks visible</string>
+    <string name="home_daily_tasks_hidden">Daily tasks hidden</string>
+    <string name="home_bottom_summary_format">bottom: %1$s / %2$s</string>
+    <string name="home_summary_format">%1$s · %2$s</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_home_screen">Home Screen</string>
+    <string name="settings_clock">Clock</string>
+    <string name="settings_notification_bar">Notification Bar</string>
+    <string name="settings_app_drawer">App Drawer</string>
+    <string name="settings_app_reminders">App Reminders</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_device_settings">Device Settings</string>
+    <string name="settings_device_settings_summary">Open Android settings</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_backup_restore">Backup &amp; Restore</string>
+    <string name="settings_backup_restore_subtitle">Manage settings backups</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_subtitle">Developer info and feedback</string>
+    <string name="settings_no_apps_tracked">No apps tracked</string>
+    <string name="settings_keyboard_opens_with_swipe">Keyboard opens with swipe</string>
+    <string name="settings_keyboard_opens_manually">Keyboard opens manually</string>
+    <string name="settings_smart_suggestions_on">smart suggestions on</string>
+    <string name="settings_smart_suggestions_off">smart suggestions off</string>
+    <string name="settings_theme_summary_format">%1$s theme · %2$s text</string>
+
+    <!-- Home Screen Settings -->
+    <string name="home_settings_title">Home Screen</string>
+    <string name="home_settings_daily_tasks_module">Daily tasks module</string>
+    <string name="home_settings_show_daily_tasks">Show daily tasks on home</string>
+    <string name="home_settings_daily_tasks_hint">Active daily reminders appear beneath the clock.</string>
+    <string name="home_settings_daily_tasks_all_complete">All tasks are complete right now, so the section is hidden until tomorrow or new activity.</string>
+    <string name="home_settings_daily_tasks_complete_to_hide">Complete everything to hide it for the day.</string>
+    <string name="home_settings_daily_tasks_auto_hide">Daily tasks stay visible for 10 seconds after completion, then hide automatically.</string>
+    <string name="home_settings_gestures">Gestures</string>
+    <string name="home_settings_double_tap_lock">Double-tap to lock screen</string>
+    <string name="home_settings_lock_service_disabled">Enable the lock service in Accessibility settings</string>
+    <string name="home_settings_lock_service_enabled">Double-tap empty space on home to lock device</string>
+    <string name="home_settings_smart_suggestions">Smart suggestions</string>
+    <string name="home_settings_show_adaptive_row">Show adaptive row</string>
+    <string name="home_settings_reset_learning">Reset learning data</string>
+
+    <!-- Clock Settings -->
+    <string name="clock_settings_title">Clock</string>
+    <string name="clock_settings_time_format">Time format</string>
+    <string name="clock_settings_seconds">Seconds</string>
+    <string name="clock_settings_show_seconds">Show seconds</string>
+    <string name="clock_settings_seconds_hint">Add a seconds indicator to the clock on the home screen.</string>
+    <string name="clock_settings_custom_duration">Custom duration (hours)</string>
+    <string name="clock_format_24">24-hour</string>
+    <string name="clock_format_12">12-hour</string>
+    <string name="clock_seconds_on"> · seconds on</string>
+    <string name="clock_seconds_off"> · seconds off</string>
+
+    <!-- App Drawer Settings -->
+    <string name="drawer_settings_keyboard">Keyboard</string>
+    <string name="drawer_settings_open_keyboard_on_swipe">Open keyboard on swipe</string>
+    <string name="drawer_settings_keyboard_hint">Automatically show the search field and keyboard when you enter All Apps.</string>
+    <string name="drawer_settings_hidden_apps">Hidden apps</string>
+    <string name="drawer_settings_hidden_apps_unlocked">Hidden apps unlocked</string>
+    <string name="drawer_settings_hidden_apps_gate">This gate keeps hidden apps out of the drawer. Once unlocked, you can unhide specific apps below.</string>
+    <string name="drawer_settings_hidden_apps_reveal">Press and hold for 10 seconds to reveal your hidden apps.</string>
+    <string name="drawer_settings_hidden_apps_manage">Press and hold for 10 seconds to reveal and manage them.</string>
+    <string name="drawer_settings_hidden_apps_tap_unhide">Tap Unhide to return an app to the drawer.</string>
+    <string name="drawer_settings_no_hidden_apps">You haven\'t hidden any apps yet.</string>
+    <string name="drawer_settings_hidden_count">%d hidden</string>
+    <string name="drawer_settings_no_apps_hidden">No apps hidden</string>
+    <string name="drawer_settings_releasing_resets">Releasing early resets the timer immediately.</string>
+    <string name="drawer_settings_unlocking">Unlocking…</string>
+    <string name="drawer_settings_unlocked">Unlocked</string>
+    <string name="drawer_settings_keep_holding">Keep holding</string>
+    <string name="drawer_settings_hold">Hold</string>
+
+    <!-- Notification Settings -->
+    <string name="notif_settings_title">Notification Settings</string>
+    <string name="notif_settings_inbox_section">Notification inbox</string>
+    <string name="notif_settings_capture">Capture notifications</string>
+    <string name="notif_settings_capture_hint">Store notifications in the in-app inbox and post a single summary alert.</string>
+    <string name="notif_settings_auto_clear">Auto-clear notifications</string>
+    <string name="notif_settings_log_retention">Log retention</string>
+    <string name="notif_settings_notif_retention">Notification retention</string>
+    <string name="notif_settings_app_filters">App filters</string>
+    <string name="notif_settings_view_logs">View logs</string>
+    <string name="notif_settings_inbox_off_hint">Turn on the inbox to manage retention and filters.</string>
+
+    <!-- Notification Inbox -->
+    <string name="notif_inbox_title">Notification Inbox</string>
+    <string name="notif_inbox_mark_all_read">Mark all read</string>
+    <string name="notif_inbox_empty">No notifications yet</string>
+    <string name="notif_inbox_empty_hint">Notifications you intercept will show up here.</string>
+
+    <!-- Notification Filter -->
+    <string name="notif_filter_title">Filters</string>
+    <string name="notif_filter_subtitle">Manage notification preferences</string>
+    <string name="notif_filter_enable_all">Enable all</string>
+    <string name="notif_filter_disable_all">Disable all</string>
+    <string name="notif_filter_no_matching_apps">No matching apps</string>
+
+    <!-- Log Viewer -->
+    <string name="log_viewer_title">Notification Logs</string>
+    <string name="log_viewer_empty">No notifications yet</string>
+    <string name="log_viewer_empty_hint">Notifications you intercept will show up here.</string>
+
+    <!-- App Reminders Settings -->
+    <string name="app_reminders_title">App Reminders</string>
+    <string name="app_reminders_hint">Enabled apps will show a time intention prompt before launching. You can also toggle from any app\'s long-press menu.</string>
+    <string name="app_reminders_no_matching">No matching apps</string>
+    <string name="summary_inbox_on_format">Inbox on · clears %1$s · logs %2$s</string>
+    <string name="summary_inbox_disabled">Inbox disabled</string>
+
+    <!-- Time Intention Dialog -->
+    <string name="time_intention_today">TODAY</string>
+    <string name="time_intention_past_7_days">PAST 7 DAYS</string>
+    <string name="time_intention_on_expire">ON EXPIRE</string>
+    <string name="time_intention_lock">Lock</string>
+    <string name="time_intention_lock_app">Lock %s</string>
+    <string name="time_intention_reminder">Reminder</string>
+    <string name="time_intention_custom_minutes">Custom minutes...</string>
+
+    <!-- Task Dialogs -->
+    <string name="task_add_title">Add New Task</string>
+    <string name="task_prompt_what_to_do">What needs to be done?</string>
+    <string name="task_edit_daily_title">Edit Daily Task</string>
+    <string name="task_edit_title">Edit Task</string>
+    <string name="task_name_label">Task name</string>
+    <string name="task_completed_tasks">Completed Tasks</string>
+    <string name="task_no_completed">No completed tasks yet</string>
+    <string name="task_add_icon">Add Task</string>
+    <string name="task_history_icon">History</string>
+    <string name="task_completed_icon">Completed</string>
+    <string name="task_enabled">Task enabled</string>
+    <string name="task_repeat_daily">Repeat every day</string>
+    <string name="task_repeat_pattern">Repeat pattern</string>
+    <string name="task_repeat_every_2_days">Repeats every 2 days</string>
+    <string name="task_daily_label">Daily</string>
+    <string name="task_alternate_label">Alternate</string>
+    <string name="task_days_label">Days</string>
+    <string name="task_set_reminder">Set Reminder</string>
+    <string name="task_limit_date_range">Limit to date range</string>
+    <string name="task_select_start_date">Select start date</string>
+    <string name="task_select_end_date_optional">Select end date (optional)</string>
+    <string name="task_select_date_time">Select Date &amp; Time</string>
+    <string name="task_reminder_label">Reminder</string>
+    <string name="task_set_label">Set</string>
+    <string name="task_next_label">Next</string>
+    <string name="task_confirm_label">Confirm</string>
+    <string name="task_enabled_will_show_scheduled">Will show on scheduled days</string>
+    <string name="task_enabled_hidden_until_reenabled">Hidden until re-enabled</string>
+    <string name="task_limit_window_hint">Visible only within the window</string>
+    <string name="task_limit_indefinite_hint">Repeats indefinitely</string>
+    <string name="task_start_label">Start</string>
+    <string name="task_clear_end_date">Clear end date</string>
+    <string name="task_completed_at">Completed: %s</string>
+    <string name="task_status_paused">Paused</string>
+    <string name="task_status_completed_today">Completed today</string>
+    <string name="task_status_active_ends">Active • ends %s</string>
+    <string name="task_status_active_since">Active • since %s</string>
+    <string name="task_status_active_every_day">Active every day</string>
+    <string name="task_status_starts">Starts %s</string>
+    <string name="task_status_ended">Ended %s</string>
+    <string name="task_status_inactive_ended">Inactive • ended %s</string>
+    <string name="task_status_inactive_today">Inactive today</string>
+    <string name="task_today_at">Today at %s</string>
+    <string name="task_tomorrow_at">Tomorrow at %s</string>
+    <string name="task_overdue_at">Overdue at %s</string>
+    <string name="task_choose_days">Choose days</string>
+    <string name="task_repeats_every_two_days">Repeats every 2 days</string>
+    <string name="task_completed_format">Completed: %s</string>
+    <string name="weekday_mon">Mon</string>
+    <string name="weekday_tue">Tue</string>
+    <string name="weekday_wed">Wed</string>
+    <string name="weekday_thu">Thu</string>
+    <string name="weekday_fri">Fri</string>
+    <string name="weekday_sat">Sat</string>
+    <string name="weekday_sun">Sun</string>
+
+    <!-- Emergency Unlock -->
+    <string name="emergency_unlock_title">Emergency Unlock</string>
+    <string name="emergency_unlock_no_locked_apps">No locked apps</string>
+    <string name="emergency_unlock_unlocking">Unlocking</string>
+    <string name="emergency_unlock_confirm_stop">Do you really wanna stop?</string>
+    <string name="emergency_unlock_confirm_message">This will unlock %s</string>
+    <string name="emergency_unlock_until">Until %s</string>
+    <string name="emergency_unlock_action">Unlock</string>
+
+    <!-- Appearance Settings -->
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_text_section">Text</string>
+    <string name="appearance_text_size">Text size</string>
+    <string name="appearance_theme_section">Theme</string>
+    <string name="appearance_theme_dark">Dark</string>
+    <string name="appearance_theme_light">Light</string>
+
+    <!-- Text Size Settings -->
+    <string name="text_size_title">Text Size</string>
+    <string name="text_size_preview">Preview</string>
+    <string name="text_size_preview_time">12:30</string>
+    <string name="text_size_preview_app">Calendar</string>
+    <string name="text_size_preview_task">Review project goals and update roadmap.</string>
+
+    <!-- Backup Settings -->
+    <string name="backup_title">Backup &amp; Restore</string>
+    <string name="backup_action_title">Backup Settings</string>
+    <string name="backup_action_subtitle">Save your current configuration</string>
+    <string name="restore_action_title">Restore Settings</string>
+    <string name="restore_action_subtitle">Load configuration from a backup</string>
+
+    <!-- About Screen -->
+    <string name="about_title">About</string>
+    <string name="about_app_name">Mini Launcher</string>
+    <string name="about_version">Version %s</string>
+    <string name="about_version_unknown">Unknown</string>
+    <string name="about_support_section">Support the App</string>
+    <string name="about_rate_play_store">Rate on Play Store</string>
+    <string name="about_share_app">Share App</string>
+    <string name="about_share_via">Share via</string>
+    <string name="about_share_subject">Mini Launcher</string>
+    <string name="about_share_message">Check out Mini Launcher - A minimalist focus launcher
+
+https://play.google.com/store/apps/details?id=com.minifocus.launcher</string>
+    <string name="about_developer_section">Developer</string>
+    <string name="about_developer_name">A Akhil</string>
+    <string name="about_contact_section">Contact</string>
+    <string name="about_contact_email">akhil@devakhil.com</string>
+    <string name="about_contact_website">devakhil.com</string>
+    <string name="about_feedback_section">Feedback &amp; Issues</string>
+    <string name="about_feedback_hint">For bug reports and feature requests:</string>
+    <string name="about_feedback_repo">github.com/A-Akhil/mini-launcher</string>
+    <string name="about_email_hint">Or send an email to:</string>
+
+    <!-- Permissions Screen -->
+    <string name="permissions_title">Permissions required</string>
+    <string name="permissions_subtitle">We need a few permissions to keep everything minimal and under your control.</string>
+    <string name="permissions_notification_access">Notification access</string>
+    <string name="permissions_exact_alarms">Exact alarms &amp; reminders</string>
+    <string name="permissions_lock_screen">Lock screen shortcut</string>
+    <string name="permissions_display_over_apps">Display over other apps</string>
+    <string name="permissions_usage_stats">Usage stats access</string>
+    <string name="permissions_post_notifications">Post notifications</string>
+    <string name="permissions_accessibility_title">Accessibility Permission Needed</string>
+    <string name="permissions_accessibility_rationale">Mini Launcher uses the Accessibility Service solely to lock your screen when you double-tap. No data is collected. If you decline, this feature will be disabled.</string>
+    <string name="permissions_open_app_info">Open App Info</string>
+    <string name="permissions_restricted_build">This build is restricted by Android. Open App Info → three dots → Allow restricted settings before enabling notification access.</string>
+    <string name="permissions_all_granted">All permissions granted</string>
+    <string name="permissions_notifications_required">Notifications required</string>
+    <string name="permissions_missing">Missing %s</string>
+    <string name="permissions_notification_access_label">Notification access</string>
+    <string name="permissions_exact_alarms_label">Exact alarms</string>
+    <string name="permissions_lock_service_label">Lock service</string>
+    <string name="permissions_usage_access_label">Usage access</string>
+    <string name="permissions_overlay_label">Overlay</string>
+
+    <!-- Language Settings -->
+    <string name="language_settings_title">Language</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_german">Deutsch (German)</string>
+    <string name="language_spanish">Español (Spanish)</string>
+
+    <!-- App context menu -->
+    <string name="menu_pin_home">Pin to Home</string>
+    <string name="menu_unpin">Unpin</string>
+    <string name="menu_hide_app">Hide App</string>
+    <string name="menu_unhide">Unhide</string>
+    <string name="menu_lock_app">Lock App</string>
+    <string name="menu_add_time_reminder">Add Time Reminder</string>
+    <string name="menu_remove_time_reminder">Remove Time Reminder</string>
+    <string name="menu_app_info">App Info</string>
+    <string name="menu_uninstall">Uninstall</string>
+
+    <!-- Permission screen extra copy -->
+    <string name="permissions_go_to_settings">Go to Settings</string>
+    <string name="permissions_not_now">Not Now</string>
+    <string name="permissions_post_notifications_desc">Allow reminders and essential alerts to reach you.</string>
+    <string name="permissions_exact_alarms_desc">Let reminders ring exactly on time, even in battery saver.</string>
+    <string name="permissions_notification_access_desc">Enable the optional inbox that curates notifications.</string>
+    <string name="permissions_lock_screen_desc">Enable the accessibility service that powers double-tap lock without disabling biometrics.</string>
+    <string name="permissions_usage_stats_desc">Tracks launched apps so optional app locks stay enforced.</string>
+    <string name="permissions_display_over_apps_desc">Shows the lock overlay when you try opening locked apps.</string>
+    <string name="permissions_required_to_continue">Grant required permissions to continue.</string>
+    <string name="permissions_optional_unlock_features">Optional permissions unlock the notification inbox and advanced locks.</string>
+    <string name="permissions_all_granted_sentence">All permissions granted.</string>
+
+    <!-- Locale + app reminder screen helpers -->
+    <string name="language_settings_subtitle">App display language</string>
+    <!-- Added: extracted hardcoded UI strings -->
+    <string name="time_intention_time_ended">Your time has ended</string>
+    <string name="time_intention_how_long">How long do you want to use this?</string>
+    <string name="time_intention_extend_by">EXTEND BY</string>
+    <string name="time_intention_duration">DURATION</string>
+    <string name="action_start">Start</string>
+    <string name="action_go_back">Go back</string>
+    <string name="action_ok">OK</string>
+    <string name="time_intention_notify">Notify</string>
+    <string name="time_intention_ask_me">Ask me</string>
+    <string name="time_intention_go_home">Go home</string>
+    <string name="label_minutes_format">%1$d min</string>
+
+    <!-- App Lock / Notification channel strings -->
+    <string name="app_lock_channel_name">App Lock Monitor</string>
+    <string name="app_lock_channel_description">Monitors locked apps in background</string>
+    <string name="app_lock_active">App Lock Active</string>
+    <string name="app_lock_monitoring">Monitoring locked apps</string>
+    <string name="app_lock_locked">Locked</string>
+    <string name="app_lock_unlocks_at">Unlocks at %1$s</string>
+    <string name="app_lock_focus_message">You chose to focus
+Respect your decision</string>
+    <string name="duration_hms_format">%1$dh %2$02dm %3$02ds</string>
+    <string name="duration_ms_format">%1$dm %2$02ds</string>
+    <string name="duration_s_format">%1$ds</string>
+
+    <!-- Time reminder strings -->
+    <string name="time_reminder_channel_name">App Time Reminders</string>
+    <string name="time_reminder_channel_description">Reminders when your intended app usage time expires</string>
+    <string name="time_reminder_title">Time is up</string>
+    <string name="time_reminder_text_format">Your intended time for %1$s has expired</string>
+
+    <string name="action_continue">Continue</string>
+    <string name="action_go_back_home">Go back home</string>
+    <string name="seconds_remaining_format">%1$d seconds remaining</string>
 </resources>

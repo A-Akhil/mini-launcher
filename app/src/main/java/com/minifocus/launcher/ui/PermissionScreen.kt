@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.activity.compose.BackHandler
 import com.minifocus.launcher.permissions.PermissionsState
+import androidx.compose.ui.res.stringResource
+import com.minifocus.launcher.R
 
 @Composable
 fun PermissionScreen(
@@ -90,14 +92,14 @@ fun PermissionScreen(
             onDismissRequest = { showAccessibilityDisclosure = false },
             title = {
                 Text(
-                    text = "Accessibility Permission Needed",
+                    text = stringResource(R.string.permissions_accessibility_title),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
-                    text = "Mini Launcher uses the Accessibility Service solely to lock your screen when you double-tap. No data is collected. If you decline, this feature will be disabled.",
+                    text = stringResource(R.string.permissions_accessibility_rationale),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -108,12 +110,12 @@ fun PermissionScreen(
                         onRequestLockAccessibility()
                     }
                 ) {
-                    Text("Go to Settings")
+                    Text(stringResource(R.string.permissions_go_to_settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAccessibilityDisclosure = false }) {
-                    Text("Not Now")
+                    Text(stringResource(R.string.permissions_not_now))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -123,8 +125,8 @@ fun PermissionScreen(
 
     val requiredPermissions = listOf(
         PermissionRequest(
-            title = "Post notifications",
-            description = "Allow reminders and essential alerts to reach you.",
+            title = stringResource(R.string.permissions_post_notifications),
+            description = stringResource(R.string.permissions_post_notifications_desc),
             granted = state.notificationsGranted,
             onRequest = onRequestNotifications
         )
@@ -132,32 +134,32 @@ fun PermissionScreen(
 
     val optionalPermissions = listOf(
         PermissionRequest(
-            title = "Exact alarms & reminders",
-            description = "Let reminders ring exactly on time, even in battery saver.",
+            title = stringResource(R.string.permissions_exact_alarms),
+            description = stringResource(R.string.permissions_exact_alarms_desc),
             granted = state.exactAlarmsGranted,
             onRequest = onRequestExactAlarms
         ),
         PermissionRequest(
-            title = "Notification access",
-            description = "Enable the optional inbox that curates notifications.",
+            title = stringResource(R.string.permissions_notification_access),
+            description = stringResource(R.string.permissions_notification_access_desc),
             granted = state.notificationListenerGranted,
             onRequest = onRequestNotificationListener
         ),
         PermissionRequest(
-            title = "Lock screen shortcut",
-            description = "Enable the accessibility service that powers double-tap lock without disabling biometrics.",
+            title = stringResource(R.string.permissions_lock_screen),
+            description = stringResource(R.string.permissions_lock_screen_desc),
             granted = state.lockAccessibilityGranted,
             onRequest = { showAccessibilityDisclosure = true }
         ),
         PermissionRequest(
-            title = "Usage stats access",
-            description = "Tracks launched apps so optional app locks stay enforced.",
+            title = stringResource(R.string.permissions_usage_stats),
+            description = stringResource(R.string.permissions_usage_stats_desc),
             granted = state.usageStatsGranted,
             onRequest = onRequestUsageStats
         ),
         PermissionRequest(
-            title = "Display over other apps",
-            description = "Shows the lock overlay when you try opening locked apps.",
+            title = stringResource(R.string.permissions_display_over_apps),
+            description = stringResource(R.string.permissions_display_over_apps_desc),
             granted = state.overlayGranted,
             onRequest = onRequestOverlay
         )
@@ -175,14 +177,14 @@ fun PermissionScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Permissions required",
+            text = stringResource(R.string.permissions_title),
             fontSize = 28.sp,
             fontWeight = FontWeight.Light,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "We need a few permissions to keep everything minimal and under your control.",
+            text = stringResource(R.string.permissions_subtitle),
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 12.dp)
@@ -190,7 +192,7 @@ fun PermissionScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Required",
+            text = stringResource(R.string.label_required),
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
@@ -210,7 +212,7 @@ fun PermissionScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Optional",
+            text = stringResource(R.string.label_optional),
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.SemiBold,
@@ -230,18 +232,18 @@ fun PermissionScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (showRestrictedNotificationHint && !state.notificationListenerGranted) {
-            Text(
-                text = "This build is restricted by Android. Open App Info → three dots → Allow restricted settings before enabling notification access.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                Text(
+                    text = stringResource(R.string.permissions_restricted_build),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = onOpenRestrictedSettings,
                 border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
             ) {
-                Text(text = "Open App Info")
+                Text(text = stringResource(R.string.permissions_open_app_info))
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -249,9 +251,9 @@ fun PermissionScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         val statusMessage = when {
-            !state.requiredGranted -> "Grant required permissions to continue."
-            optionalPending -> "Optional permissions unlock the notification inbox and advanced locks."
-            else -> "All permissions granted."
+            !state.requiredGranted -> stringResource(R.string.permissions_required_to_continue)
+            optionalPending -> stringResource(R.string.permissions_optional_unlock_features)
+            else -> stringResource(R.string.permissions_all_granted_sentence)
         }
 
         Text(
@@ -270,7 +272,7 @@ fun PermissionScreen(
                 contentColor = MaterialTheme.colorScheme.background
             )
         ) {
-            Text(text = if (optionalPending) "Continue" else "Continue")
+            Text(text = stringResource(R.string.action_continue))
         }
     }
 }
@@ -331,7 +333,7 @@ private fun PermissionCard(
                     border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                 ) {
-                    Text(text = "Grant")
+                    Text(text = stringResource(R.string.action_grant))
                 }
             }
         }

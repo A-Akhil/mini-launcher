@@ -68,8 +68,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.minifocus.launcher.model.AppEntry
 import com.minifocus.launcher.model.ExpiryAction
+import com.minifocus.launcher.R
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -169,7 +171,7 @@ fun TimeIntentionDialog(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = if (isTimeExpired) "Your time has ended" else "How long do you want to use this?",
+                text = if (isTimeExpired) stringResource(R.string.time_intention_time_ended) else stringResource(R.string.time_intention_how_long),
                 color = if (isTimeExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
@@ -198,7 +200,7 @@ fun TimeIntentionDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "TODAY",
+                        text = stringResource(R.string.time_intention_today),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
@@ -227,7 +229,7 @@ fun TimeIntentionDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "PAST 7 DAYS",
+                        text = stringResource(R.string.time_intention_past_7_days),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
@@ -256,7 +258,7 @@ fun TimeIntentionDialog(
 
             // Duration presets -- 2x2 grid
             Text(
-                text = if (isTimeExpired) "EXTEND BY" else "DURATION",
+                text = if (isTimeExpired) stringResource(R.string.time_intention_extend_by) else stringResource(R.string.time_intention_duration),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
@@ -279,7 +281,7 @@ fun TimeIntentionDialog(
                     ) {
                         pair.forEach { minutes ->
                             DurationChip(
-                                label = "${minutes} min",
+                                label = stringResource(R.string.label_minutes_format, minutes),
                                 selected = selectedPreset == minutes,
                                 enabled = !isInCooldown,
                                 modifier = Modifier.weight(1f)
@@ -303,7 +305,7 @@ fun TimeIntentionDialog(
                 },
                 enabled = !isInCooldown,
                 placeholder = {
-                    Text("Custom minutes...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    Text(stringResource(R.string.time_intention_custom_minutes), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -341,7 +343,7 @@ fun TimeIntentionDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "ON EXPIRE",
+                    text = stringResource(R.string.time_intention_on_expire),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
@@ -357,9 +359,9 @@ fun TimeIntentionDialog(
                 ) {
                     ExpiryAction.entries.forEach { action ->
                         val label = when (action) {
-                            ExpiryAction.NOTIFICATION -> "Notify"
-                            ExpiryAction.PROMPT -> "Ask me"
-                            ExpiryAction.RETURN_HOME -> "Go home"
+                            ExpiryAction.NOTIFICATION -> stringResource(R.string.time_intention_notify)
+                            ExpiryAction.PROMPT -> stringResource(R.string.time_intention_ask_me)
+                            ExpiryAction.RETURN_HOME -> stringResource(R.string.time_intention_go_home)
                         }
                         val isSelected = selectedAction == action
                         Box(
@@ -410,7 +412,7 @@ fun TimeIntentionDialog(
             ) {
                 // Go back
                 Text(
-                    text = if (isTimeExpired) "Go back home" else "Go back",
+                    text = if (isTimeExpired) stringResource(R.string.action_go_back_home) else stringResource(R.string.action_go_back),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
@@ -437,7 +439,7 @@ fun TimeIntentionDialog(
                         .padding(horizontal = 20.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = "Start",
+                        text = stringResource(R.string.action_start),
                         color = if (isCustomValid) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
@@ -529,7 +531,7 @@ private fun CooldownTimer(
             )
         }
         Text(
-            text = if (isActive) "$secondsLeft" else "OK",
+            text = if (isActive) "$secondsLeft" else stringResource(R.string.action_ok),
             color = if (isActive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
             fontSize = if (isActive) 20.sp else 16.sp,
             fontWeight = FontWeight.Bold,

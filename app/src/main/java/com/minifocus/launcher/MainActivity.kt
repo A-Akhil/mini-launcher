@@ -312,7 +312,8 @@ class MainActivity : ComponentActivity() {
                         onRemoveTrackedReminderApp = viewModel::removeTrackedReminderApp,
                         onSetPendingTimeIntention = viewModel::setPendingTimeIntention,
                         onUpdateExpiryAction = viewModel::updateExpiryAction,
-                        onThemeChange = viewModel::setTheme
+                        onThemeChange = viewModel::setTheme,
+                        onLanguageSettingsVisibilityChange = viewModel::setLanguageSettingsVisibility,
                     )
                 } else {
                     PermissionScreen(

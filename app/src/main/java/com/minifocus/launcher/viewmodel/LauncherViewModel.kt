@@ -266,6 +266,7 @@ class LauncherViewModel(
     private val isEmergencyUnlockVisible = MutableStateFlow(false)
     private val isHiddenAppsVisible = MutableStateFlow(false)
     private val isBackupSettingsVisible = MutableStateFlow(false)
+    private val isLanguageSettingsVisible = MutableStateFlow(false)
     private val isAppTimeReminderSettingsVisible = MutableStateFlow(false)
     private val trackedReminderApps = appTimeReminderManager.observeTrackedApps()
     private val pendingTimeIntention = MutableStateFlow<AppEntry?>(null)
@@ -384,6 +385,9 @@ class LauncherViewModel(
         }
         .combine(isAppTimeReminderSettingsVisible) { state, reminderSettingsVisible ->
             state.copy(isAppTimeReminderSettingsVisible = reminderSettingsVisible)
+        }
+        .combine(isLanguageSettingsVisible) { state, languageVisible ->
+            state.copy(isLanguageSettingsVisible = languageVisible)
         }
         .combine(trackedReminderApps) { state, tracked ->
             state.copy(trackedReminderApps = tracked)
@@ -810,6 +814,28 @@ class LauncherViewModel(
         }
     }
 
+    fun setLanguageSettingsVisibility(visible: Boolean) {
+        isLanguageSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isEmergencyUnlockVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+            isBackupSettingsVisible.value = false
+            isAppTimeReminderSettingsVisible.value = false
+        }
+    }
+
     fun setBackupSettingsVisibility(visible: Boolean) {
         isBackupSettingsVisible.value = visible
         if (visible) {
@@ -907,6 +933,7 @@ class LauncherViewModel(
         isEmergencyUnlockVisible.value = false
         isBackupSettingsVisible.value = false
         isAppTimeReminderSettingsVisible.value = false
+        isLanguageSettingsVisible.value = false
         isSearchVisible.value = false
         isHiddenAppsVisible.value = false
         pendingTimeIntention.value = null
@@ -1247,6 +1274,7 @@ data class LauncherUiState(
     val isHiddenAppsVisible: Boolean = false,
     val isBackupSettingsVisible: Boolean = false,
     val isAppTimeReminderSettingsVisible: Boolean = false,
+    val isLanguageSettingsVisible: Boolean = false,
     val trackedReminderApps: List<AppTimeReminderEntity> = emptyList(),
     val pendingTimeIntention: AppEntry? = null,
     val showSeconds: Boolean = false,

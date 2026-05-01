@@ -46,10 +46,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.theme.MinimalistFocusTheme
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -151,7 +153,7 @@ fun AppLockOverlayScreen(
             )
             
             Text(
-                text = "Locked",
+                text = stringResource(R.string.app_lock_locked),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
@@ -161,9 +163,9 @@ fun AppLockOverlayScreen(
             
             Text(
                 text = when {
-                    hours > 0 -> String.format("%dh %02dm %02ds", hours, minutes, seconds)
-                    minutes > 0 -> String.format("%dm %02ds", minutes, seconds)
-                    else -> String.format("%ds", seconds)
+                    hours > 0 -> stringResource(R.string.duration_hms_format, hours, minutes, seconds)
+                    minutes > 0 -> stringResource(R.string.duration_ms_format, minutes, seconds)
+                    else -> stringResource(R.string.duration_s_format, seconds)
                 },
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Light,
@@ -174,7 +176,7 @@ fun AppLockOverlayScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Unlocks at $unlockTimeText",
+                text = stringResource(R.string.app_lock_unlocks_at, unlockTimeText),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
@@ -183,7 +185,7 @@ fun AppLockOverlayScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
-                text = "You chose to focus\nRespect your decision",
+                text = stringResource(R.string.app_lock_focus_message),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),

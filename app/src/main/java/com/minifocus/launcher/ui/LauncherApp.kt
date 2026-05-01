@@ -108,6 +108,8 @@ import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -141,6 +143,7 @@ import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.Notification
 import com.minifocus.launcher.viewmodel.NotificationInboxViewModel.NotificationInboxUiState
 import com.minifocus.launcher.permissions.PermissionsState
 import com.minifocus.launcher.ui.components.AppContextMenu
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
@@ -153,6 +156,7 @@ import com.minifocus.launcher.ui.screens.NotificationSettingsScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.minifocus.launcher.ui.screens.TextSizeSettingsScreen
 import com.minifocus.launcher.ui.screens.AppTimeReminderSettingsScreen
+import com.minifocus.launcher.ui.screens.LanguageSettingsScreen
 import com.minifocus.launcher.model.ExpiryAction
 import com.minifocus.launcher.data.entity.AppTimeReminderEntity
 import com.minifocus.launcher.service.AppTimeReminderReceiver
@@ -227,6 +231,7 @@ fun LauncherApp(
     onBackupSettingsVisibilityChange: (Boolean) -> Unit,
     onBackupSettings: () -> Unit,
     onRestoreSettings: () -> Unit,
+    onLanguageSettingsVisibilityChange: (Boolean) -> Unit,
     onAppTimeReminderSettingsVisibilityChange: (Boolean) -> Unit,
     onAddTrackedReminderApp: (String, String) -> Unit,
     onRemoveTrackedReminderApp: (String) -> Unit,
@@ -272,7 +277,8 @@ fun LauncherApp(
         state.isHistoryVisible ||
         state.isSearchVisible ||
         state.isHiddenAppsVisible ||
-        state.isAppTimeReminderSettingsVisible
+        state.isAppTimeReminderSettingsVisible ||
+        state.isLanguageSettingsVisible
 
     LaunchedEffect(state.homeResetTick) {
         if (pagerState.currentPage != 1) {
@@ -492,6 +498,7 @@ fun LauncherApp(
             state.isAppearanceSettingsVisible -> closeAppearanceSettings()
             state.isHomeSettingsVisible -> closeHomeSettings()
             state.isAppTimeReminderSettingsVisible -> closeAppTimeReminderSettings()
+            state.isLanguageSettingsVisible -> onLanguageSettingsVisibilityChange(false)
             state.isNotificationInboxVisible -> closeInbox()
             state.isSettingsVisible -> onSettingsVisibilityChange(false)
             state.isHistoryVisible -> onHistoryVisibilityChange(false)
@@ -574,6 +581,7 @@ fun LauncherApp(
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onOpenBackupSettings = { onBackupSettingsVisibilityChange(true) },
                         onOpenAppTimeReminderSettings = { openAppTimeReminderSettings(AppTimeReminderSettingsBackTarget.Settings) },
+                        onOpenLanguageSettings = { onLanguageSettingsVisibilityChange(true) },
                         trackedReminderAppsCount = state.trackedReminderApps.size,
                         onBack = { onSettingsVisibilityChange(false) }
                     )
@@ -583,6 +591,11 @@ fun LauncherApp(
                         onBackup = onBackupSettings,
                         onRestore = onRestoreSettings,
                         onBack = { onBackupSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isLanguageSettingsVisible -> {
+                    LanguageSettingsScreen(
+                        onBack = { onLanguageSettingsVisibilityChange(false) }
                     )
                 }
                 state.isAppTimeReminderSettingsVisible -> {
@@ -810,7 +823,7 @@ fun LauncherApp(
 
             if (showNotificationRetentionDialog.value) {
                 RetentionPickerDialog(
-                    title = "Notification retention",
+                    title = stringResource(R.string.notif_settings_notif_retention),
                     options = listOf(1, 2, 7, 14, 30),
                     selected = state.notificationRetentionDays,
                     onSelect = { days ->
@@ -823,7 +836,7 @@ fun LauncherApp(
 
             if (showLogRetentionDialog.value) {
                 RetentionPickerDialog(
-                    title = "Log retention",
+                    title = stringResource(R.string.notif_settings_log_retention),
                     options = listOf(7, 30, 60, 90),
                     selected = state.logRetentionDays,
                     onSelect = { days ->
@@ -1013,7 +1026,7 @@ private fun RetentionPickerDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )
@@ -1343,12 +1356,12 @@ private fun BottomIconRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         BottomIconButton(
-            label = left?.label ?: "Phone",
+            label = left?.label ?: stringResource(R.string.home_default_left_label),
             onClick = { left?.let(onLaunch) },
             onLongPress = { onLongPress(BottomIconSlot.LEFT) }
         )
         BottomIconButton(
-            label = right?.label ?: "Camera",
+            label = right?.label ?: stringResource(R.string.home_default_right_label),
             onClick = { right?.let(onLaunch) },
             onLongPress = { onLongPress(BottomIconSlot.RIGHT) }
         )
@@ -1406,7 +1419,7 @@ private fun TasksScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Tasks",
+                    text = stringResource(R.string.nav_tasks),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold
@@ -1414,7 +1427,7 @@ private fun TasksScreen(
                 IconButton(onClick = onOpenHistory) {
                     Icon(
                         imageVector = Icons.Filled.History,
-                        contentDescription = "History",
+                        contentDescription = stringResource(R.string.task_history_icon),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
@@ -1471,7 +1484,7 @@ private fun TasksScreen(
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
         ) {
-            Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Task")
+            Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(R.string.task_add_icon))
         }
     }
 
@@ -1509,7 +1522,7 @@ private fun TasksScreen(
 
     showEditDailyDialog.value?.let { task ->
         DailyTaskEditorDialog(
-            title = "Edit Daily Task",
+            title = stringResource(R.string.task_edit_daily_title),
             initialTitle = task.title,
             initialStartEpochDay = task.startEpochDay,
             initialEndEpochDay = task.endEpochDay,
@@ -1530,23 +1543,6 @@ private fun TasksScreen(
                 showEditDailyDialog.value = null
             }
         )
-    }
-}
-
-private fun formatScheduledTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val dateTime = java.time.LocalDateTime.ofInstant(
-        java.time.Instant.ofEpochMilli(timestamp), 
-        java.time.ZoneId.systemDefault()
-    )
-    val today = java.time.LocalDate.now()
-    val taskDate = dateTime.toLocalDate()
-    
-    return when {
-        taskDate == today -> "Today at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
-        taskDate == today.plusDays(1) -> "Tomorrow at ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
-        timestamp < now -> "⚠ ${dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))}"
-        else -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
     }
 }
 
@@ -1595,8 +1591,23 @@ private fun TaskItemRow(
                 textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
             )
             task.scheduledFor?.let { timestamp ->
+                val dateTime = java.time.LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(timestamp),
+                    java.time.ZoneId.systemDefault()
+                )
+                val today = java.time.LocalDate.now()
+                val taskDate = dateTime.toLocalDate()
+                val scheduledText = when {
+                    taskDate == today -> stringResource(R.string.task_today_at, dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
+                    taskDate == today.plusDays(1) -> stringResource(R.string.task_tomorrow_at, dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
+                    timestamp < System.currentTimeMillis() -> stringResource(
+                        R.string.task_overdue_at,
+                        dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
+                    )
+                    else -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd 'at' HH:mm"))
+                }
                 Text(
-                    text = formatScheduledTime(timestamp),
+                    text = scheduledText,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(top = 2.dp)
@@ -1606,7 +1617,7 @@ private fun TaskItemRow(
         if (isCompleted) {
             Icon(
                 imageVector = Icons.Filled.CheckCircle,
-                contentDescription = "Completed",
+                contentDescription = stringResource(R.string.task_completed_icon),
                 tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(20.dp)
             )
@@ -1614,6 +1625,7 @@ private fun TaskItemRow(
     }
 }
 
+@Composable
 private fun dailyTaskStatusText(
     task: DailyTaskItem,
     todayEpochDay: Long,
@@ -1624,17 +1636,17 @@ private fun dailyTaskStatusText(
     val endDate = task.endEpochDay?.let { LocalDate.ofEpochDay(it) }
 
     return when {
-        !task.isEnabled -> "Paused"
-        task.isActiveToday && task.isCompletedToday -> "Completed today"
+        !task.isEnabled -> stringResource(R.string.task_status_paused)
+        task.isActiveToday && task.isCompletedToday -> stringResource(R.string.task_status_completed_today)
         task.isActiveToday -> when {
-            endDate != null -> "Active • ends ${endDate.format(formatter)}"
-            startDate != null -> "Active • since ${startDate.format(formatter)}"
-            else -> "Active every day"
+            endDate != null -> stringResource(R.string.task_status_active_ends, endDate.format(formatter))
+            startDate != null -> stringResource(R.string.task_status_active_since, startDate.format(formatter))
+            else -> stringResource(R.string.task_status_active_every_day)
         }
-        startDate != null && today.isBefore(startDate) -> "Starts ${startDate.format(formatter)}"
-        endDate != null && today.isAfter(endDate) -> "Ended ${endDate.format(formatter)}"
-        endDate != null -> "Inactive • ended ${endDate.format(formatter)}"
-        else -> "Inactive today"
+        startDate != null && today.isBefore(startDate) -> stringResource(R.string.task_status_starts, startDate.format(formatter))
+        endDate != null && today.isAfter(endDate) -> stringResource(R.string.task_status_ended, endDate.format(formatter))
+        endDate != null -> stringResource(R.string.task_status_inactive_ended, endDate.format(formatter))
+        else -> stringResource(R.string.task_status_inactive_today)
     }
 }
 
@@ -1857,7 +1869,7 @@ private fun AllAppsScreen(
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "All Apps",
+                    text = stringResource(R.string.nav_all_apps),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -1870,7 +1882,7 @@ private fun AllAppsScreen(
                     IconButton(onClick = onOpenNotificationInbox) {
                         Icon(
                             imageVector = Icons.Filled.Notifications,
-                            contentDescription = "Notification inbox",
+                            contentDescription = stringResource(R.string.notif_inbox_title),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -1897,7 +1909,7 @@ private fun AllAppsScreen(
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.settings_title),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -1912,7 +1924,7 @@ private fun AllAppsScreen(
             ) {
                 if (searchQuery.isBlank()) {
                     Text(
-                        text = "Search apps",
+                        text = stringResource(R.string.label_search_apps),
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.53f)
                     )
                 }
@@ -1969,7 +1981,7 @@ private fun AllAppsScreen(
         if (filteredApps.isEmpty()) {
             item {
                 Text(
-                    text = "No apps match your search",
+                    text = stringResource(R.string.home_no_apps_match),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     textAlign = TextAlign.Center
@@ -1977,7 +1989,7 @@ private fun AllAppsScreen(
             }
         } else {
             if (suggestionEntries.isNotEmpty()) {
-                item { SectionDivider(label = "Frequently opened") }
+                item { SectionDivider(label = stringResource(R.string.home_frequently_opened)) }
                 items(suggestionEntries) { app ->
                     val isBlinking = blinkingApp.value == app.packageName
                     Text(
@@ -1996,7 +2008,7 @@ private fun AllAppsScreen(
                             )
                     )
                 }
-                item { SectionDivider(label = "All apps") }
+                item { SectionDivider(label = stringResource(R.string.home_all_apps_section)) }
             }
 
             items(remainingApps) { app ->
@@ -2275,7 +2287,7 @@ private fun BottomIconPickerDialog(
     if (slot == null) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Assign App") },
+        title = { Text(text = stringResource(R.string.home_assign_app)) },
         text = {
             LazyColumn(modifier = Modifier.fillMaxWidth().height(320.dp)) {
                 items(apps) { app ->
@@ -2321,56 +2333,78 @@ private fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onOpenBackupSettings: () -> Unit,
     onOpenAppTimeReminderSettings: () -> Unit,
+    onOpenLanguageSettings: () -> Unit,
     trackedReminderAppsCount: Int,
     onBack: () -> Unit
 ) {
     val homeSummary = buildString {
-        append(if (showDailyTasksOnHome) "Daily tasks visible" else "Daily tasks hidden")
-        val leftLabel = bottomLeftApp?.label ?: "None"
-        val rightLabel = bottomRightApp?.label ?: "None"
-        append(" · bottom: $leftLabel / $rightLabel")
+        val statusLabel = if (showDailyTasksOnHome) {
+            stringResource(R.string.home_daily_tasks_visible)
+        } else {
+            stringResource(R.string.home_daily_tasks_hidden)
+        }
+        val leftLabel = bottomLeftApp?.label ?: stringResource(R.string.label_none)
+        val rightLabel = bottomRightApp?.label ?: stringResource(R.string.label_none)
+        val bottomSummary = stringResource(R.string.home_bottom_summary_format, leftLabel, rightLabel)
+        append(stringResource(R.string.home_summary_format, statusLabel, bottomSummary))
     }
 
     val clockSummary = buildString {
-        val formatLabel = if (clockFormat == ClockFormat.H24) "24-hour" else "12-hour"
+        val formatLabel = if (clockFormat == ClockFormat.H24) {
+            stringResource(R.string.clock_format_24)
+        } else {
+            stringResource(R.string.clock_format_12)
+        }
         append(formatLabel)
-        append(if (showSeconds) " · seconds on" else " · seconds off")
+        append(if (showSeconds) stringResource(R.string.clock_seconds_on) else stringResource(R.string.clock_seconds_off))
     }
 
     val notificationSummary = if (notificationInboxEnabled) {
-        val notifLabel = if (notificationRetentionDays == 1) "1 day" else "$notificationRetentionDays days"
-        val logLabel = if (logRetentionDays == 1) "1 day" else "$logRetentionDays days"
-        "Inbox on · clears $notifLabel · logs $logLabel"
+        val notifLabel = pluralStringResource(R.plurals.label_day_count, notificationRetentionDays, notificationRetentionDays)
+        val logLabel = pluralStringResource(R.plurals.label_day_count, logRetentionDays, logRetentionDays)
+        stringResource(R.string.summary_inbox_on_format, notifLabel, logLabel)
     } else {
-        "Inbox disabled"
+        stringResource(R.string.summary_inbox_disabled)
     }
 
     val optionalMissing = buildList {
-        if (!permissionsState.notificationListenerGranted) add("Notification access")
-        if (!permissionsState.exactAlarmsGranted) add("Exact alarms")
-    if (!permissionsState.lockAccessibilityGranted) add("Lock service")
-        if (!permissionsState.usageStatsGranted) add("Usage access")
-        if (!permissionsState.overlayGranted) add("Overlay")
+        if (!permissionsState.notificationListenerGranted) add(stringResource(R.string.permissions_notification_access_label))
+        if (!permissionsState.exactAlarmsGranted) add(stringResource(R.string.permissions_exact_alarms_label))
+        if (!permissionsState.lockAccessibilityGranted) add(stringResource(R.string.permissions_lock_service_label))
+        if (!permissionsState.usageStatsGranted) add(stringResource(R.string.permissions_usage_access_label))
+        if (!permissionsState.overlayGranted) add(stringResource(R.string.permissions_overlay_label))
     }
 
     val permissionSummary = when {
-        !permissionsState.notificationsGranted -> "Notifications required"
-        optionalMissing.isEmpty() -> "All permissions granted"
-        else -> "Missing ${optionalMissing.joinToString(", ")}"
+        !permissionsState.notificationsGranted -> stringResource(R.string.permissions_notifications_required)
+        optionalMissing.isEmpty() -> stringResource(R.string.permissions_all_granted)
+        else -> stringResource(R.string.permissions_missing, optionalMissing.joinToString(", "))
     }
 
     val appDrawerSummary = buildString {
-        append(if (keyboardOnSwipe) "Keyboard opens with swipe" else "Keyboard opens manually")
-        append(if (smartSuggestionsEnabled) " · smart suggestions on" else " · smart suggestions off")
+        append(
+            if (keyboardOnSwipe) {
+                stringResource(R.string.settings_keyboard_opens_with_swipe)
+            } else {
+                stringResource(R.string.settings_keyboard_opens_manually)
+            }
+        )
+        append(
+            if (smartSuggestionsEnabled) {
+                " · ${stringResource(R.string.settings_smart_suggestions_on)}"
+            } else {
+                " · ${stringResource(R.string.settings_smart_suggestions_off)}"
+            }
+        )
     }
 
     val themeName = when (theme) {
-        LauncherTheme.AMOLED -> "Dark"
-        LauncherTheme.LIGHT -> "Light"
+        LauncherTheme.AMOLED -> stringResource(R.string.appearance_theme_dark)
+        LauncherTheme.LIGHT -> stringResource(R.string.appearance_theme_light)
     }
-    val appearanceSummary = "$themeName theme · ${textSize.label} text"
+    val appearanceSummary = stringResource(R.string.settings_theme_summary_format, themeName, textSize.label)
 
-    val deviceSettingsSummary = "Open Android settings"
+    val deviceSettingsSummary = stringResource(R.string.settings_device_settings_summary)
 
     Column(
         modifier = Modifier
@@ -2380,14 +2414,14 @@ private fun SettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Settings",
+            title = stringResource(R.string.settings_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         SettingsRow(
-            title = "Home Screen",
+            title = stringResource(R.string.settings_home_screen),
             subtitle = homeSummary,
             onClick = onOpenHomeSettings
         )
@@ -2395,7 +2429,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "Clock",
+            title = stringResource(R.string.settings_clock),
             subtitle = clockSummary,
             onClick = onOpenClockSettings
         )
@@ -2403,7 +2437,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "Notification Bar",
+            title = stringResource(R.string.settings_notification_bar),
             subtitle = notificationSummary,
             onClick = onOpenNotificationSettings
         )
@@ -2411,7 +2445,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "App Drawer",
+            title = stringResource(R.string.settings_app_drawer),
             subtitle = appDrawerSummary,
             onClick = onOpenAppDrawerSettings
         )
@@ -2419,13 +2453,17 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         val reminderSummary = if (trackedReminderAppsCount > 0) {
-            "$trackedReminderAppsCount app${if (trackedReminderAppsCount != 1) "s" else ""} tracked"
+            stringResource(
+                R.string.label_apps_tracked_count,
+                trackedReminderAppsCount,
+                if (trackedReminderAppsCount != 1) stringResource(R.string.label_plural_suffix) else ""
+            )
         } else {
-            "No apps tracked"
+            stringResource(R.string.settings_no_apps_tracked)
         }
 
         SettingsRow(
-            title = "App Reminders",
+            title = stringResource(R.string.settings_app_reminders),
             subtitle = reminderSummary,
             onClick = onOpenAppTimeReminderSettings
         )
@@ -2433,7 +2471,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "Appearance",
+            title = stringResource(R.string.settings_appearance),
             subtitle = appearanceSummary,
             onClick = onOpenAppearanceSettings
         )
@@ -2441,7 +2479,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         SettingsRow(
-            title = "Device Settings",
+            title = stringResource(R.string.settings_device_settings),
             subtitle = deviceSettingsSummary,
             onClick = onOpenDeviceSettings
         )
@@ -2449,7 +2487,7 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "Permissions",
+            title = stringResource(R.string.settings_permissions),
             subtitle = permissionSummary,
             onClick = onOpenPermissionManager
         )
@@ -2457,16 +2495,24 @@ private fun SettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         SettingsRow(
-            title = "Backup & Restore",
-            subtitle = "Manage settings backups",
+            title = stringResource(R.string.settings_backup_restore),
+            subtitle = stringResource(R.string.settings_backup_restore_subtitle),
             onClick = onOpenBackupSettings
         )
         
         Spacer(modifier = Modifier.height(20.dp))
 
         SettingsRow(
-            title = "About",
-            subtitle = "Developer info and feedback",
+            title = stringResource(R.string.language_settings_title),
+            subtitle = stringResource(R.string.language_settings_subtitle),
+            onClick = onOpenLanguageSettings
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        SettingsRow(
+            title = stringResource(R.string.settings_about),
+            subtitle = stringResource(R.string.settings_about_subtitle),
             onClick = onOpenAbout
         )
     }
@@ -2494,14 +2540,14 @@ private fun HomeSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Home Screen",
+            title = stringResource(R.string.home_settings_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Daily tasks module",
+            text = stringResource(R.string.home_settings_daily_tasks_module),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2515,16 +2561,16 @@ private fun HomeSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Show daily tasks on home",
+                    text = stringResource(R.string.home_settings_show_daily_tasks),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 val description = buildString {
-                    append("Active daily reminders appear beneath the clock.")
+                    append(stringResource(R.string.home_settings_daily_tasks_hint))
                     if (showDailyTasksOnHome && !showDailyTasksHomeSection) {
-                        append(" All tasks are complete right now, so the section is hidden until tomorrow or new activity.")
+                        append(" ${stringResource(R.string.home_settings_daily_tasks_all_complete)}")
                     } else if (showDailyTasksOnHome) {
-                        append(" Complete everything to hide it for the day.")
+                        append(" ${stringResource(R.string.home_settings_daily_tasks_complete_to_hide)}")
                     }
                 }
                 Text(
@@ -2543,7 +2589,7 @@ private fun HomeSettingsScreen(
         if (showDailyTasksOnHome) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Daily tasks stay visible for 10 seconds after completion, then hide automatically.",
+                text = stringResource(R.string.home_settings_daily_tasks_auto_hide),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 lineHeight = 18.sp
@@ -2553,7 +2599,7 @@ private fun HomeSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Gestures",
+            text = stringResource(R.string.home_settings_gestures),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2567,14 +2613,14 @@ private fun HomeSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Double-tap to lock screen",
+                    text = stringResource(R.string.home_settings_double_tap_lock),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 val description = if (!lockAccessibilityGranted) {
-                    "Enable the lock service in Accessibility settings"
+                    stringResource(R.string.home_settings_lock_service_disabled)
                 } else {
-                    "Double-tap empty space on home to lock device"
+                    stringResource(R.string.home_settings_lock_service_enabled)
                 }
                 Text(
                     text = description,
@@ -2599,7 +2645,7 @@ private fun HomeSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Bottom quick launch",
+            text = stringResource(R.string.home_bottom_quick_launch),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2607,14 +2653,14 @@ private fun HomeSettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         SettingsRow(
-            title = "Left icon",
-            subtitle = bottomLeftApp?.label ?: "None",
+            title = stringResource(R.string.home_left_icon),
+            subtitle = bottomLeftApp?.label ?: stringResource(R.string.label_none),
             onClick = { onBottomIconClick(BottomIconSlot.LEFT) }
         )
 
         SettingsRow(
-            title = "Right icon",
-            subtitle = bottomRightApp?.label ?: "None",
+            title = stringResource(R.string.home_right_icon),
+            subtitle = bottomRightApp?.label ?: stringResource(R.string.label_none),
             onClick = { onBottomIconClick(BottomIconSlot.RIGHT) }
         )
     }
@@ -2636,14 +2682,14 @@ private fun ClockSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Clock",
+            title = stringResource(R.string.clock_settings_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Time format",
+            text = stringResource(R.string.clock_settings_time_format),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2664,8 +2710,8 @@ private fun ClockSettingsScreen(
                 )
                 Text(
                     text = when (option) {
-                        ClockFormat.H24 -> "24-hour"
-                        ClockFormat.H12 -> "12-hour"
+                        ClockFormat.H24 -> stringResource(R.string.clock_format_24)
+                        ClockFormat.H12 -> stringResource(R.string.clock_format_12)
                     },
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp,
@@ -2677,7 +2723,7 @@ private fun ClockSettingsScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Seconds",
+            text = stringResource(R.string.clock_settings_seconds),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2692,12 +2738,12 @@ private fun ClockSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Show seconds",
+                    text = stringResource(R.string.clock_settings_show_seconds),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Add a seconds indicator to the clock on the home screen.",
+                    text = stringResource(R.string.clock_settings_seconds_hint),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
@@ -2752,7 +2798,7 @@ private fun HiddenAppsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Hidden apps",
+            title = stringResource(R.string.drawer_settings_hidden_apps),
             onBack = onBack
         )
 
@@ -2760,12 +2806,12 @@ private fun HiddenAppsScreen(
 
         if (!unlocked) {
             Text(
-                text = "Press and hold for 10 seconds to reveal your hidden apps.",
+                text = stringResource(R.string.drawer_settings_hidden_apps_reveal),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp
             )
             Text(
-                text = "Releasing early resets the timer immediately.",
+                text = stringResource(R.string.drawer_settings_releasing_resets),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 8.dp)
@@ -2813,10 +2859,10 @@ private fun HiddenAppsScreen(
                     )
                 Text(
                     text = when {
-                        unlocked -> "Unlocked"
-                        isHolding -> "Unlocking…"
-                        holdProgress > 0f -> "Keep holding"
-                        else -> "Hold"
+                        unlocked -> stringResource(R.string.drawer_settings_unlocked)
+                        isHolding -> stringResource(R.string.drawer_settings_unlocking)
+                        holdProgress > 0f -> stringResource(R.string.drawer_settings_keep_holding)
+                        else -> stringResource(R.string.drawer_settings_hold)
                     },
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 18.sp,
@@ -2828,20 +2874,20 @@ private fun HiddenAppsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "This gate keeps hidden apps out of the drawer. Once unlocked, you can unhide specific apps below.",
+                text = stringResource(R.string.drawer_settings_hidden_apps_gate),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )
         } else {
             Text(
-                text = "Hidden apps unlocked",
+                text = stringResource(R.string.drawer_settings_hidden_apps_unlocked),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Tap Unhide to return an app to the drawer.",
+                text = stringResource(R.string.drawer_settings_hidden_apps_tap_unhide),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 8.dp)
@@ -2851,7 +2897,7 @@ private fun HiddenAppsScreen(
 
             if (hiddenApps.isEmpty()) {
                 Text(
-                    text = "You haven't hidden any apps yet.",
+                    text = stringResource(R.string.drawer_settings_no_hidden_apps),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )
@@ -2871,7 +2917,7 @@ private fun HiddenAppsScreen(
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(onClick = { onUnhideApp(app.packageName) }) {
-                            Text(text = "Unhide")
+                            Text(text = stringResource(R.string.action_unhide))
                         }
                     }
                 }
@@ -2899,14 +2945,14 @@ private fun AppDrawerSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "App Drawer",
+            title = stringResource(R.string.settings_app_drawer),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Keyboard",
+            text = stringResource(R.string.drawer_settings_keyboard),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2921,12 +2967,12 @@ private fun AppDrawerSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Open keyboard on swipe",
+                    text = stringResource(R.string.drawer_settings_open_keyboard_on_swipe),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Automatically show the search field and keyboard when you enter All Apps.",
+                    text = stringResource(R.string.drawer_settings_keyboard_hint),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
@@ -2938,7 +2984,7 @@ private fun AppDrawerSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Smart suggestions",
+            text = stringResource(R.string.home_settings_smart_suggestions),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2953,7 +2999,7 @@ private fun AppDrawerSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Show adaptive row",
+                    text = stringResource(R.string.home_settings_show_adaptive_row),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
@@ -2971,13 +3017,13 @@ private fun AppDrawerSettingsScreen(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
         ) {
-            Text(text = "Reset learning data")
+            Text(text = stringResource(R.string.home_settings_reset_learning))
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Hidden apps",
+            text = stringResource(R.string.drawer_settings_hidden_apps),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -2985,12 +3031,16 @@ private fun AppDrawerSettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         SettingsRow(
-            title = "Hidden apps",
-            subtitle = if (hiddenAppsCount == 0) "No apps hidden" else "$hiddenAppsCount hidden",
+            title = stringResource(R.string.drawer_settings_hidden_apps),
+            subtitle = if (hiddenAppsCount == 0) {
+                stringResource(R.string.drawer_settings_no_apps_hidden)
+            } else {
+                stringResource(R.string.drawer_settings_hidden_count, hiddenAppsCount)
+            },
             onClick = onOpenHiddenApps
         )
         Text(
-            text = "Press and hold for 10 seconds to reveal and manage them.",
+            text = stringResource(R.string.drawer_settings_hidden_apps_manage),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 4.dp)
@@ -3005,15 +3055,15 @@ private fun LockDurationDialog(
     onLock: (Long) -> Unit
 ) {
     val predefinedDurations = listOf(
-        "30 min" to 30L,
-        "1 hour" to 60L,
-        "2 hours" to 120L,
-        "4 hours" to 240L,
-        "8 hours" to 480L,
-        "12 hours" to 720L,
-        "1 day" to 1440L,
-        "3 days" to 4320L,
-        "1 week" to 10080L
+        stringResource(R.string.label_minutes_format, 30) to 30L,
+        stringResource(R.string.label_hours_format, 1) to 60L,
+        stringResource(R.string.label_hours_format_plural, 2) to 120L,
+        stringResource(R.string.label_hours_format_plural, 4) to 240L,
+        stringResource(R.string.label_hours_format_plural, 8) to 480L,
+        stringResource(R.string.label_hours_format_plural, 12) to 720L,
+        pluralStringResource(R.plurals.label_day_count, 1, 1) to 1440L,
+        pluralStringResource(R.plurals.label_day_count, 3, 3) to 4320L,
+        pluralStringResource(R.plurals.label_week_count, 1, 1) to 10080L
     )
     
     val sliderPosition = remember { mutableFloatStateOf(0f) }
@@ -3035,7 +3085,7 @@ private fun LockDurationDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Lock $appName",
+                    text = stringResource(R.string.time_intention_lock_app, appName),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -3066,7 +3116,7 @@ private fun LockDurationDialog(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Text(
-                    text = "Custom duration (hours)",
+                    text = stringResource(R.string.clock_settings_custom_duration),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier
@@ -3083,7 +3133,7 @@ private fun LockDurationDialog(
                 ) {
                     if (customHours.value.isEmpty()) {
                         Text(
-                            text = "e.g., 5",
+                            text = stringResource(R.string.label_example_hours),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp
                         )
@@ -3124,7 +3174,7 @@ private fun LockDurationDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(R.string.action_cancel),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -3150,7 +3200,7 @@ private fun LockDurationDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Lock",
+                            text = stringResource(R.string.time_intention_lock),
                             color = MaterialTheme.colorScheme.background,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold

@@ -425,20 +425,22 @@ class NotificationInboxManager(
                     PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentFlags()
                 )
 
-            val summaryTitle = context.resources.getQuantityString(
+            val localizedContext = com.minifocus.launcher.LocaleUtils.getLocalizedContext(context)
+
+            val summaryTitle = localizedContext.resources.getQuantityString(
                 R.plurals.notification_summary_title,
                 total,
                 total
             )
 
             val summaryText = if (unread > 0) {
-                context.resources.getQuantityString(
+                localizedContext.resources.getQuantityString(
                     R.plurals.notification_summary_subtitle_unread,
                     unread,
                     unread
                 )
             } else {
-                context.getString(R.string.notification_summary_subtitle)
+                localizedContext.getString(R.string.notification_summary_subtitle)
             }
 
             val summary = NotificationCompat.Builder(context, SUMMARY_CHANNEL_ID)
@@ -499,18 +501,16 @@ class NotificationInboxManager(
 
     private fun ensureSummaryChannel(notificationManager: NotificationManager) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val existing = notificationManager.getNotificationChannel(SUMMARY_CHANNEL_ID)
-        if (existing == null) {
-            val channel = NotificationChannel(
-                SUMMARY_CHANNEL_ID,
-                context.getString(R.string.notification_inbox_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = context.getString(R.string.notification_inbox_channel_description)
-                setShowBadge(false)
-            }
-            notificationManager.createNotificationChannel(channel)
+        val localizedContext = com.minifocus.launcher.LocaleUtils.getLocalizedContext(context)
+        val channel = NotificationChannel(
+            SUMMARY_CHANNEL_ID,
+            localizedContext.getString(R.string.notification_inbox_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = localizedContext.getString(R.string.notification_inbox_channel_description)
+            setShowBadge(false)
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun pendingIntentFlags(): Int =

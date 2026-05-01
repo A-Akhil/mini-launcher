@@ -40,9 +40,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.model.TextSize
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.theme.TextSizeProvider
@@ -61,7 +63,7 @@ fun TextSizeSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Text Size",
+            title = stringResource(R.string.text_size_title),
             onBack = onBack
         )
 
@@ -82,7 +84,7 @@ fun TextSizeSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Preview",
+            text = stringResource(R.string.text_size_preview),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium
@@ -99,20 +101,20 @@ fun TextSizeSettingsScreen(
         ) {
             Column {
                 Text(
-                    text = "12:30",
+                    text = stringResource(R.string.text_size_preview_time),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Calendar",
+                    text = stringResource(R.string.text_size_preview_app),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 20.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Review project goals and update roadmap.",
+                    text = stringResource(R.string.text_size_preview_task),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 16.sp
                 )

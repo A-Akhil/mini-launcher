@@ -148,9 +148,10 @@ class AppLockMonitorService : Service() {
     }
 
     private fun createNotification(): Notification {
+        val localizedContext = com.minifocus.launcher.LocaleUtils.getLocalizedContext(this)
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("App Lock Active")
-            .setContentText("Monitoring locked apps")
+            .setContentTitle(localizedContext.getString(R.string.app_lock_active))
+            .setContentText(localizedContext.getString(R.string.app_lock_monitoring))
             .setSmallIcon(R.drawable.ic_notification_summary)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -160,12 +161,13 @@ class AppLockMonitorService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val localizedContext = com.minifocus.launcher.LocaleUtils.getLocalizedContext(this)
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "App Lock Monitor",
+                localizedContext.getString(R.string.app_lock_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Monitors locked apps in background"
+                description = localizedContext.getString(R.string.app_lock_channel_description)
                 setShowBadge(false)
             }
             

@@ -51,8 +51,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.minifocus.launcher.manager.LockManager
 import com.minifocus.launcher.ui.components.ScreenHeader
+import com.minifocus.launcher.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -104,7 +106,7 @@ fun EmergencyUnlockScreen(
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
                     Text(
-                        text = "Unlocking",
+                        text = stringResource(R.string.emergency_unlock_unlocking),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Light,
                         color = MaterialTheme.colorScheme.onBackground
@@ -135,7 +137,7 @@ fun EmergencyUnlockScreen(
                     )
                     
                     Text(
-                        text = "seconds remaining",
+                        text = stringResource(R.string.seconds_remaining_format, countdown),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -149,7 +151,7 @@ fun EmergencyUnlockScreen(
                     .padding(horizontal = 24.dp, vertical = 36.dp)
             ) {
                 ScreenHeader(
-                    title = "Emergency Unlock",
+                    title = stringResource(R.string.emergency_unlock_title),
                     onBack = onBack
                 )
 
@@ -157,7 +159,7 @@ fun EmergencyUnlockScreen(
 
                 if (lockedApps.isEmpty()) {
                     Text(
-                        text = "No locked apps",
+                        text = stringResource(R.string.emergency_unlock_no_locked_apps),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Light
@@ -179,18 +181,18 @@ fun EmergencyUnlockScreen(
         }
 
         if (showConfirmDialog && confirmUnlockPackage != null) {
-            AlertDialog(
+                AlertDialog(
                 onDismissRequest = { },
                 title = {
                     Text(
-                        text = "Do you really wanna stop?",
+                        text = stringResource(R.string.emergency_unlock_confirm_stop),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Light
                     )
                 },
                 text = {
                     Text(
-                        text = "This will unlock $confirmUnlockPackage",
+                        text = stringResource(R.string.emergency_unlock_confirm_message, confirmUnlockPackage ?: ""),
                         fontSize = 16.sp
                     )
                 },
@@ -209,7 +211,7 @@ fun EmergencyUnlockScreen(
                             countdown = 60
                         }
                     ) {
-                        Text("Yes", color = MaterialTheme.colorScheme.onBackground)
+                        Text(stringResource(R.string.action_yes), color = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 dismissButton = {
@@ -221,7 +223,7 @@ fun EmergencyUnlockScreen(
                             countdown = 60
                         }
                     ) {
-                        Text("No", color = MaterialTheme.colorScheme.onBackground)
+                        Text(stringResource(R.string.action_no), color = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -259,7 +261,7 @@ fun LockedAppItem(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Until $unlockTimeText",
+                text = stringResource(R.string.emergency_unlock_until, unlockTimeText),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -273,7 +275,7 @@ fun LockedAppItem(
             )
         ) {
             Text(
-                text = "Unlock",
+                text = stringResource(R.string.emergency_unlock_action),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Light
             )

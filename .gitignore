@@ -1,6 +1,8 @@
 # Internal agent notes
 rough_note.md
 promo-video/rough_note.md
+build_errors.txt
+diff.patch
 
 # Gradle build output
 .gradle/

@@ -32,8 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.components.ScreenHeader
 
 @Composable
@@ -49,21 +51,21 @@ fun BackupSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Backup & Restore",
+            title = stringResource(R.string.backup_title),
             onBack = onBack
         )
         
         Spacer(modifier = Modifier.height(24.dp))
         
         BackupSettingsRow(
-            title = "Backup Settings",
-            subtitle = "Save your current configuration",
+            title = stringResource(R.string.backup_action_title),
+            subtitle = stringResource(R.string.backup_action_subtitle),
             onClick = onBackup
         )
         
         BackupSettingsRow(
-            title = "Restore Settings",
-            subtitle = "Load configuration from a backup",
+            title = stringResource(R.string.restore_action_title),
+            subtitle = stringResource(R.string.restore_action_subtitle),
             onClick = onRestore
         )
     }

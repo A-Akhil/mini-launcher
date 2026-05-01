@@ -39,9 +39,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.model.LauncherTheme
 import com.minifocus.launcher.model.TextSize
 import com.minifocus.launcher.ui.components.ScreenHeader
@@ -62,14 +64,14 @@ fun AppearanceSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Appearance",
+            title = stringResource(R.string.appearance_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Text",
+            text = stringResource(R.string.appearance_text_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium
@@ -78,7 +80,7 @@ fun AppearanceSettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         SettingsRow(
-            title = "Text size",
+            title = stringResource(R.string.appearance_text_size),
             value = textSize.label,
             onClick = onOpenTextSize
         )
@@ -86,7 +88,7 @@ fun AppearanceSettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Theme",
+            text = stringResource(R.string.appearance_theme_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium
@@ -149,8 +151,8 @@ private fun ThemeOption(
     onClick: () -> Unit
 ) {
     val themeName = when (theme) {
-        LauncherTheme.AMOLED -> "Dark"
-        LauncherTheme.LIGHT -> "Light"
+        LauncherTheme.AMOLED -> stringResource(R.string.appearance_theme_dark)
+        LauncherTheme.LIGHT -> stringResource(R.string.appearance_theme_light)
     }
 
     Row(

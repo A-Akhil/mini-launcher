@@ -38,9 +38,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.components.ScreenHeader
 
 @Composable
@@ -63,14 +66,14 @@ fun NotificationSettingsScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "Notification Settings",
+            title = stringResource(R.string.notif_settings_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Notification inbox",
+            text = stringResource(R.string.notif_settings_inbox_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium
@@ -86,12 +89,12 @@ fun NotificationSettingsScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Capture notifications",
+                    text = stringResource(R.string.notif_settings_capture),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "Store notifications in the in-app inbox and post a single summary alert.",
+                    text = stringResource(R.string.notif_settings_capture_hint),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(top = 4.dp)
@@ -107,23 +110,23 @@ fun NotificationSettingsScreen(
 
         if (notificationInboxEnabled) {
             NotificationSettingsRow(
-                title = "Auto-clear notifications",
-                value = "$notificationRetentionDays days",
+                title = stringResource(R.string.notif_settings_auto_clear),
+                value = pluralStringResource(R.plurals.label_day_count, notificationRetentionDays, notificationRetentionDays),
                 onClick = onOpenNotificationRetention
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             NotificationSettingsRow(
-                title = "Log retention",
-                value = "$logRetentionDays days",
+                title = stringResource(R.string.notif_settings_log_retention),
+                value = pluralStringResource(R.plurals.label_day_count, logRetentionDays, logRetentionDays),
                 onClick = onOpenLogRetention
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             NotificationSettingsRow(
-                title = "App filters",
+                title = stringResource(R.string.notif_settings_app_filters),
                 value = "",
                 onClick = onOpenAppFilters
             )
@@ -131,13 +134,13 @@ fun NotificationSettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             NotificationSettingsRow(
-                title = "View logs",
+                title = stringResource(R.string.notif_settings_view_logs),
                 value = "",
                 onClick = onOpenLogViewer
             )
         } else {
             Text(
-                text = "Turn on the inbox to manage retention and filters.",
+                text = stringResource(R.string.notif_settings_inbox_off_hint),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 lineHeight = 20.sp

@@ -41,9 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.components.ScreenHeader
 
 @Composable
@@ -61,7 +63,7 @@ fun AboutScreen(
             null
         }
     }
-    val versionName = packageInfo?.versionName ?: "Unknown"
+    val versionName = packageInfo?.versionName ?: stringResource(R.string.about_version_unknown)
     
     Column(
         modifier = Modifier
@@ -71,14 +73,14 @@ fun AboutScreen(
             .padding(horizontal = 24.dp, vertical = 36.dp)
     ) {
         ScreenHeader(
-            title = "About",
+            title = stringResource(R.string.about_title),
             onBack = onBack
         )
 
         Spacer(modifier = Modifier.height(40.dp))
 
         Text(
-            text = "Mini Launcher",
+            text = stringResource(R.string.about_app_name),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
@@ -87,7 +89,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Version $versionName",
+            text = stringResource(R.string.about_version, versionName),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
@@ -95,7 +97,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "A minimalist focus launcher",
+            text = stringResource(R.string.app_description),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )
@@ -103,7 +105,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Support the App",
+            text = stringResource(R.string.about_support_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -111,6 +113,10 @@ fun AboutScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        val shareSubject = stringResource(R.string.about_share_subject)
+        val shareMessage = stringResource(R.string.about_share_message)
+        val shareVia = stringResource(R.string.about_share_via)
+        
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
@@ -134,12 +140,7 @@ fun AboutScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "\u2B50",
-                    fontSize = 24.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Rate on Play Store",
+                    text = stringResource(R.string.about_rate_play_store),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -153,21 +154,16 @@ fun AboutScreen(
                     .clickable {
                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, "Mini Launcher")
-                            putExtra(Intent.EXTRA_TEXT, "Check out Mini Launcher - A minimalist focus launcher\n\nhttps://play.google.com/store/apps/details?id=com.minifocus.launcher")
+                            putExtra(Intent.EXTRA_SUBJECT, shareSubject)
+                            putExtra(Intent.EXTRA_TEXT, shareMessage)
                         }
-                        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+                        context.startActivity(Intent.createChooser(shareIntent, shareVia))
                     }
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "\uD83D\uDCE4",
-                    fontSize = 24.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Share App",
+                    text = stringResource(R.string.about_share_app),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -178,7 +174,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(40.dp))
 
         Text(
-            text = "Developer",
+            text = stringResource(R.string.about_developer_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -187,7 +183,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "A Akhil",
+            text = stringResource(R.string.about_developer_name),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize= 16.sp,
             modifier = Modifier.clickable {
@@ -202,7 +198,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Contact",
+            text = stringResource(R.string.about_contact_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -211,7 +207,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "akhil@devakhil.com",
+            text = stringResource(R.string.about_contact_email),
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
@@ -225,7 +221,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "devakhil.com",
+            text = stringResource(R.string.about_contact_website),
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
@@ -237,7 +233,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Feedback & Issues",
+            text = stringResource(R.string.about_feedback_section),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
@@ -246,7 +242,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "For bug reports and feature requests:",
+            text = stringResource(R.string.about_feedback_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
@@ -254,7 +250,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "github.com/A-Akhil/mini-launcher",
+            text = stringResource(R.string.about_feedback_repo),
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {
@@ -266,7 +262,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Or send an email to:",
+            text = stringResource(R.string.about_email_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp
         )
@@ -274,7 +270,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "akhil@devakhil.com",
+            text = stringResource(R.string.about_contact_email),
             color = MaterialTheme.colorScheme.tertiary,
             fontSize = 16.sp,
             modifier = Modifier.clickable {

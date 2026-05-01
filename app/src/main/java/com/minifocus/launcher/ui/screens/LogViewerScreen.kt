@@ -41,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 import com.minifocus.launcher.model.NotificationItem
 import com.minifocus.launcher.ui.components.ScreenHeader
 import java.time.Instant
@@ -76,19 +78,19 @@ fun LogViewerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ScreenHeader(
-                title = "Notification Logs",
+                title = stringResource(R.string.log_viewer_title),
                 onBack = onBack
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Notification Logs",
+                        text = stringResource(R.string.log_viewer_title),
                         color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 28.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     if (notifications.isNotEmpty()) {
                         Text(
-                            text = "${notifications.size} entries",
+                            text = stringResource(R.string.label_entries_count, notifications.size),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -183,13 +185,13 @@ private fun LogEmptyState() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "No notifications yet",
+            text = stringResource(R.string.log_viewer_empty),
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = "Notifications you intercept will show up here.",
+            text = stringResource(R.string.log_viewer_empty_hint),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)

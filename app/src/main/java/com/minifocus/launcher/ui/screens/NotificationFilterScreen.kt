@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.FilterUiState
 import com.minifocus.launcher.viewmodel.NotificationFilterViewModel.NotificationFilterItem
+import com.minifocus.launcher.R
 
 @Composable
 fun NotificationFilterScreen(
@@ -86,7 +88,7 @@ fun NotificationFilterScreen(
         TextField(
             value = state.query,
             onValueChange = onQueryChange,
-            placeholder = { Text("Search apps", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
+            placeholder = { Text(stringResource(R.string.label_search_apps), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) },
             singleLine = true,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -140,10 +142,10 @@ private fun FilterHeaderContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
-        IconButton(onClick = onBack) {
+            IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                    contentDescription = stringResource(R.string.label_back),
                 tint = MaterialTheme.colorScheme.onBackground
             )
         }
@@ -154,14 +156,14 @@ private fun FilterHeaderContent(
                 .padding(start = 4.dp)
         ) {
             Text(
-                text = "Filters",
+                text = stringResource(R.string.notif_filter_title),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.5).sp
             )
             Text(
-                text = "Manage notification preferences",
+                text = stringResource(R.string.notif_filter_subtitle),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 2.dp)
@@ -171,7 +173,7 @@ private fun FilterHeaderContent(
             IconButton(onClick = { menuExpanded.value = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.label_more),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -180,14 +182,14 @@ private fun FilterHeaderContent(
                 onDismissRequest = { menuExpanded.value = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Enable all") },
+                    text = { Text(stringResource(R.string.notif_filter_enable_all)) },
                     onClick = {
                         menuExpanded.value = false
                         onToggleAll(true)
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Disable all") },
+                    text = { Text(stringResource(R.string.notif_filter_disable_all)) },
                     onClick = {
                         menuExpanded.value = false
                         onToggleAll(false)
@@ -231,7 +233,7 @@ private fun FilterRow(
 private fun EmptyFiltersState() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
-            text = "No matching apps",
+            text = stringResource(R.string.notif_filter_no_matching_apps),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )

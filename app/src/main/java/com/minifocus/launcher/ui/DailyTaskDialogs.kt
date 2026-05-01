@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
@@ -69,6 +70,7 @@ import java.time.format.DateTimeFormatter
 import java.time.DayOfWeek
 import com.minifocus.launcher.model.DailyTaskRepeatMode
 import com.minifocus.launcher.model.DailyTaskWeekdayMask
+import com.minifocus.launcher.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +118,7 @@ fun DailyTaskEditorDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Title", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    label = { Text(stringResource(R.string.task_name_label), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.onBackground,
                         unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -129,7 +131,7 @@ fun DailyTaskEditorDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = "Repeat pattern", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
+                Text(text = stringResource(R.string.task_repeat_pattern), color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -138,17 +140,17 @@ fun DailyTaskEditorDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     RepeatOption(
-                        label = "Daily",
+                        label = stringResource(R.string.task_daily_label),
                         selected = repeatMode == DailyTaskRepeatMode.EVERY_DAY
                     ) { repeatMode = DailyTaskRepeatMode.EVERY_DAY }
 
                     RepeatOption(
-                        label = "Alternate",
+                        label = stringResource(R.string.task_alternate_label),
                         selected = repeatMode == DailyTaskRepeatMode.EVERY_OTHER_DAY
                     ) { repeatMode = DailyTaskRepeatMode.EVERY_OTHER_DAY }
 
                     RepeatOption(
-                        label = "Days",
+                        label = stringResource(R.string.task_days_label),
                         selected = repeatMode == DailyTaskRepeatMode.SPECIFIC_DAYS
                     ) { repeatMode = DailyTaskRepeatMode.SPECIFIC_DAYS }
                 }
@@ -156,16 +158,7 @@ fun DailyTaskEditorDialog(
                 if (repeatMode == DailyTaskRepeatMode.EVERY_OTHER_DAY) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Repeats every 2 days",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp
-                    )
-                }
-
-                if (repeatMode == DailyTaskRepeatMode.EVERY_OTHER_DAY) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Repeats every 2 days",
+                        text = stringResource(R.string.task_repeats_every_two_days),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -174,7 +167,7 @@ fun DailyTaskEditorDialog(
                 if (repeatMode == DailyTaskRepeatMode.SPECIFIC_DAYS) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "Choose days",
+                        text = stringResource(R.string.task_choose_days),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -210,9 +203,17 @@ fun DailyTaskEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Task enabled", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                         Text(
-                            text = if (enabled) "Will appear on eligible days" else "Will be hidden everywhere",
+                            text = stringResource(R.string.task_enabled),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = if (enabled) {
+                                stringResource(R.string.task_enabled_will_show_scheduled)
+                            } else {
+                                stringResource(R.string.task_enabled_hidden_until_reenabled)
+                            },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -237,9 +238,9 @@ fun DailyTaskEditorDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Limit to date range", color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
+                        Text(text = stringResource(R.string.task_limit_date_range), color = MaterialTheme.colorScheme.onBackground, fontSize = 16.sp)
                         Text(
-                            text = if (limitRange) "Task only appears within the window" else "Follows repeat pattern indefinitely",
+                            text = if (limitRange) stringResource(R.string.task_limit_window_hint) else stringResource(R.string.task_limit_indefinite_hint),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp
                         )
@@ -274,7 +275,7 @@ fun DailyTaskEditorDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                     ) {
                         Text(
-                            text = startDate?.format(dateFormatter) ?: "Select start date",
+                            text = startDate?.format(dateFormatter) ?: stringResource(R.string.task_select_start_date),
                             fontSize = 14.sp
                         )
                     }
@@ -287,14 +288,14 @@ fun DailyTaskEditorDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
                     ) {
                         Text(
-                            text = endDate?.format(dateFormatter) ?: "Select end date (optional)",
+                            text = endDate?.format(dateFormatter) ?: stringResource(R.string.task_select_end_date_optional),
                             fontSize = 14.sp
                         )
                     }
 
                     if (endDate != null) {
                         TextButton(onClick = { endDate = null }) {
-                            Text(text = "Clear end date", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = stringResource(R.string.task_clear_end_date), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -318,18 +319,18 @@ fun DailyTaskEditorDialog(
                 },
                 enabled = name.trim().isNotEmpty()
             ) {
-                Text(text = "Save", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(R.string.action_save), color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             Row {
                 onDelete?.let {
                     TextButton(onClick = it) {
-                        Text(text = "Delete", color = MaterialTheme.colorScheme.error)
+                        Text(text = stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         },
@@ -354,12 +355,12 @@ fun DailyTaskEditorDialog(
                         showStartPicker = false
                     }
                 ) {
-                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
+                    Text(text = stringResource(R.string.task_set_label), color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartPicker = false }) {
-                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
@@ -387,12 +388,12 @@ fun DailyTaskEditorDialog(
                         showEndPicker = false
                     }
                 ) {
-                    Text(text = "Set", color = MaterialTheme.colorScheme.onBackground)
+                    Text(text = stringResource(R.string.task_set_label), color = MaterialTheme.colorScheme.onBackground)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndPicker = false }) {
-                    Text(text = "Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = stringResource(R.string.action_cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
