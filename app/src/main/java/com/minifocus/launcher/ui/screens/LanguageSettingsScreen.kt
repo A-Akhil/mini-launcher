@@ -59,6 +59,14 @@ private val LANGUAGES = listOf(
     LanguageOption("en", R.string.language_english),
     LanguageOption("de", R.string.language_german),
     LanguageOption("es", R.string.language_spanish),
+    LanguageOption("pt", R.string.language_portuguese),
+    LanguageOption("fr", R.string.language_french),
+    LanguageOption("ru", R.string.language_russian),
+    LanguageOption("hi", R.string.language_hindi),
+    LanguageOption("ta", R.string.language_tamil),
+    LanguageOption("ja", R.string.language_japanese),
+    LanguageOption("id", R.string.language_indonesian),
+    LanguageOption("tr", R.string.language_turkish),
 )
 
 @Composable
