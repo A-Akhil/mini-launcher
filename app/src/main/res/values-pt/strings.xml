@@ -1,0 +1,402 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="app_name">Foco minimalista</string>
+    <string name="app_description">Um lançador de foco minimalista</string>
+
+    
+    <string name="lock_accessibility_service_description">Permita que o Minimalist Focus bloqueie a tela ao tocar duas vezes na página inicial.</string>
+    <string name="lock_accessibility_service_toast">Ative o serviço de bloqueio de toque duplo nas configurações de acessibilidade.</string>
+
+    
+    <plurals name="notification_summary_title">
+        <item quantity="one">Notificação%d</item>
+        <item quantity="other">Notificações%d</item>
+    </plurals>
+    <string name="notification_summary_subtitle">Toque para visualizar a caixa de entrada</string>
+    <plurals name="notification_summary_subtitle_unread">
+        <item quantity="one">Toque para visualizar a caixa de entrada •%dnão lida</item>
+        <item quantity="other">Toque para visualizar a caixa de entrada •%dnão lida</item>
+    </plurals>
+    <string name="notification_inbox_channel_name">Caixa de entrada do iniciador</string>
+    <string name="notification_inbox_channel_description">Resumo das notificações interceptadas</string>
+
+    
+    <string name="nav_home">Lar</string>
+    <string name="nav_tasks">Tarefas</string>
+    <string name="nav_all_apps">Todos os aplicativos</string>
+    <string name="nav_settings">Configurações</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_grant">Conceder</string>
+    <string name="action_set">Definir</string>
+    <string name="action_yes">Sim</string>
+    <string name="action_no">Não</string>
+    <string name="action_unlock">Desbloquear</string>
+    <string name="action_unhide">Mostrar</string>
+    <string name="label_none">Nenhum</string>
+    <string name="label_optional">Opcional</string>
+    <string name="label_required">Obrigatório</string>
+    <string name="label_back">Voltar</string>
+    <string name="label_more">Mais</string>
+    <string name="label_search_apps">Pesquisar aplicativos</string>
+    <string name="label_days_format">%1$ddias</string>
+    <string name="label_unread_count">%1$dnão lido</string>
+    <string name="label_entries_count">Entradas%1$d</string>
+    <string name="label_apps_tracked_count">Aplicativo%1$d%2$srastreado</string>
+    <string name="label_plural_suffix">é</string>
+    <plurals name="label_day_count">
+        <item quantity="one">%1$ddia</item>
+        <item quantity="other">%1$ddias</item>
+    </plurals>
+    <plurals name="label_week_count">
+        <item quantity="one">Semana%1$d</item>
+        <item quantity="other">%1$dsemanas</item>
+    </plurals>
+    <string name="label_all_apps">Todos os aplicativos</string>
+    <string name="label_hours_format">%1$dhora</string>
+    <string name="label_hours_format_plural">%1$dhoras</string>
+    <string name="label_example_hours">por exemplo, 5</string>
+
+    
+    <string name="home_search_apps">Pesquisar aplicativos</string>
+    <string name="home_no_apps_match">Nenhum aplicativo corresponde à sua pesquisa</string>
+    <string name="home_frequently_opened">Aberto com frequência</string>
+    <string name="home_all_apps_section">Todos os aplicativos</string>
+    <string name="home_assign_app">Atribuir aplicativo</string>
+    <string name="home_bottom_quick_launch">Lançamento rápido inferior</string>
+    <string name="home_left_icon">Ícone esquerdo</string>
+    <string name="home_right_icon">Ícone direito</string>
+    <string name="home_default_left_label">Telefone</string>
+    <string name="home_default_right_label">Câmera</string>
+    <string name="home_daily_tasks_visible">Tarefas diárias visíveis</string>
+    <string name="home_daily_tasks_hidden">Tarefas diárias ocultadas</string>
+    <string name="home_bottom_summary_format">inferior:%1$s/%2$s</string>
+    <string name="home_summary_format">%1$s·%2$s</string>
+
+    
+    <string name="settings_title">Configurações</string>
+    <string name="settings_home_screen">Tela inicial</string>
+    <string name="settings_clock">Relógio</string>
+    <string name="settings_notification_bar">Barra de notificação</string>
+    <string name="settings_app_drawer">Gaveta de aplicativos</string>
+    <string name="settings_app_reminders">Lembretes de aplicativos</string>
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_device_settings">Configurações do dispositivo</string>
+    <string name="settings_device_settings_summary">Abra as configurações do Android</string>
+    <string name="settings_permissions">Permissões</string>
+    <string name="settings_backup_restore">Backup e restauração</string>
+    <string name="settings_backup_restore_subtitle">Gerenciar backups de configurações</string>
+    <string name="settings_about">Sobre</string>
+    <string name="settings_about_subtitle">Informações e feedback do desenvolvedor</string>
+    <string name="settings_no_apps_tracked">Nenhum aplicativo rastreado</string>
+    <string name="settings_keyboard_opens_with_swipe">O teclado abre com o deslizar</string>
+    <string name="settings_keyboard_opens_manually">O teclado abre manualmente</string>
+    <string name="settings_smart_suggestions_on">sugestões inteligentes sobre</string>
+    <string name="settings_smart_suggestions_off">sugestões inteligentes desativadas</string>
+    <string name="settings_theme_summary_format">Tema%1$s· Texto%2$s</string>
+
+    
+    <string name="home_settings_title">Tela inicial</string>
+    <string name="home_settings_daily_tasks_module">Módulo de tarefas diárias</string>
+    <string name="home_settings_show_daily_tasks">Mostrar tarefas diárias em casa</string>
+    <string name="home_settings_daily_tasks_hint">Lembretes diários ativos aparecem abaixo do relógio.</string>
+    <string name="home_settings_daily_tasks_all_complete">Todas as tarefas estão concluídas agora, então a seção fica oculta até amanhã ou nova atividade.</string>
+    <string name="home_settings_daily_tasks_complete_to_hide">Complete tudo para escondê-lo durante o dia.</string>
+    <string name="home_settings_daily_tasks_auto_hide">As tarefas diárias permanecem visíveis por 10 segundos após a conclusão e depois são ocultadas automaticamente.</string>
+    <string name="home_settings_gestures">Gestos</string>
+    <string name="home_settings_double_tap_lock">Toque duas vezes para bloquear a tela</string>
+    <string name="home_settings_lock_service_disabled">Habilite o serviço de bloqueio nas configurações de acessibilidade</string>
+    <string name="home_settings_lock_service_enabled">Toque duas vezes no espaço vazio da página inicial para bloquear o dispositivo</string>
+    <string name="home_settings_smart_suggestions">Sugestões inteligentes</string>
+    <string name="home_settings_show_adaptive_row">Mostrar linha adaptável</string>
+    <string name="home_settings_reset_learning">Redefinir dados de aprendizagem</string>
+
+    
+    <string name="clock_settings_title">Relógio</string>
+    <string name="clock_settings_time_format">Formato de hora</string>
+    <string name="clock_settings_seconds">Segundos</string>
+    <string name="clock_settings_show_seconds">Mostrar segundos</string>
+    <string name="clock_settings_seconds_hint">Adicione um indicador de segundos ao relógio na tela inicial.</string>
+    <string name="clock_settings_custom_duration">Duração personalizada (horas)</string>
+    <string name="clock_format_24">24 horas</string>
+    <string name="clock_format_12">12 horas</string>
+    <string name="clock_seconds_on">· segundos ligados</string>
+    <string name="clock_seconds_off">· segundos de folga</string>
+
+    
+    <string name="drawer_settings_keyboard">Teclado</string>
+    <string name="drawer_settings_open_keyboard_on_swipe">Abra o teclado ao deslizar</string>
+    <string name="drawer_settings_keyboard_hint">Mostrar automaticamente o campo de pesquisa e o teclado ao entrar em Todos os aplicativos.</string>
+    <string name="drawer_settings_hidden_apps">Aplicativos ocultos</string>
+    <string name="drawer_settings_hidden_apps_unlocked">Aplicativos ocultos desbloqueados</string>
+    <string name="drawer_settings_hidden_apps_gate">Este portão mantém os aplicativos ocultos fora da gaveta. Depois de desbloqueado, você pode exibir aplicativos específicos abaixo.</string>
+    <string name="drawer_settings_hidden_apps_reveal">Pressione e segure por 10 segundos para revelar seus aplicativos ocultos.</string>
+    <string name="drawer_settings_hidden_apps_manage">Pressione e segure por 10 segundos para revelá-los e gerenciá-los.</string>
+    <string name="drawer_settings_hidden_apps_tap_unhide">Toque em Reexibir para retornar um aplicativo à gaveta.</string>
+    <string name="drawer_settings_no_hidden_apps">Você ainda não ocultou nenhum aplicativo.</string>
+    <string name="drawer_settings_hidden_count">%doculto</string>
+    <string name="drawer_settings_no_apps_hidden">Nenhum aplicativo oculto</string>
+    <string name="drawer_settings_releasing_resets">Liberar antecipadamente zera o cronômetro imediatamente.</string>
+    <string name="drawer_settings_unlocking">Desbloqueando…</string>
+    <string name="drawer_settings_unlocked">Desbloqueado</string>
+    <string name="drawer_settings_keep_holding">Continue segurando</string>
+    <string name="drawer_settings_hold">Segurar</string>
+
+    
+    <string name="notif_settings_title">Configurações de notificação</string>
+    <string name="notif_settings_inbox_section">Caixa de entrada de notificações</string>
+    <string name="notif_settings_capture">Capturar notificações</string>
+    <string name="notif_settings_capture_hint">Armazene notificações na caixa de entrada do aplicativo e publique um único alerta resumido.</string>
+    <string name="notif_settings_auto_clear">Limpar notificações automaticamente</string>
+    <string name="notif_settings_log_retention">Retenção de registros</string>
+    <string name="notif_settings_notif_retention">Retenção de notificação</string>
+    <string name="notif_settings_app_filters">Filtros de aplicativos</string>
+    <string name="notif_settings_view_logs">Ver registros</string>
+    <string name="notif_settings_inbox_off_hint">Ative a caixa de entrada para gerenciar retenção e filtros.</string>
+
+    
+    <string name="notif_inbox_title">Caixa de entrada de notificação</string>
+    <string name="notif_inbox_mark_all_read">Marcar tudo como lido</string>
+    <string name="notif_inbox_empty">Nenhuma notificação ainda</string>
+    <string name="notif_inbox_empty_hint">As notificações que você interceptar aparecerão aqui.</string>
+
+    
+    <string name="notif_filter_title">Filtros</string>
+    <string name="notif_filter_subtitle">Gerenciar preferências de notificação</string>
+    <string name="notif_filter_enable_all">Habilitar tudo</string>
+    <string name="notif_filter_disable_all">Desativar tudo</string>
+    <string name="notif_filter_no_matching_apps">Nenhum aplicativo correspondente</string>
+
+    
+    <string name="log_viewer_title">Registros de notificação</string>
+    <string name="log_viewer_empty">Nenhuma notificação ainda</string>
+    <string name="log_viewer_empty_hint">As notificações que você interceptar aparecerão aqui.</string>
+
+    
+    <string name="app_reminders_title">Lembretes de aplicativos</string>
+    <string name="app_reminders_hint">Os aplicativos habilitados mostrarão um aviso de intenção de tempo antes do lançamento. Você também pode alternar no menu de toque longo de qualquer aplicativo.</string>
+    <string name="app_reminders_no_matching">Nenhum aplicativo correspondente</string>
+    <string name="summary_inbox_on_format">Caixa de entrada ativada · limpa%1$s· registra%2$s</string>
+    <string name="summary_inbox_disabled">Caixa de entrada desativada</string>
+
+    
+    <string name="time_intention_today">HOJE</string>
+    <string name="time_intention_past_7_days">ÚLTIMOS 7 DIAS</string>
+    <string name="time_intention_on_expire">NA EXPIRAÇÃO</string>
+    <string name="time_intention_lock">Trancar</string>
+    <string name="time_intention_lock_app">Bloquear%s</string>
+    <string name="time_intention_reminder">Lembrete</string>
+    <string name="time_intention_custom_minutes">Minutos personalizados...</string>
+
+    
+    <string name="task_add_title">Adicionar nova tarefa</string>
+    <string name="task_prompt_what_to_do">O que precisa ser feito?</string>
+    <string name="task_edit_daily_title">Editar tarefa diária</string>
+    <string name="task_edit_title">Editar tarefa</string>
+    <string name="task_name_label">Nome da tarefa</string>
+    <string name="task_completed_tasks">Tarefas Concluídas</string>
+    <string name="task_no_completed">Nenhuma tarefa concluída ainda</string>
+    <string name="task_add_icon">Adicionar tarefa</string>
+    <string name="task_history_icon">História</string>
+    <string name="task_completed_icon">Concluído</string>
+    <string name="task_enabled">Tarefa ativada</string>
+    <string name="task_repeat_daily">Repita todos os dias</string>
+    <string name="task_repeat_pattern">Repetir padrão</string>
+    <string name="task_repeat_every_2_days">Repete a cada 2 dias</string>
+    <string name="task_daily_label">Diário</string>
+    <string name="task_alternate_label">Alternar</string>
+    <string name="task_days_label">Dias</string>
+    <string name="task_set_reminder">Definir lembrete</string>
+    <string name="task_limit_date_range">Limitar ao intervalo de datas</string>
+    <string name="task_select_start_date">Selecione a data de início</string>
+    <string name="task_select_end_date_optional">Selecione a data de término (opcional)</string>
+    <string name="task_select_date_time">Selecione Data e Hora</string>
+    <string name="task_reminder_label">Lembrete</string>
+    <string name="task_set_label">Definir</string>
+    <string name="task_next_label">Próximo</string>
+    <string name="task_confirm_label">Confirmar</string>
+    <string name="task_enabled_will_show_scheduled">Será exibido em dias programados</string>
+    <string name="task_enabled_hidden_until_reenabled">Oculto até ser reativado</string>
+    <string name="task_limit_window_hint">Visível apenas dentro da janela</string>
+    <string name="task_limit_indefinite_hint">Repete indefinidamente</string>
+    <string name="task_start_label">Começar</string>
+    <string name="task_clear_end_date">Limpar data de término</string>
+    <string name="task_completed_at">Concluído:%s</string>
+    <string name="task_status_paused">Pausado</string>
+    <string name="task_status_completed_today">Concluído hoje</string>
+    <string name="task_status_active_ends">Ativo • termina%s</string>
+    <string name="task_status_active_since">Ativo • desde%s</string>
+    <string name="task_status_active_every_day">Ativo todos os dias</string>
+    <string name="task_status_starts">Começa%s</string>
+    <string name="task_status_ended">Terminou%s</string>
+    <string name="task_status_inactive_ended">Inativo • terminou%s</string>
+    <string name="task_status_inactive_today">Inativo hoje</string>
+    <string name="task_today_at">Hoje às%s</string>
+    <string name="task_tomorrow_at">Amanhã às%s</string>
+    <string name="task_overdue_at">Vencido em%s</string>
+    <string name="task_choose_days">Escolha os dias</string>
+    <string name="task_repeats_every_two_days">Repete a cada 2 dias</string>
+    <string name="task_completed_format">Concluído:%s</string>
+    <string name="weekday_mon">seg</string>
+    <string name="weekday_tue">ter</string>
+    <string name="weekday_wed">qua</string>
+    <string name="weekday_thu">qui</string>
+    <string name="weekday_fri">sex</string>
+    <string name="weekday_sat">Sentado</string>
+    <string name="weekday_sun">Sol</string>
+
+    
+    <string name="emergency_unlock_title">Desbloqueio de emergência</string>
+    <string name="emergency_unlock_no_locked_apps">Nenhum aplicativo bloqueado</string>
+    <string name="emergency_unlock_unlocking">Desbloqueio</string>
+    <string name="emergency_unlock_confirm_stop">Você realmente quer parar?</string>
+    <string name="emergency_unlock_confirm_message">Isso irá desbloquear%s</string>
+    <string name="emergency_unlock_until">Até%s</string>
+    <string name="emergency_unlock_action">Desbloquear</string>
+
+    
+    <string name="appearance_title">Aparência</string>
+    <string name="appearance_text_section">Texto</string>
+    <string name="appearance_text_size">Tamanho do texto</string>
+    <string name="appearance_theme_section">Tema</string>
+    <string name="appearance_theme_dark">Escuro</string>
+    <string name="appearance_theme_light">Luz</string>
+
+    
+    <string name="text_size_title">Tamanho do texto</string>
+    <string name="text_size_preview">Visualização</string>
+    <string name="text_size_preview_time">12h30</string>
+    <string name="text_size_preview_app">Calendário</string>
+    <string name="text_size_preview_task">Revise as metas do projeto e atualize o roteiro.</string>
+
+    
+    <string name="backup_title">Backup e restauração</string>
+    <string name="backup_action_title">Configurações de backup</string>
+    <string name="backup_action_subtitle">Salve sua configuração atual</string>
+    <string name="restore_action_title">Restaurar configurações</string>
+    <string name="restore_action_subtitle">Carregar configuração de um backup</string>
+
+    
+    <string name="about_title">Sobre</string>
+    <string name="about_app_name">Minilançador</string>
+    <string name="about_version">Versão%s</string>
+    <string name="about_version_unknown">Desconhecido</string>
+    <string name="about_support_section">Apoie o aplicativo</string>
+    <string name="about_rate_play_store">Avalie na Play Store</string>
+    <string name="about_share_app">Compartilhar aplicativo</string>
+    <string name="about_share_via">Compartilhar via</string>
+    <string name="about_share_subject">Minilançador</string>
+    <string name="about_share_message">Confira o Mini Launcher - Um lançador de foco minimalista
+
+https://play.google.com/store/apps/details?id=com.minifocus.launcher</string>
+    <string name="about_developer_section">Desenvolvedor</string>
+    <string name="about_developer_name">Um Akhil</string>
+    <string name="about_contact_section">Contato</string>
+    <string name="about_contact_email">akhil@devakhil.com</string>
+    <string name="about_contact_website">devakhil.com</string>
+    <string name="about_feedback_section">Comentários e problemas</string>
+    <string name="about_feedback_hint">Para relatórios de bugs e solicitações de recursos:</string>
+    <string name="about_feedback_repo">github.com/A-Akhil/mini-launcher</string>
+    <string name="about_email_hint">Ou envie um e-mail para:</string>
+
+    
+    <string name="permissions_title">Permissões necessárias</string>
+    <string name="permissions_subtitle">Precisamos de algumas permissões para manter tudo mínimo e sob seu controle.</string>
+    <string name="permissions_notification_access">Acesso à notificação</string>
+    <string name="permissions_exact_alarms">Alarmes e lembretes exatos</string>
+    <string name="permissions_lock_screen">Atalho da tela de bloqueio</string>
+    <string name="permissions_display_over_apps">Exibir sobre outros aplicativos</string>
+    <string name="permissions_usage_stats">Acesso às estatísticas de uso</string>
+    <string name="permissions_post_notifications">Postar notificações</string>
+    <string name="permissions_accessibility_title">Permissão de acessibilidade necessária</string>
+    <string name="permissions_accessibility_rationale">O Mini Launcher usa o Serviço de Acessibilidade apenas para bloquear a tela quando você toca duas vezes. Nenhum dado é coletado. Se você recusar, esse recurso será desativado.</string>
+    <string name="permissions_open_app_info">Abra as informações do aplicativo</string>
+    <string name="permissions_restricted_build">Esta compilação é restrita pelo Android. Abra Informações do aplicativo → três pontos → Permitir configurações restritas antes de ativar o acesso às notificações.</string>
+    <string name="permissions_all_granted">Todas as permissões concedidas</string>
+    <string name="permissions_notifications_required">Notificações necessárias</string>
+    <string name="permissions_missing">Faltando%s</string>
+    <string name="permissions_notification_access_label">Acesso à notificação</string>
+    <string name="permissions_exact_alarms_label">Alarmes exatos</string>
+    <string name="permissions_lock_service_label">Serviço de bloqueio</string>
+    <string name="permissions_usage_access_label">Acesso de uso</string>
+    <string name="permissions_overlay_label">Sobreposição</string>
+
+    
+    <string name="language_settings_title">Linguagem</string>
+    <string name="language_system_default">Padrão do sistema</string>
+    <string name="language_english">Inglês</string>
+    <string name="language_german">Alemão (Alemão)</string>
+    <string name="language_spanish">Espanhol (espanhol)</string>
+    <string name="language_portuguese">Português (português)</string>
+    <string name="language_french">Français (francês)</string>
+    <string name="language_russian">Русский (Russo)</string>
+    <string name="language_hindi">हिन्दी (hindi)</string>
+    <string name="language_tamil">தமிழ் (Tamil)</string>
+    <string name="language_japanese">日本語 (japonês)</string>
+    <string name="language_indonesian">Bahasa Indonésia (indonésio)</string>
+    <string name="language_turkish">Türkçe (turco)</string>
+
+    
+    <string name="menu_pin_home">Fixar na página inicial</string>
+    <string name="menu_unpin">Liberar</string>
+    <string name="menu_hide_app">Ocultar aplicativo</string>
+    <string name="menu_unhide">Mostrar</string>
+    <string name="menu_lock_app">Bloquear aplicativo</string>
+    <string name="menu_add_time_reminder">Adicionar lembrete de horário</string>
+    <string name="menu_remove_time_reminder">Remover lembrete de tempo</string>
+    <string name="menu_app_info">Informações do aplicativo</string>
+    <string name="menu_uninstall">Desinstalar</string>
+
+    
+    <string name="permissions_go_to_settings">Vá para Configurações</string>
+    <string name="permissions_not_now">Agora não</string>
+    <string name="permissions_post_notifications_desc">Permita que lembretes e alertas essenciais cheguem até você.</string>
+    <string name="permissions_exact_alarms_desc">Deixe os lembretes tocarem exatamente na hora certa, mesmo no modo de economia de bateria.</string>
+    <string name="permissions_notification_access_desc">Ative a caixa de entrada opcional que seleciona notificações.</string>
+    <string name="permissions_lock_screen_desc">Ative o serviço de acessibilidade que ativa o bloqueio de toque duplo sem desativar a biometria.</string>
+    <string name="permissions_usage_stats_desc">Rastreia aplicativos iniciados para que bloqueios de aplicativos opcionais permaneçam aplicados.</string>
+    <string name="permissions_display_over_apps_desc">Mostra a sobreposição de bloqueio quando você tenta abrir aplicativos bloqueados.</string>
+    <string name="permissions_required_to_continue">Conceda as permissões necessárias para continuar.</string>
+    <string name="permissions_optional_unlock_features">Permissões opcionais desbloqueiam a caixa de entrada de notificações e bloqueios avançados.</string>
+    <string name="permissions_all_granted_sentence">Todas as permissões concedidas.</string>
+
+    
+    <string name="language_settings_subtitle">Idioma de exibição do aplicativo</string>
+    
+    <string name="time_intention_time_ended">Seu tempo acabou</string>
+    <string name="time_intention_how_long">Por quanto tempo você deseja usar isso?</string>
+    <string name="time_intention_extend_by">ESTENDER POR</string>
+    <string name="time_intention_duration">DURAÇÃO</string>
+    <string name="action_start">Começar</string>
+    <string name="action_go_back">Volte</string>
+    <string name="action_ok">OK</string>
+    <string name="time_intention_notify">Notificar</string>
+    <string name="time_intention_ask_me">Pergunte-me</string>
+    <string name="time_intention_go_home">Ir para casa</string>
+    <string name="label_minutes_format">%1$dminutos</string>
+
+    
+    <string name="app_lock_channel_name">Monitor de bloqueio de aplicativos</string>
+    <string name="app_lock_channel_description">Monitora aplicativos bloqueados em segundo plano</string>
+    <string name="app_lock_active">Bloqueio de aplicativo ativo</string>
+    <string name="app_lock_monitoring">Monitorando aplicativos bloqueados</string>
+    <string name="app_lock_locked">Bloqueado</string>
+    <string name="app_lock_unlocks_at">Desbloqueia em%1$s</string>
+    <string name="app_lock_focus_message">Você escolheu se concentrar
+Respeite sua decisão</string>
+    <string name="duration_hms_format">%1$dh %2$02dm %3$02ds</string>
+    <string name="duration_ms_format">%1$dmilhões %2$02ds</string>
+    <string name="duration_s_format">%1$d</string>
+
+    
+    <string name="time_reminder_channel_name">Lembretes de horário do aplicativo</string>
+    <string name="time_reminder_channel_description">Lembretes quando o tempo de uso pretendido do aplicativo expirar</string>
+    <string name="time_reminder_title">O tempo acabou</string>
+    <string name="time_reminder_text_format">O tempo pretendido para%1$sexpirou</string>
+
+    <string name="action_continue">Continuar</string>
+    <string name="action_go_back_home">Volte para casa</string>
+    <string name="seconds_remaining_format">%1$dsegundos restantes</string>
+</resources>
