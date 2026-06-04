@@ -114,6 +114,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
@@ -1786,15 +1787,10 @@ private fun AllAppsScreen(
     val suggestionPackages = remember(suggestionEntries) {
         suggestionEntries.map { it.packageName }.toSet()
     }
-    val remainingApps = remember(filteredApps, suggestionPackages) {
-        if (suggestionPackages.isEmpty()) {
-            filteredApps
-        } else {
-            filteredApps.filterNot { suggestionPackages.contains(it.packageName) }
-        }
-    }
+    // Show all apps in the alphabetical list even if they appear in suggestions
+    val remainingApps = filteredApps
     val listState = rememberLazyListState()
-    val alphabet = remember { (('A'..'Z').toList() + listOf('#')) }
+    val alphabet = remember { listOf('#') + ('A'..'Z').toList() }
     var fastScrollLetter by remember { mutableStateOf<Char?>(null) }
     var scrollJob by remember { mutableStateOf<Job?>(null) }
     var lastFastScrollTargetIndex by remember { mutableStateOf(-1) }
@@ -1810,6 +1806,8 @@ private fun AllAppsScreen(
             }
 
             val map = mutableMapOf<Char, Int>()
+            // # maps to the very top (search box + frequently opened)
+            map['#'] = 0
             remainingApps.forEachIndexed { index, app ->
                 val letter = app.label.firstOrNull()?.uppercaseChar()?.takeIf { it.isLetter() } ?: '#'
                 if (!map.containsKey(letter)) {
@@ -2033,6 +2031,42 @@ private fun AllAppsScreen(
     }
 
     if (showFastScroll) {
+        // Feedback bubble: shows active letter in a large circle to the left of the rail
+        if (fastScrollLetter != null) {
+            val activeIdx = alphabet.indexOf(fastScrollLetter!!)
+            val railTopPadding = if (suggestionEntries.isNotEmpty()) 192.dp else 160.dp
+            if (activeIdx >= 0) {
+                val fraction = activeIdx.toFloat() / (alphabet.size - 1).coerceAtLeast(1)
+                androidx.compose.foundation.layout.BoxWithConstraints(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .fillMaxHeight()
+                        .padding(end = 44.dp, top = railTopPadding, bottom = 24.dp)
+                ) {
+                    val railHeightDp = maxHeight
+                    val bubbleOffset = railHeightDp * fraction - 21.dp // center the 42dp bubble
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .offset(y = bubbleOffset.coerceAtLeast(0.dp))
+                            .size(42.dp)
+                            .background(
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f),
+                                CircleShape
+                            )
+                    ) {
+                        Text(
+                            text = fastScrollLetter.toString(),
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
         FastScrollRail(
             letters = alphabet,
             availableLetters = availableLetters,
@@ -2181,18 +2215,58 @@ private fun FastScrollRail(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        letters.forEach { letter ->
+        val activeIndex = if (activeLetter != null) letters.indexOf(activeLetter) else -1
+
+        letters.forEachIndexed { index, letter ->
+            // Distance from the active letter (used for the curve)
+            val distance = if (activeIndex >= 0) kotlin.math.abs(index - activeIndex) else Int.MAX_VALUE
+
+            // Horizontal shift: active letter bulges outward (negative X = leftward),
+            // neighbors bulge less, far letters stay flush. Creates a curved barrel shape.
+            val bulge = if (activeIndex >= 0) {
+                val maxBulge = -50f  // max shift for the selected letter
+                val curveRadius = 5  // how many letters participate in the curve
+                if (distance <= curveRadius) {
+                    // Cosine curve for smooth falloff
+                    val t = distance.toFloat() / curveRadius
+                    maxBulge * kotlin.math.cos(t * (Math.PI / 2.0)).toFloat()
+                } else {
+                    0f
+                }
+            } else {
+                0f
+            }
+
+            val isActive = distance == 0 && activeIndex >= 0
+            val isNear = distance in 1..2 && activeIndex >= 0
+            val isAvailable = availableLetters.contains(letter)
+
             val color = when {
-                letter == activeLetter -> MaterialTheme.colorScheme.onBackground
-                availableLetters.contains(letter) -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                isActive -> MaterialTheme.colorScheme.onBackground
+                isNear && isAvailable -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f)
+                isAvailable -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 else -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.25f)
+            }
+            val fontSize = when {
+                isActive -> 16.sp
+                isNear -> 12.sp
+                else -> 11.sp
+            }
+            val fontWeight = when {
+                isActive -> FontWeight.Bold
+                isNear -> FontWeight.Medium
+                else -> FontWeight.Normal
             }
 
             Text(
                 text = letter.toString(),
                 color = color,
-                fontSize = 12.sp,
-                fontWeight = if (letter == activeLetter) FontWeight.SemiBold else FontWeight.Normal
+                fontSize = fontSize,
+                fontWeight = fontWeight,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer {
+                    translationX = bulge
+                }
             )
         }
     }
