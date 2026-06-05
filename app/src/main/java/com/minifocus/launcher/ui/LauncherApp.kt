@@ -23,6 +23,7 @@ package com.minifocus.launcher.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.repeatable
 import androidx.compose.animation.core.tween
@@ -2111,7 +2112,14 @@ private fun AllAppsScreen(
                 scrollJob?.cancel()
                 scrollJob = null
                 scrollJob = coroutineScope.launch {
-                    listState.animateScrollToItem(targetIndex, scrollOffset = 0)
+                    // For large jumps (e.g., Z to A), animateScrollToItem causes massive lag
+                    // as Compose tries to measure all intermediate items. We use instant scroll
+                    // for large distances, and smooth animation for small scrubs.
+                    if (kotlin.math.abs(listState.firstVisibleItemIndex - targetIndex) > 15) {
+                        listState.scrollToItem(targetIndex, scrollOffset = 0)
+                    } else {
+                        listState.animateScrollToItem(targetIndex, scrollOffset = 0)
+                    }
                 }
             },
             onInteractionEnd = {
@@ -2221,9 +2229,7 @@ private fun FastScrollRail(
             // Distance from the active letter (used for the curve)
             val distance = if (activeIndex >= 0) kotlin.math.abs(index - activeIndex) else Int.MAX_VALUE
 
-            // Horizontal shift: active letter bulges outward (negative X = leftward),
-            // neighbors bulge less, far letters stay flush. Creates a curved barrel shape.
-            val bulge = if (activeIndex >= 0) {
+            val targetBulge = if (activeIndex >= 0) {
                 val maxBulge = -50f  // max shift for the selected letter
                 val curveRadius = 5  // how many letters participate in the curve
                 if (distance <= curveRadius) {
@@ -2236,6 +2242,12 @@ private fun FastScrollRail(
             } else {
                 0f
             }
+
+            val animatedBulge by animateFloatAsState(
+                targetValue = targetBulge,
+                animationSpec = tween(durationMillis = 150),
+                label = "bulge"
+            )
 
             val isActive = distance == 0 && activeIndex >= 0
             val isNear = distance in 1..2 && activeIndex >= 0
@@ -2265,7 +2277,7 @@ private fun FastScrollRail(
                 fontWeight = fontWeight,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.graphicsLayer {
-                    translationX = bulge
+                    translationX = animatedBulge
                 }
             )
         }
