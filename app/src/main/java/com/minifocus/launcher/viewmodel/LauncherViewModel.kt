@@ -151,12 +151,15 @@ class LauncherViewModel(
         }
     }
 
+    private val tasksRefreshTrigger = MutableStateFlow(0)
+
     private val dataSnapshot = combine(
         appsManager.observePinnedApps(),
         appsManager.observeAllApps(),
         appsManager.observeHiddenApps(),
-        tickingTasksFlow
-    ) { pinned, allApps, hiddenApps, tasks ->
+        tickingTasksFlow,
+        tasksRefreshTrigger
+    ) { pinned, allApps, hiddenApps, tasks, _ ->
         val now = System.currentTimeMillis()
 
         val activeTasks = tasks.filter { task ->
@@ -434,8 +437,8 @@ class LauncherViewModel(
     fun toggleTask(taskId: Long) {
         viewModelScope.launch {
             tasksManager.toggleTask(taskId)
-            delay(3100L)
-            tasksManager.observeTasks().first()
+            delay(TASK_HISTORY_GRACE_MS + 100L)
+            tasksRefreshTrigger.value++
         }
     }
 
