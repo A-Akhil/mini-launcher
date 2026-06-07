@@ -377,7 +377,7 @@ Implement the 20-20-20 eye health rule: Every 20 minutes of screen time, remind 
 ---
 
 ## 14. Alphabetical Scroll Bar with Animations
-**Status:** Not Started
+**Status:** Completed (Released in v2.4.0)
 
 ### Description
 Add a polished alphabetical fast-scroll side bar to the All Apps drawer, similar to Contacts app, with smooth animations and haptic feedback.
