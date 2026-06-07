@@ -1,0 +1,721 @@
+/*
+ * Minimalist Focus Launcher
+ * Copyright (C) 2025 A-Akhil
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+package com.minifocus.launcher.ui.screens
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.text.format.DateFormat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.minifocus.launcher.manager.CalendarManager
+import com.minifocus.launcher.model.CalendarEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
+import java.util.TimeZone
+
+@Composable
+fun CalendarScreen(selectedCalendarId: Long = -1L) {
+    val context = LocalContext.current
+    val calendarManager = remember { CalendarManager(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Permission state
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasPermission = permissions[Manifest.permission.READ_CALENDAR] == true
+    }
+
+    // Calendar state
+    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var daysWithEvents by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var selectedDateEvents by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var deleteConfirmEvent by remember { mutableStateOf<CalendarEvent?>(null) }
+
+    // Refresh counter to trigger reloads after mutations
+    var refreshTick by remember { mutableIntStateOf(0) }
+
+    // Request permissions on first render if not granted
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.READ_CALENDAR,
+                    Manifest.permission.WRITE_CALENDAR
+                )
+            )
+        }
+    }
+
+    // Load days-with-events for the current month
+    LaunchedEffect(currentMonth, hasPermission, refreshTick) {
+        if (hasPermission) {
+            daysWithEvents = withContext(Dispatchers.IO) {
+                calendarManager.getDaysWithEvents(currentMonth.year, currentMonth.monthValue)
+            }
+        }
+    }
+
+    // Load events for the selected date
+    LaunchedEffect(selectedDate, hasPermission, refreshTick) {
+        if (hasPermission) {
+            selectedDateEvents = withContext(Dispatchers.IO) {
+                calendarManager.getEventsForDate(
+                    selectedDate.year,
+                    selectedDate.monthValue,
+                    selectedDate.dayOfMonth
+                )
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        if (!hasPermission) {
+            // Permission not granted view
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 36.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Calendar",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Calendar permission is needed to view and manage your events.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                TextButton(onClick = {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.READ_CALENDAR,
+                            Manifest.permission.WRITE_CALENDAR
+                        )
+                    )
+                }) {
+                    Text("Grant Permission")
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 36.dp)
+            ) {
+                // Title
+                Text(
+                    text = "Calendar",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Month navigation header
+                MonthHeader(
+                    currentMonth = currentMonth,
+                    onPreviousMonth = {
+                        currentMonth = currentMonth.minusMonths(1)
+                    },
+                    onNextMonth = {
+                        currentMonth = currentMonth.plusMonths(1)
+                    },
+                    onTapMonth = {
+                        // Reset to today
+                        currentMonth = YearMonth.now()
+                        selectedDate = LocalDate.now()
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Weekday header row
+                WeekdayHeader()
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Calendar grid
+                CalendarGrid(
+                    currentMonth = currentMonth,
+                    selectedDate = selectedDate,
+                    daysWithEvents = daysWithEvents,
+                    onDateSelected = { date ->
+                        selectedDate = date
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Selected date label
+                Text(
+                    text = formatSelectedDate(selectedDate),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Events list for selected date
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    if (selectedDateEvents.isEmpty()) {
+                        Text(
+                            text = "No events",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(selectedDateEvents, key = { "${it.id}-${it.startMillis}" }) { event ->
+                                EventRow(
+                                    event = event,
+                                    is24Hour = DateFormat.is24HourFormat(context),
+                                    onDelete = { deleteConfirmEvent = event }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // FAB for adding events
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+            ) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add Event")
+            }
+        }
+    }
+
+    // Add event dialog
+    if (showAddDialog) {
+        AddEventDialog(
+            selectedDate = selectedDate,
+            onDismiss = { showAddDialog = false },
+            onAdd = { title, hour, minute, durationMinutes ->
+                coroutineScope.launch {
+                    val cal = java.util.Calendar.getInstance().apply {
+                        set(selectedDate.year, selectedDate.monthValue - 1, selectedDate.dayOfMonth, hour, minute, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                    }
+                    val startMillis = cal.timeInMillis
+                    val endMillis = startMillis + durationMinutes * 60 * 1000L
+                    withContext(Dispatchers.IO) {
+                        val targetCalendar = calendarManager.getWritableCalendar(selectedCalendarId)
+                        if (targetCalendar != null) {
+                            calendarManager.createEvent(
+                                title = title,
+                                startMillis = startMillis,
+                                endMillis = endMillis,
+                                calendarId = targetCalendar.id
+                            )
+                        }
+                    }
+                    showAddDialog = false
+                    refreshTick++
+                }
+            }
+        )
+    }
+
+    // Delete confirmation dialog
+    deleteConfirmEvent?.let { event ->
+        AlertDialog(
+            onDismissRequest = { deleteConfirmEvent = null },
+            title = { Text("Delete Event") },
+            text = { Text("Remove \"${event.title}\" from your calendar?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        withContext(Dispatchers.IO) {
+                            calendarManager.deleteEvent(event.id)
+                        }
+                        deleteConfirmEvent = null
+                        refreshTick++
+                    }
+                }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteConfirmEvent = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+// --- Sub-components ---
+
+@Composable
+private fun MonthHeader(
+    currentMonth: YearMonth,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onTapMonth: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = onPreviousMonth) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Previous month",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        Text(
+            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.clickable { onTapMonth() }
+        )
+        IconButton(onClick = onNextMonth) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Next month",
+                tint = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeekdayHeader() {
+    val daysOfWeek = remember {
+        listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+    }
+    Row(modifier = Modifier.fillMaxWidth()) {
+        daysOfWeek.forEach { day ->
+            Text(
+                text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarGrid(
+    currentMonth: YearMonth,
+    selectedDate: LocalDate,
+    daysWithEvents: Set<Int>,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val today = remember { LocalDate.now() }
+    val firstOfMonth = currentMonth.atDay(1)
+    // Monday=1 ... Sunday=7; offset so Monday is column 0
+    val startOffset = (firstOfMonth.dayOfWeek.value - 1)
+    val daysInMonth = currentMonth.lengthOfMonth()
+    val totalCells = startOffset + daysInMonth
+    val rows = (totalCells + 6) / 7
+
+    Column {
+        for (row in 0 until rows) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                for (col in 0 until 7) {
+                    val cellIndex = row * 7 + col
+                    val dayNumber = cellIndex - startOffset + 1
+                    if (dayNumber < 1 || dayNumber > daysInMonth) {
+                        // Empty cell
+                        Box(modifier = Modifier.weight(1f).aspectRatio(1f))
+                    } else {
+                        val date = currentMonth.atDay(dayNumber)
+                        val isSelected = date == selectedDate
+                        val isToday = date == today
+                        val hasEvent = daysWithEvents.contains(dayNumber)
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(1f)
+                                .clip(CircleShape)
+                                .then(
+                                    if (isSelected) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.onBackground,
+                                            CircleShape
+                                        )
+                                    } else if (isToday) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                                            CircleShape
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .clickable { onDateSelected(date) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = dayNumber.toString(),
+                                    color = when {
+                                        isSelected -> MaterialTheme.colorScheme.background
+                                        isToday -> MaterialTheme.colorScheme.onBackground
+                                        else -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
+                                    },
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                                // Event dot indicator
+                                if (hasEvent && !isSelected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                                CircleShape
+                                            )
+                                    )
+                                } else if (hasEvent && isSelected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+                                                CircleShape
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventRow(
+    event: CalendarEvent,
+    is24Hour: Boolean,
+    onDelete: () -> Unit
+) {
+    val timeFormatter = remember(is24Hour) {
+        if (is24Hour) {
+            java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+        } else {
+            java.time.format.DateTimeFormatter.ofPattern("h:mm a")
+        }
+    }
+    val zoneId = remember { java.time.ZoneId.systemDefault() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Color indicator from calendar
+        Box(
+            modifier = Modifier
+                .size(4.dp, 32.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(
+                    if (event.eventColor != 0) {
+                        androidx.compose.ui.graphics.Color(event.eventColor)
+                    } else if (event.calendarColor != 0) {
+                        androidx.compose.ui.graphics.Color(event.calendarColor)
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                )
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = event.title.ifEmpty { "(No title)" },
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val timeText = if (event.allDay) {
+                "All day"
+            } else {
+                val start = java.time.Instant.ofEpochMilli(event.startMillis)
+                    .atZone(zoneId).toLocalTime().format(timeFormatter)
+                val end = java.time.Instant.ofEpochMilli(event.endMillis)
+                    .atZone(zoneId).toLocalTime().format(timeFormatter)
+                "$start - $end"
+            }
+            Text(
+                text = timeText,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp
+            )
+        }
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Delete event",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddEventDialog(
+    selectedDate: LocalDate,
+    onDismiss: () -> Unit,
+    onAdd: (title: String, hour: Int, minute: Int, durationMinutes: Int) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var hour by remember { mutableIntStateOf(java.time.LocalTime.now().hour) }
+    var minute by remember { mutableIntStateOf(0) }
+    var durationMinutes by remember { mutableIntStateOf(60) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "New Event",
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = formatSelectedDate(selectedDate),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
+                )
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Event title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        cursorColor = MaterialTheme.colorScheme.onBackground,
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+                var showTimePicker by remember { mutableStateOf(false) }
+
+                // Time picker row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Time:",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                    OutlinedButton(
+                        onClick = { showTimePicker = true },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onBackground
+                        )
+                    ) {
+                        Text(
+                            text = "%02d:%02d".format(hour, minute),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                if (showTimePicker) {
+                    com.minifocus.launcher.ui.TimePickerDialog(
+                        onDismiss = { showTimePicker = false },
+                        onConfirm = { h, m ->
+                            hour = h
+                            minute = m
+                            showTimePicker = false
+                        }
+                    )
+                }
+                // Duration selector
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Duration:",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                    listOf(30, 60, 120).forEach { mins ->
+                        val label = if (mins < 60) "${mins}m" else "${mins / 60}h"
+                        val isChosen = durationMinutes == mins
+                        Text(
+                            text = label,
+                            color = if (isChosen) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
+                            fontSize = 13.sp,
+                            fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (isChosen) MaterialTheme.colorScheme.onBackground
+                                    else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f)
+                                )
+                                .clickable { durationMinutes = mins }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank()) {
+                        onAdd(title.trim(), hour, minute, durationMinutes)
+                    }
+                },
+                enabled = title.isNotBlank()
+            ) {
+                Text("Add", color = MaterialTheme.colorScheme.onBackground)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private fun formatSelectedDate(date: LocalDate): String {
+    val today = LocalDate.now()
+    val dayLabel = when (date) {
+        today -> "Today"
+        today.plusDays(1) -> "Tomorrow"
+        today.minusDays(1) -> "Yesterday"
+        else -> date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    }
+    val month = date.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    return "$dayLabel, $month ${date.dayOfMonth}"
+}

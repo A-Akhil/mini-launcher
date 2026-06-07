@@ -314,6 +314,8 @@ class MainActivity : ComponentActivity() {
                         onUpdateExpiryAction = viewModel::updateExpiryAction,
                         onThemeChange = viewModel::setTheme,
                         onLanguageSettingsVisibilityChange = viewModel::setLanguageSettingsVisibility,
+                        onCalendarSettingsVisibilityChange = viewModel::setCalendarSettingsVisibility,
+                        onSelectCalendar = viewModel::setSelectedCalendar,
                     )
                 } else {
                     PermissionScreen(

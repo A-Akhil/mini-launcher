@@ -149,6 +149,8 @@ import com.minifocus.launcher.R
 import com.minifocus.launcher.ui.components.MinimalCheckbox
 import com.minifocus.launcher.ui.components.ScreenHeader
 import com.minifocus.launcher.ui.screens.AboutScreen
+import com.minifocus.launcher.ui.screens.CalendarScreen
+import com.minifocus.launcher.ui.screens.CalendarSettingsScreen
 import com.minifocus.launcher.ui.screens.AppearanceSettingsScreen
 import com.minifocus.launcher.ui.screens.EmergencyUnlockScreen
 import com.minifocus.launcher.ui.screens.LogViewerScreen
@@ -235,6 +237,8 @@ fun LauncherApp(
     onRestoreSettings: () -> Unit,
     onLanguageSettingsVisibilityChange: (Boolean) -> Unit,
     onAppTimeReminderSettingsVisibilityChange: (Boolean) -> Unit,
+    onCalendarSettingsVisibilityChange: (Boolean) -> Unit,
+    onSelectCalendar: (Long, String) -> Unit,
     onAddTrackedReminderApp: (String, String) -> Unit,
     onRemoveTrackedReminderApp: (String) -> Unit,
     onSetPendingTimeIntention: (AppEntry?) -> Unit,
@@ -243,12 +247,12 @@ fun LauncherApp(
     onRootBack: () -> Unit = {},
     onConsumeMessage: () -> Unit = {}
 ) {
-    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val pagerState = rememberPagerState(initialPage = 2, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
     val bottomIconPickerSlot = remember { mutableStateOf<BottomIconSlot?>(null) }
     val searchVisible = state.isSearchVisible
     val shouldShowInlineSearch = state.isKeyboardSearchOnSwipe
-    val shouldFocusInlineSearch = shouldShowInlineSearch && pagerState.currentPage == 2
+    val shouldFocusInlineSearch = shouldShowInlineSearch && pagerState.currentPage == 3
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val showNotificationRetentionDialog = remember { mutableStateOf(false) }
@@ -280,17 +284,18 @@ fun LauncherApp(
         state.isSearchVisible ||
         state.isHiddenAppsVisible ||
         state.isAppTimeReminderSettingsVisible ||
-        state.isLanguageSettingsVisible
+        state.isLanguageSettingsVisible ||
+        state.isCalendarSettingsVisible
 
     LaunchedEffect(state.homeResetTick) {
-        if (pagerState.currentPage != 1) {
-            pagerState.scrollToPage(1)
+        if (pagerState.currentPage != 2) {
+            pagerState.scrollToPage(2)
         }
     }
 
     LaunchedEffect(shouldSnapToHome) {
-        if (shouldSnapToHome && pagerState.currentPage != 1) {
-            pagerState.scrollToPage(1)
+        if (shouldSnapToHome && pagerState.currentPage != 2) {
+            pagerState.scrollToPage(2)
         }
     }
 
@@ -507,16 +512,17 @@ fun LauncherApp(
             state.isAboutVisible -> onAboutVisibilityChange(false)
             state.isEmergencyUnlockVisible -> onEmergencyUnlockVisibilityChange(false)
             state.isHiddenAppsVisible -> closeHiddenApps()
+            state.isCalendarSettingsVisible -> onCalendarSettingsVisibilityChange(false)
             searchVisible -> onSearchVisibilityChange(false)
-            pagerState.currentPage != 1 -> {
-                coroutineScope.launch { pagerState.scrollToPage(1) }
+            pagerState.currentPage != 2 -> {
+                coroutineScope.launch { pagerState.scrollToPage(2) }
             }
             else -> onRootBack()
         }
     }
 
     LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage != 2) {
+        if (pagerState.currentPage != 3) {
             focusManager.clearFocus(force = true)
             keyboardController?.hide()
             if (state.searchQuery.isNotEmpty()) {
@@ -526,7 +532,7 @@ fun LauncherApp(
     }
 
     LaunchedEffect(shouldShowInlineSearch, searchVisible, pagerState.currentPage) {
-        if (shouldShowInlineSearch && pagerState.currentPage == 2 && searchVisible) {
+        if (shouldShowInlineSearch && pagerState.currentPage == 3 && searchVisible) {
             onSearchVisibilityChange(false)
         }
     }
@@ -538,7 +544,7 @@ fun LauncherApp(
     }
 
     LaunchedEffect(pagerState.currentPage, shouldShowInlineSearch) {
-        if (pagerState.currentPage != 2 && shouldShowInlineSearch && state.searchQuery.isNotEmpty()) {
+        if (pagerState.currentPage != 3 && shouldShowInlineSearch && state.searchQuery.isNotEmpty()) {
             onSearchQueryChange("")
         }
     }
@@ -583,7 +589,12 @@ fun LauncherApp(
                         onOpenAbout = { onAboutVisibilityChange(true) },
                         onOpenBackupSettings = { onBackupSettingsVisibilityChange(true) },
                         onOpenAppTimeReminderSettings = { openAppTimeReminderSettings(AppTimeReminderSettingsBackTarget.Settings) },
+                        onOpenCalendarSettings = {
+                            onSettingsVisibilityChange(false)
+                            onCalendarSettingsVisibilityChange(true)
+                        },
                         onOpenLanguageSettings = { onLanguageSettingsVisibilityChange(true) },
+                        selectedCalendarAccountName = state.selectedCalendarAccountName,
                         trackedReminderAppsCount = state.trackedReminderApps.size,
                         onBack = { onSettingsVisibilityChange(false) }
                     )
@@ -598,6 +609,13 @@ fun LauncherApp(
                 state.isLanguageSettingsVisible -> {
                     LanguageSettingsScreen(
                         onBack = { onLanguageSettingsVisibilityChange(false) }
+                    )
+                }
+                state.isCalendarSettingsVisible -> {
+                    CalendarSettingsScreen(
+                        selectedCalendarId = state.selectedCalendarId,
+                        onSelectCalendar = onSelectCalendar,
+                        onBack = { onCalendarSettingsVisibilityChange(false) }
                     )
                 }
                 state.isAppTimeReminderSettingsVisible -> {
@@ -719,7 +737,8 @@ fun LauncherApp(
                 else -> {
                     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                         when (page) {
-                            0 -> TasksScreen(
+                            0 -> CalendarScreen(selectedCalendarId = state.selectedCalendarId)
+                            1 -> TasksScreen(
                                 tasks = state.tasks,
                                 dailyTasks = state.dailyTasks,
                                 heldDailyTaskIds = state.heldDailyTaskIds,
@@ -734,7 +753,7 @@ fun LauncherApp(
                                 onDailyTaskCompleted = onDailyTaskCompleted,
                                 onDailyTaskReset = onDailyTaskReset
                             )
-                            1 -> HomeScreen(
+                            2 -> HomeScreen(
                                 state = state,
                                 onLaunchApp = { entry ->
                                     onRecordAppUsage(entry.packageName, AppUsageEventSource.HOME)
@@ -759,9 +778,9 @@ fun LauncherApp(
                                 onAddTrackedReminderApp = onAddTrackedReminderApp,
                                 onRemoveTrackedReminderApp = onRemoveTrackedReminderApp
                             )
-                            else -> AllAppsScreen(
+                            3 -> AllAppsScreen(
                                 apps = state.allApps,
-                                isDrawerVisible = pagerState.currentPage == 2,
+                                isDrawerVisible = pagerState.currentPage == 3,
                                 keyboardOnSwipe = shouldShowInlineSearch,
                                 searchQuery = state.searchQuery,
                                 shouldFocusSearch = shouldFocusInlineSearch,
@@ -778,7 +797,7 @@ fun LauncherApp(
                                         onLaunchApp,
                                         navigateToHome = {
                                             coroutineScope.launch {
-                                                pagerState.scrollToPage(1)
+                                                pagerState.scrollToPage(2)
                                             }
                                         },
                                         trackedPackages = trackedPackages,
@@ -2419,7 +2438,9 @@ private fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onOpenBackupSettings: () -> Unit,
     onOpenAppTimeReminderSettings: () -> Unit,
+    onOpenCalendarSettings: () -> Unit,
     onOpenLanguageSettings: () -> Unit,
+    selectedCalendarAccountName: String,
     trackedReminderAppsCount: Int,
     onBack: () -> Unit
 ) {
@@ -2560,6 +2581,19 @@ private fun SettingsScreen(
             title = stringResource(R.string.settings_appearance),
             subtitle = appearanceSummary,
             onClick = onOpenAppearanceSettings
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        val calendarSummary = if (selectedCalendarAccountName.isNotEmpty()) {
+            selectedCalendarAccountName
+        } else {
+            "Auto-detect"
+        }
+        SettingsRow(
+            title = "Calendar",
+            subtitle = calendarSummary,
+            onClick = onOpenCalendarSettings
         )
 
         Spacer(modifier = Modifier.height(32.dp))

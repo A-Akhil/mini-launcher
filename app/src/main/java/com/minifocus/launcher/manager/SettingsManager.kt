@@ -51,6 +51,8 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val permissionOnboardingAcknowledged = intPreferencesKey("permission_onboarding_acknowledged")
         val doubleTapLockScreen = intPreferencesKey("double_tap_lock_screen")
         val smartSuggestionsEnabled = intPreferencesKey("smart_suggestions_enabled")
+        val selectedCalendarId = longPreferencesKey("selected_calendar_id")
+        val selectedCalendarAccountName = stringPreferencesKey("selected_calendar_account_name")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -193,6 +195,21 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
     suspend fun setDoubleTapLockScreen(enabled: Boolean) {
         dataStore.edit { prefs ->
             prefs[Keys.doubleTapLockScreen] = if (enabled) 1 else 0
+        }
+    }
+
+    fun observeSelectedCalendarId(): Flow<Long> = dataStore.data.map { prefs ->
+        prefs[Keys.selectedCalendarId] ?: -1L
+    }
+
+    fun observeSelectedCalendarAccountName(): Flow<String> = dataStore.data.map { prefs ->
+        prefs[Keys.selectedCalendarAccountName] ?: ""
+    }
+
+    suspend fun setSelectedCalendar(calendarId: Long, accountName: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.selectedCalendarId] = calendarId
+            prefs[Keys.selectedCalendarAccountName] = accountName
         }
     }
 

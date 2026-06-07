@@ -268,8 +268,11 @@ class LauncherViewModel(
     private val isBackupSettingsVisible = MutableStateFlow(false)
     private val isLanguageSettingsVisible = MutableStateFlow(false)
     private val isAppTimeReminderSettingsVisible = MutableStateFlow(false)
+    private val isCalendarSettingsVisible = MutableStateFlow(false)
     private val trackedReminderApps = appTimeReminderManager.observeTrackedApps()
     private val pendingTimeIntention = MutableStateFlow<AppEntry?>(null)
+    private val selectedCalendarAccountName = settingsManager.observeSelectedCalendarAccountName()
+    private val selectedCalendarId = settingsManager.observeSelectedCalendarId()
 
     private val baseUiState = combine(
         dataSnapshot,
@@ -394,6 +397,15 @@ class LauncherViewModel(
         }
         .combine(pendingTimeIntention) { state, pending ->
             state.copy(pendingTimeIntention = pending)
+        }
+        .combine(isCalendarSettingsVisible) { state, calendarSettingsVisible ->
+            state.copy(isCalendarSettingsVisible = calendarSettingsVisible)
+        }
+        .combine(selectedCalendarAccountName) { state, calName ->
+            state.copy(selectedCalendarAccountName = calName)
+        }
+        .combine(selectedCalendarId) { state, calId ->
+            state.copy(selectedCalendarId = calId)
         }
         .combine(smartUsageState) { state, smartState ->
             state.copy(
@@ -877,6 +889,34 @@ class LauncherViewModel(
         }
     }
 
+    fun setCalendarSettingsVisibility(visible: Boolean) {
+        isCalendarSettingsVisible.value = visible
+        if (visible) {
+            isSearchVisible.value = false
+            isSettingsVisible.value = false
+            isHistoryVisible.value = false
+            isNotificationInboxVisible.value = false
+            isNotificationFilterVisible.value = false
+            isNotificationSettingsVisible.value = false
+            isAboutVisible.value = false
+            isEmergencyUnlockVisible.value = false
+            isHomeSettingsVisible.value = false
+            isClockSettingsVisible.value = false
+            isAppDrawerSettingsVisible.value = false
+            isAppearanceSettingsVisible.value = false
+            isTextSizeSettingsVisible.value = false
+            isHiddenAppsVisible.value = false
+            isBackupSettingsVisible.value = false
+            isAppTimeReminderSettingsVisible.value = false
+        }
+    }
+
+    fun setSelectedCalendar(calendarId: Long, accountName: String) {
+        viewModelScope.launch {
+            settingsManager.setSelectedCalendar(calendarId, accountName)
+        }
+    }
+
     fun addTrackedReminderApp(packageName: String, appLabel: String) {
         viewModelScope.launch {
             appTimeReminderManager.addTrackedApp(packageName, appLabel)
@@ -934,6 +974,7 @@ class LauncherViewModel(
         isBackupSettingsVisible.value = false
         isAppTimeReminderSettingsVisible.value = false
         isLanguageSettingsVisible.value = false
+        isCalendarSettingsVisible.value = false
         isSearchVisible.value = false
         isHiddenAppsVisible.value = false
         pendingTimeIntention.value = null
@@ -1275,6 +1316,9 @@ data class LauncherUiState(
     val isBackupSettingsVisible: Boolean = false,
     val isAppTimeReminderSettingsVisible: Boolean = false,
     val isLanguageSettingsVisible: Boolean = false,
+    val isCalendarSettingsVisible: Boolean = false,
+    val selectedCalendarId: Long = -1L,
+    val selectedCalendarAccountName: String = "",
     val trackedReminderApps: List<AppTimeReminderEntity> = emptyList(),
     val pendingTimeIntention: AppEntry? = null,
     val showSeconds: Boolean = false,
