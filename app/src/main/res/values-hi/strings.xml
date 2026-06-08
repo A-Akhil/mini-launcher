@@ -339,4 +339,44 @@
     <string name="action_continue">जारी रखें</string>
     <string name="action_go_back_home">वापस होम पर जाएं</string>
     <string name="seconds_remaining_format">%1$d सेकंड शेष</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">कैलेंडर</string>
+    <string name="title_calendar_accounts">खाते</string>
+    <string name="desc_calendar_accounts">इवेंट बनाने के लिए किस कैलेंडर का उपयोग करना है, चुनें</string>
+    <string name="title_calendar_sync">सिंक करें</string>
+    <string name="desc_calendar_sync">कॉन्फ़िगर करें कि कार्य और रिमाइंडर आपके कैलेंडर के साथ कैसे सिंक होते हैं</string>
+    <string name="title_default_calendar">डिफ़ॉल्ट कैलेंडर</string>
+    <string name="desc_default_calendar">लॉन्चर से आपके द्वारा बनाए गए इवेंट इस कैलेंडर में जोड़े जाएंगे।</string>
+    <string name="msg_calendar_permission_not_granted">कैलेंडर अनुमति नहीं दी गई। अनुमति देने के लिए पहले कैलेंडर पृष्ठ खोलें।</string>
+    <string name="msg_no_writable_calendars">इस डिवाइस पर कोई लिखने योग्य कैलेंडर नहीं मिला।</string>
+    <string name="title_auto_detect">स्वतः पता लगाएँ</string>
+    <string name="desc_auto_detect">लॉन्चर को सर्वश्रेष्ठ कैलेंडर चुनने दें</string>
+    <string name="title_sync_settings">सिंक सेटिंग्स</string>
+    <string name="title_show_tasks_in_calendar">कैलेंडर में कार्य दिखाएं</string>
+    <string name="desc_show_tasks_in_calendar">लॉन्चर के कैलेंडर दृश्य में सीधे अपने कार्य देखें</string>
+    <string name="title_add_tasks_to_device_calendar">डिवाइस कैलेंडर में कार्य जोड़ें</string>
+    <string name="desc_add_tasks_to_device_calendar">अपने कार्यों को सिंक करें ताकि वे Google कैलेंडर और आपके सभी डिवाइस पर दिखाई दें</string>
+    <string name="title_sync_one_time_tasks">एक बार के कार्यों को सिंक करें</string>
+    <string name="desc_sync_one_time_tasks">इसमें वे कार्य शामिल हैं जिनके लिए एक विशिष्ट तिथि निर्धारित है</string>
+    <string name="title_sync_repeating_tasks">दोहराए जाने वाले कार्यों को सिंक करें</string>
+    <string name="desc_sync_repeating_tasks">इसमें ऐसे कार्य शामिल हैं जो प्रतिदिन या विशिष्ट दिनों में दोहराए जाते हैं</string>
+    <string name="title_permission_required">अनुमति आवश्यक</string>
+    <string name="title_grant_permission">अनुमति दें</string>
+    <string name="desc_grant_permission">हमें आपके कार्यों के साथ आपके ईवेंट दिखाने के लिए कैलेंडर एक्सेस की आवश्यकता है।</string>
+    <string name="action_add_event">इवेंट जोड़ें</string>
+    <string name="label_all_day">पूरा दिन</string>
+    <string name="action_delete_event">इवेंट हटाएं</string>
+    <string name="label_duration">अवधि:</string>
+    <string name="label_event_title">इवेंट का शीर्षक</string>
+    <string name="title_new_event">नया इवेंट</string>
+    <string name="msg_no_events">कोई इवेंट नहीं</string>
+    <string name="label_no_title">(कोई शीर्षक नहीं)</string>
+    <string name="msg_remove_event_prompt">क्या आपके कैलेंडर से "%1$s" हटा दें?</string>
+    <string name="label_time">समय:</string>
+    <string name="label_today">आज</string>
+    <string name="label_tomorrow">कल</string>
+    <string name="label_yesterday">कल</string>
+    <string name="label_next_month">अगला महीना</string>
+    <string name="label_previous_month">पिछला महीना</string>
 </resources>

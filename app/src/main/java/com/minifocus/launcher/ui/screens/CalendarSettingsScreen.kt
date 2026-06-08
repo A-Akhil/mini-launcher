@@ -34,6 +34,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.minifocus.launcher.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -108,39 +110,39 @@ fun CalendarSettingsScreen(
         when (currentScreen) {
             "Main" -> {
                 ScreenHeader(
-                    title = "Calendar",
+                    title = stringResource(R.string.title_calendar),
                     onBack = onBack
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 SettingClickableRow(
-                    title = "Accounts",
-                    description = "Choose which calendar to use for creating events",
+                    title = stringResource(R.string.title_calendar_accounts),
+                    description = stringResource(R.string.desc_calendar_accounts),
                     onClick = { currentScreen = "Accounts" }
                 )
                 SettingClickableRow(
-                    title = "Sync",
-                    description = "Configure how tasks and reminders sync with your calendar",
+                    title = stringResource(R.string.title_calendar_sync),
+                    description = stringResource(R.string.desc_calendar_sync),
                     onClick = { currentScreen = "Sync" }
                 )
             }
             "Accounts" -> {
                 ScreenHeader(
-                    title = "Accounts",
+                    title = stringResource(R.string.title_calendar_accounts),
                     onBack = handleBack
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Default calendar",
+                    text = stringResource(R.string.title_default_calendar),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Events you create from the launcher will be added to this calendar. Changes sync automatically via your Google account.",
+                    text = stringResource(R.string.desc_default_calendar),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp
                 )
@@ -149,13 +151,13 @@ fun CalendarSettingsScreen(
 
                 if (!hasPermission) {
                     Text(
-                        text = "Calendar permission not granted. Open the Calendar page to grant permission first.",
+                        text = stringResource(R.string.msg_calendar_permission_not_granted),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 } else if (writableCalendars.isEmpty()) {
                     Text(
-                        text = "No writable calendars found on this device.",
+                        text = stringResource(R.string.msg_no_writable_calendars),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
@@ -163,8 +165,8 @@ fun CalendarSettingsScreen(
                     // Auto-select option (let the app pick)
                     val autoSelected = selectedCalendarId <= 0
                     CalendarPickerRow(
-                        displayName = "Auto-detect",
-                        accountName = "Let the launcher pick the best calendar",
+                        displayName = stringResource(R.string.title_auto_detect),
+                        accountName = stringResource(R.string.desc_auto_detect),
                         isSelected = autoSelected,
                         onClick = { onSelectCalendar(-1L, "") }
                     )
@@ -190,15 +192,15 @@ fun CalendarSettingsScreen(
             }
             "Sync" -> {
                 ScreenHeader(
-                    title = "Sync Settings",
+                    title = stringResource(R.string.title_sync_settings),
                     onBack = handleBack
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 SettingToggleRow(
-                    title = "Show tasks in calendar",
-                    description = "See your tasks directly inside the launcher's calendar view",
+                    title = stringResource(R.string.title_show_tasks_in_calendar),
+                    description = stringResource(R.string.desc_show_tasks_in_calendar),
                     isChecked = showTasksInCalendar,
                     onCheckedChange = onToggleShowTasksInCalendar
                 )
@@ -206,8 +208,8 @@ fun CalendarSettingsScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 SettingToggleRow(
-                    title = "Add tasks to device calendar",
-                    description = "Sync your tasks so they appear in Google Calendar and across your devices",
+                    title = stringResource(R.string.title_add_tasks_to_device_calendar),
+                    description = stringResource(R.string.desc_add_tasks_to_device_calendar),
                     isChecked = syncTasksWithCalendar,
                     onCheckedChange = onToggleSyncTasksWithCalendar
                 )
@@ -216,15 +218,15 @@ fun CalendarSettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Column(modifier = Modifier.padding(start = 16.dp)) {
                         SettingToggleRow(
-                            title = "Sync one-time tasks",
-                            description = "Includes tasks that have a specific date set",
+                            title = stringResource(R.string.title_sync_one_time_tasks),
+                            description = stringResource(R.string.desc_sync_one_time_tasks),
                             isChecked = syncTasksWithDate,
                             onCheckedChange = onToggleSyncTasksWithDate
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         SettingToggleRow(
-                            title = "Sync repeating tasks",
-                            description = "Includes tasks that repeat daily or on specific days",
+                            title = stringResource(R.string.title_sync_repeating_tasks),
+                            description = stringResource(R.string.desc_sync_repeating_tasks),
                             isChecked = syncDailyReminders,
                             onCheckedChange = onToggleSyncDailyReminders
                         )

@@ -339,4 +339,44 @@
     <string name="action_continue">Continuer</string>
     <string name="action_go_back_home">Retour à l\'accueil</string>
     <string name="seconds_remaining_format">%1$d secondes restantes</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Calendrier</string>
+    <string name="title_calendar_accounts">Comptes</string>
+    <string name="desc_calendar_accounts">Choisissez le calendrier à utiliser pour créer des événements</string>
+    <string name="title_calendar_sync">Synchroniser</string>
+    <string name="desc_calendar_sync">Configurez la façon dont les tâches et les rappels se synchronisent avec votre calendrier</string>
+    <string name="title_default_calendar">Calendrier par défaut</string>
+    <string name="desc_default_calendar">Les événements que vous créez à partir du lanceur seront ajoutés à ce calendrier.</string>
+    <string name="msg_calendar_permission_not_granted">Autorisation de calendrier non accordée. Ouvrez d\'abord la page Calendrier pour accorder l\'autorisation.</string>
+    <string name="msg_no_writable_calendars">Aucun calendrier modifiable trouvé sur cet appareil.</string>
+    <string name="title_auto_detect">Détection automatique</string>
+    <string name="desc_auto_detect">Laissez le lanceur choisir le meilleur calendrier</string>
+    <string name="title_sync_settings">Paramètres de synchronisation</string>
+    <string name="title_show_tasks_in_calendar">Afficher les tâches dans le calendrier</string>
+    <string name="desc_show_tasks_in_calendar">Affichez vos tâches directement dans la vue calendrier du lanceur</string>
+    <string name="title_add_tasks_to_device_calendar">Ajouter des tâches au calendrier de l\'appareil</string>
+    <string name="desc_add_tasks_to_device_calendar">Synchronisez vos tâches pour qu\'elles apparaissent dans Google Agenda et sur tous vos appareils</string>
+    <string name="title_sync_one_time_tasks">Synchroniser les tâches ponctuelles</string>
+    <string name="desc_sync_one_time_tasks">Inclut les tâches qui ont une date spécifique définie</string>
+    <string name="title_sync_repeating_tasks">Synchroniser les tâches répétitives</string>
+    <string name="desc_sync_repeating_tasks">Inclut les tâches qui se répètent tous les jours ou certains jours précis</string>
+    <string name="title_permission_required">Autorisation requise</string>
+    <string name="title_grant_permission">Accorder l\'autorisation</string>
+    <string name="desc_grant_permission">Nous avons besoin d\'accéder au calendrier pour afficher vos événements à côté de vos tâches.</string>
+    <string name="action_add_event">Ajouter un événement</string>
+    <string name="label_all_day">Toute la journée</string>
+    <string name="action_delete_event">Supprimer l\'événement</string>
+    <string name="label_duration">Durée :</string>
+    <string name="label_event_title">Titre de l\'événement</string>
+    <string name="title_new_event">Nouvel événement</string>
+    <string name="msg_no_events">Aucun événement</string>
+    <string name="label_no_title">(Sans titre)</string>
+    <string name="msg_remove_event_prompt">Supprimer "%1$s" de votre calendrier ?</string>
+    <string name="label_time">Heure :</string>
+    <string name="label_today">Aujourd\'hui</string>
+    <string name="label_tomorrow">Demain</string>
+    <string name="label_yesterday">Hier</string>
+    <string name="label_next_month">Mois prochain</string>
+    <string name="label_previous_month">Mois précédent</string>
 </resources>

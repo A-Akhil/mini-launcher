@@ -339,4 +339,44 @@
     <string name="action_continue">Lanjut</string>
     <string name="action_go_back_home">Kembali ke beranda</string>
     <string name="seconds_remaining_format">%1$d detik tersisa</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Kalender</string>
+    <string name="title_calendar_accounts">Akun</string>
+    <string name="desc_calendar_accounts">Pilih kalender mana yang akan digunakan untuk membuat acara</string>
+    <string name="title_calendar_sync">Sinkronkan</string>
+    <string name="desc_calendar_sync">Konfigurasikan bagaimana tugas dan pengingat disinkronkan dengan kalender Anda</string>
+    <string name="title_default_calendar">Kalender default</string>
+    <string name="desc_default_calendar">Acara yang Anda buat dari peluncur akan ditambahkan ke kalender ini.</string>
+    <string name="msg_calendar_permission_not_granted">Izin kalender tidak diberikan. Buka halaman Kalender untuk memberikan izin terlebih dahulu.</string>
+    <string name="msg_no_writable_calendars">Tidak ada kalender yang dapat ditulisi yang ditemukan di perangkat ini.</string>
+    <string name="title_auto_detect">Deteksi otomatis</string>
+    <string name="desc_auto_detect">Biarkan peluncur memilih kalender terbaik</string>
+    <string name="title_sync_settings">Pengaturan Sinkronisasi</string>
+    <string name="title_show_tasks_in_calendar">Tampilkan tugas di kalender</string>
+    <string name="desc_show_tasks_in_calendar">Lihat tugas Anda secara langsung di dalam tampilan kalender peluncur</string>
+    <string name="title_add_tasks_to_device_calendar">Tambahkan tugas ke kalender perangkat</string>
+    <string name="desc_add_tasks_to_device_calendar">Sinkronkan tugas Anda sehingga muncul di Google Kalender dan di semua perangkat Anda</string>
+    <string name="title_sync_one_time_tasks">Sinkronkan tugas satu kali</string>
+    <string name="desc_sync_one_time_tasks">Termasuk tugas yang memiliki tanggal tertentu yang ditetapkan</string>
+    <string name="title_sync_repeating_tasks">Sinkronkan tugas berulang</string>
+    <string name="desc_sync_repeating_tasks">Termasuk tugas yang berulang setiap hari atau pada hari-hari tertentu</string>
+    <string name="title_permission_required">Izin Diperlukan</string>
+    <string name="title_grant_permission">Beri Izin</string>
+    <string name="desc_grant_permission">Kami memerlukan akses kalender untuk menampilkan acara Anda bersama tugas Anda.</string>
+    <string name="action_add_event">Tambahkan Acara</string>
+    <string name="label_all_day">Sepanjang hari</string>
+    <string name="action_delete_event">Hapus Acara</string>
+    <string name="label_duration">Durasi:</string>
+    <string name="label_event_title">Judul acara</string>
+    <string name="title_new_event">Acara Baru</string>
+    <string name="msg_no_events">Tidak ada acara</string>
+    <string name="label_no_title">(Tanpa judul)</string>
+    <string name="msg_remove_event_prompt">Hapus "%1$s" dari kalender Anda?</string>
+    <string name="label_time">Waktu:</string>
+    <string name="label_today">Hari ini</string>
+    <string name="label_tomorrow">Besok</string>
+    <string name="label_yesterday">Kemarin</string>
+    <string name="label_next_month">Bulan depan</string>
+    <string name="label_previous_month">Bulan sebelumnya</string>
 </resources>

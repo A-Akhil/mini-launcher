@@ -399,4 +399,44 @@ Respect your decision</string>
     <string name="action_continue">Continue</string>
     <string name="action_go_back_home">Go back home</string>
     <string name="seconds_remaining_format">%1$d seconds remaining</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Calendar</string>
+    <string name="title_calendar_accounts">Accounts</string>
+    <string name="desc_calendar_accounts">Choose which calendar to use for creating events</string>
+    <string name="title_calendar_sync">Sync</string>
+    <string name="desc_calendar_sync">Configure how tasks and reminders sync with your calendar</string>
+    <string name="title_default_calendar">Default calendar</string>
+    <string name="desc_default_calendar">Events you create from the launcher will be added to this calendar.</string>
+    <string name="msg_calendar_permission_not_granted">Calendar permission not granted. Open the Calendar page to grant permission first.</string>
+    <string name="msg_no_writable_calendars">No writable calendars found on this device.</string>
+    <string name="title_auto_detect">Auto-detect</string>
+    <string name="desc_auto_detect">Let the launcher pick the best calendar</string>
+    <string name="title_sync_settings">Sync Settings</string>
+    <string name="title_show_tasks_in_calendar">Show tasks in calendar</string>
+    <string name="desc_show_tasks_in_calendar">See your tasks directly inside the launcher\'s calendar view</string>
+    <string name="title_add_tasks_to_device_calendar">Add tasks to device calendar</string>
+    <string name="desc_add_tasks_to_device_calendar">Sync your tasks so they appear in Google Calendar and across your devices</string>
+    <string name="title_sync_one_time_tasks">Sync one-time tasks</string>
+    <string name="desc_sync_one_time_tasks">Includes tasks that have a specific date set</string>
+    <string name="title_sync_repeating_tasks">Sync repeating tasks</string>
+    <string name="desc_sync_repeating_tasks">Includes tasks that repeat daily or on specific days</string>
+    <string name="title_permission_required">Permission Required</string>
+    <string name="title_grant_permission">Grant Permission</string>
+    <string name="desc_grant_permission">We need calendar access to show your events alongside your tasks.</string>
+    <string name="action_add_event">Add Event</string>
+    <string name="label_all_day">All day</string>
+    <string name="action_delete_event">Delete Event</string>
+    <string name="label_duration">Duration:</string>
+    <string name="label_event_title">Event title</string>
+    <string name="title_new_event">New Event</string>
+    <string name="msg_no_events">No events</string>
+    <string name="label_no_title">(No title)</string>
+    <string name="msg_remove_event_prompt">Remove "%1$s" from your calendar?</string>
+    <string name="label_time">Time:</string>
+    <string name="label_today">Today</string>
+    <string name="label_tomorrow">Tomorrow</string>
+    <string name="label_yesterday">Yesterday</string>
+    <string name="label_next_month">Next month</string>
+    <string name="label_previous_month">Previous month</string>
 </resources>

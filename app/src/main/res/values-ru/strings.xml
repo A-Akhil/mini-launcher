@@ -347,4 +347,44 @@
     <string name="action_continue">Продолжить</string>
     <string name="action_go_back_home">На главную</string>
     <string name="seconds_remaining_format">Осталось %1$d секунд</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Календарь</string>
+    <string name="title_calendar_accounts">Аккаунты</string>
+    <string name="desc_calendar_accounts">Выберите календарь для создания событий</string>
+    <string name="title_calendar_sync">Синхронизация</string>
+    <string name="desc_calendar_sync">Настройте синхронизацию задач и напоминаний с вашим календарем</string>
+    <string name="title_default_calendar">Календарь по умолчанию</string>
+    <string name="desc_default_calendar">События, созданные из лаунчера, будут добавлены в этот календарь.</string>
+    <string name="msg_calendar_permission_not_granted">Разрешение на календарь не предоставлено. Сначала откройте страницу Календаря, чтобы предоставить разрешение.</string>
+    <string name="msg_no_writable_calendars">На этом устройстве не найдено доступных для записи календарей.</string>
+    <string name="title_auto_detect">Автоопределение</string>
+    <string name="desc_auto_detect">Позволить лаунчеру выбрать лучший календарь</string>
+    <string name="title_sync_settings">Настройки синхронизации</string>
+    <string name="title_show_tasks_in_calendar">Показывать задачи в календаре</string>
+    <string name="desc_show_tasks_in_calendar">Просматривайте задачи прямо в окне календаря лаунчера</string>
+    <string name="title_add_tasks_to_device_calendar">Добавлять задачи в календарь устройства</string>
+    <string name="desc_add_tasks_to_device_calendar">Синхронизируйте задачи, чтобы они отображались в Google Календаре и на всех ваших устройствах</string>
+    <string name="title_sync_one_time_tasks">Синхронизировать одноразовые задачи</string>
+    <string name="desc_sync_one_time_tasks">Включает задачи с установленной конкретной датой</string>
+    <string name="title_sync_repeating_tasks">Синхронизировать повторяющиеся задачи</string>
+    <string name="desc_sync_repeating_tasks">Включает задачи, повторяющиеся ежедневно или в определенные дни</string>
+    <string name="title_permission_required">Требуется разрешение</string>
+    <string name="title_grant_permission">Предоставить разрешение</string>
+    <string name="desc_grant_permission">Нам нужен доступ к календарю, чтобы показывать ваши события вместе с задачами.</string>
+    <string name="action_add_event">Добавить событие</string>
+    <string name="label_all_day">Весь день</string>
+    <string name="action_delete_event">Удалить событие</string>
+    <string name="label_duration">Продолжительность:</string>
+    <string name="label_event_title">Название события</string>
+    <string name="title_new_event">Новое событие</string>
+    <string name="msg_no_events">Нет событий</string>
+    <string name="label_no_title">(Без названия)</string>
+    <string name="msg_remove_event_prompt">Удалить "%1$s" из вашего календаря?</string>
+    <string name="label_time">Время:</string>
+    <string name="label_today">Сегодня</string>
+    <string name="label_tomorrow">Завтра</string>
+    <string name="label_yesterday">Вчера</string>
+    <string name="label_next_month">Следующий месяц</string>
+    <string name="label_previous_month">Предыдущий месяц</string>
 </resources>

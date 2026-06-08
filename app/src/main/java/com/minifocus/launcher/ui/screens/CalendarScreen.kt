@@ -57,6 +57,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.minifocus.launcher.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -164,7 +166,7 @@ fun CalendarScreen(selectedCalendarId: Long = -1L) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Calendar",
+                    text = stringResource(R.string.title_calendar),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold
@@ -196,7 +198,7 @@ fun CalendarScreen(selectedCalendarId: Long = -1L) {
             ) {
                 // Title
                 Text(
-                    text = "Calendar",
+                    text = stringResource(R.string.title_calendar),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.SemiBold
@@ -257,7 +259,7 @@ fun CalendarScreen(selectedCalendarId: Long = -1L) {
                 ) {
                     if (selectedDateEvents.isEmpty()) {
                         Text(
-                            text = "No events",
+                            text = stringResource(R.string.msg_no_events),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -630,7 +632,7 @@ private fun AddEventDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Time:",
+                        text = stringResource(R.string.label_time),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
@@ -663,7 +665,7 @@ private fun AddEventDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Duration:",
+                        text = stringResource(R.string.label_duration),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )

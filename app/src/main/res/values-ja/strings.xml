@@ -339,4 +339,44 @@
     <string name="action_continue">続ける</string>
     <string name="action_go_back_home">ホームに戻る</string>
     <string name="seconds_remaining_format">残り %1$d 秒</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">カレンダー</string>
+    <string name="title_calendar_accounts">アカウント</string>
+    <string name="desc_calendar_accounts">イベント作成に使用するカレンダーを選択してください</string>
+    <string name="title_calendar_sync">同期</string>
+    <string name="desc_calendar_sync">タスクとリマインダーをカレンダーと同期する方法を設定します</string>
+    <string name="title_default_calendar">デフォルトのカレンダー</string>
+    <string name="desc_default_calendar">ランチャーから作成したイベントはこのカレンダーに追加されます。</string>
+    <string name="msg_calendar_permission_not_granted">カレンダーの権限が付与されていません。まずカレンダーページを開いて権限を付与してください。</string>
+    <string name="msg_no_writable_calendars">このデバイスに書き込み可能なカレンダーが見つかりません。</string>
+    <string name="title_auto_detect">自動検出</string>
+    <string name="desc_auto_detect">ランチャーに最適なカレンダーを選択させる</string>
+    <string name="title_sync_settings">同期設定</string>
+    <string name="title_show_tasks_in_calendar">カレンダーにタスクを表示</string>
+    <string name="desc_show_tasks_in_calendar">ランチャーのカレンダービューで直接タスクを確認</string>
+    <string name="title_add_tasks_to_device_calendar">デバイスのカレンダーにタスクを追加</string>
+    <string name="desc_add_tasks_to_device_calendar">Googleカレンダーや他のデバイスに表示されるようにタスクを同期します</string>
+    <string name="title_sync_one_time_tasks">1回限りのタスクを同期</string>
+    <string name="desc_sync_one_time_tasks">特定の日付が設定されているタスクを含みます</string>
+    <string name="title_sync_repeating_tasks">繰り返しタスクを同期</string>
+    <string name="desc_sync_repeating_tasks">毎日または特定の日に繰り返すタスクを含みます</string>
+    <string name="title_permission_required">権限が必要です</string>
+    <string name="title_grant_permission">権限を付与</string>
+    <string name="desc_grant_permission">タスクと一緒にイベントを表示するにはカレンダーへのアクセスが必要です。</string>
+    <string name="action_add_event">イベントを追加</string>
+    <string name="label_all_day">終日</string>
+    <string name="action_delete_event">イベントを削除</string>
+    <string name="label_duration">時間:</string>
+    <string name="label_event_title">イベントのタイトル</string>
+    <string name="title_new_event">新しいイベント</string>
+    <string name="msg_no_events">イベントなし</string>
+    <string name="label_no_title">(タイトルなし)</string>
+    <string name="msg_remove_event_prompt">カレンダーから「%1$s」を削除しますか？</string>
+    <string name="label_time">時刻:</string>
+    <string name="label_today">今日</string>
+    <string name="label_tomorrow">明日</string>
+    <string name="label_yesterday">昨日</string>
+    <string name="label_next_month">来月</string>
+    <string name="label_previous_month">先月</string>
 </resources>

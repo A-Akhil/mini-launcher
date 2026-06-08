@@ -256,4 +256,44 @@
     <string name="language_english">English</string>
     <string name="language_german">Deutsch (German)</string>
     <string name="language_spanish">Español (Spanish)</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Kalender</string>
+    <string name="title_calendar_accounts">Konten</string>
+    <string name="desc_calendar_accounts">Wählen Sie, welchen Kalender Sie zum Erstellen von Ereignissen verwenden möchten</string>
+    <string name="title_calendar_sync">Synchronisieren</string>
+    <string name="desc_calendar_sync">Konfigurieren Sie, wie Aufgaben und Erinnerungen mit Ihrem Kalender synchronisiert werden</string>
+    <string name="title_default_calendar">Standardkalender</string>
+    <string name="desc_default_calendar">Ereignisse, die Sie im Launcher erstellen, werden diesem Kalender hinzugefügt.</string>
+    <string name="msg_calendar_permission_not_granted">Kalenderberechtigung nicht erteilt. Öffnen Sie zuerst die Kalenderseite, um die Berechtigung zu erteilen.</string>
+    <string name="msg_no_writable_calendars">Keine schreibbaren Kalender auf diesem Gerät gefunden.</string>
+    <string name="title_auto_detect">Automatisch erkennen</string>
+    <string name="desc_auto_detect">Lassen Sie den Launcher den besten Kalender auswählen</string>
+    <string name="title_sync_settings">Synchronisierungseinstellungen</string>
+    <string name="title_show_tasks_in_calendar">Aufgaben im Kalender anzeigen</string>
+    <string name="desc_show_tasks_in_calendar">Sehen Sie Ihre Aufgaben direkt in der Kalenderansicht des Launchers</string>
+    <string name="title_add_tasks_to_device_calendar">Aufgaben zum Gerätekalender hinzufügen</string>
+    <string name="desc_add_tasks_to_device_calendar">Synchronisieren Sie Ihre Aufgaben, damit sie in Google Kalender und auf all Ihren Geräten angezeigt werden</string>
+    <string name="title_sync_one_time_tasks">Einmalige Aufgaben synchronisieren</string>
+    <string name="desc_sync_one_time_tasks">Umfasst Aufgaben, für die ein bestimmtes Datum festgelegt wurde</string>
+    <string name="title_sync_repeating_tasks">Wiederkehrende Aufgaben synchronisieren</string>
+    <string name="desc_sync_repeating_tasks">Umfasst Aufgaben, die sich täglich oder an bestimmten Tagen wiederholen</string>
+    <string name="title_permission_required">Berechtigung erforderlich</string>
+    <string name="title_grant_permission">Berechtigung erteilen</string>
+    <string name="desc_grant_permission">Wir benötigen Kalenderzugriff, um Ihre Ereignisse neben Ihren Aufgaben anzuzeigen.</string>
+    <string name="action_add_event">Ereignis hinzufügen</string>
+    <string name="label_all_day">Ganztägig</string>
+    <string name="action_delete_event">Ereignis löschen</string>
+    <string name="label_duration">Dauer:</string>
+    <string name="label_event_title">Ereignistitel</string>
+    <string name="title_new_event">Neues Ereignis</string>
+    <string name="msg_no_events">Keine Ereignisse</string>
+    <string name="label_no_title">(Kein Titel)</string>
+    <string name="msg_remove_event_prompt">"%1$s" aus Ihrem Kalender entfernen?</string>
+    <string name="label_time">Zeit:</string>
+    <string name="label_today">Heute</string>
+    <string name="label_tomorrow">Morgen</string>
+    <string name="label_yesterday">Gestern</string>
+    <string name="label_next_month">Nächster Monat</string>
+    <string name="label_previous_month">Vorheriger Monat</string>
 </resources>

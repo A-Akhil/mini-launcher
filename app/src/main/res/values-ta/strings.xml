@@ -339,4 +339,44 @@
     <string name="action_continue">தொடரவும்</string>
     <string name="action_go_back_home">முகப்பிற்குத் திரும்பு</string>
     <string name="seconds_remaining_format">%1$d வினாடிகள் மீதமுள்ளன</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">நாள்காட்டி</string>
+    <string name="title_calendar_accounts">கணக்குகள்</string>
+    <string name="desc_calendar_accounts">நிகழ்வுகளை உருவாக்க எந்த நாள்காட்டியைப் பயன்படுத்த வேண்டும் என்பதைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="title_calendar_sync">ஒத்திசை</string>
+    <string name="desc_calendar_sync">உங்கள் நாள்காட்டியுடன் பணிகள் மற்றும் நினைவூட்டல்கள் எவ்வாறு ஒத்திசைகின்றன என்பதை உள்ளமைக்கவும்</string>
+    <string name="title_default_calendar">இயல்புநிலை நாள்காட்டி</string>
+    <string name="desc_default_calendar">லாஞ்சரிலிருந்து நீங்கள் உருவாக்கும் நிகழ்வுகள் இந்த நாள்காட்டியில் சேர்க்கப்படும்.</string>
+    <string name="msg_calendar_permission_not_granted">நாள்காட்டி அனுமதி வழங்கப்படவில்லை. அனுமதி வழங்க முதலில் நாள்காட்டி பக்கத்தைத் திறக்கவும்.</string>
+    <string name="msg_no_writable_calendars">இந்த சாதனத்தில் எழுதக்கூடிய நாள்காட்டிகள் எதுவும் காணப்படவில்லை.</string>
+    <string name="title_auto_detect">தானாகக் கண்டறி</string>
+    <string name="desc_auto_detect">லாஞ்சர் சிறந்த நாள்காட்டியைத் தேர்ந்தெடுக்கட்டும்</string>
+    <string name="title_sync_settings">ஒத்திசைவு அமைப்புகள்</string>
+    <string name="title_show_tasks_in_calendar">நாள்காட்டியில் பணிகளைக் காட்டு</string>
+    <string name="desc_show_tasks_in_calendar">லாஞ்சரின் நாள்காட்டி பார்வையில் நேரடியாக உங்கள் பணிகளைப் பார்க்கவும்</string>
+    <string name="title_add_tasks_to_device_calendar">சாதன நாள்காட்டியில் பணிகளைச் சேர்</string>
+    <string name="desc_add_tasks_to_device_calendar">உங்கள் பணிகளை ஒத்திசைக்கவும், அதனால் அவை Google Calendar மற்றும் உங்கள் சாதனங்களில் தோன்றும்</string>
+    <string name="title_sync_one_time_tasks">ஒரு முறை பணிகளை ஒத்திசைக்கவும்</string>
+    <string name="desc_sync_one_time_tasks">ஒரு குறிப்பிட்ட தேதி அமைக்கப்பட்ட பணிகளை உள்ளடக்கியது</string>
+    <string name="title_sync_repeating_tasks">மீண்டும் மீண்டும் வரும் பணிகளை ஒத்திசைக்கவும்</string>
+    <string name="desc_sync_repeating_tasks">தினமும் அல்லது குறிப்பிட்ட நாட்களில் மீண்டும் மீண்டும் வரும் பணிகளை உள்ளடக்கியது</string>
+    <string name="title_permission_required">அனுமதி தேவை</string>
+    <string name="title_grant_permission">அனுமதி வழங்கு</string>
+    <string name="desc_grant_permission">உங்கள் பணிகளுடன் உங்கள் நிகழ்வுகளைக் காட்ட நாள்காட்டி அணுகல் எங்களுக்குத் தேவை.</string>
+    <string name="action_add_event">நிகழ்வைச் சேர்</string>
+    <string name="label_all_day">முழு நாள்</string>
+    <string name="action_delete_event">நிகழ்வை நீக்கு</string>
+    <string name="label_duration">கால அளவு:</string>
+    <string name="label_event_title">நிகழ்வு தலைப்பு</string>
+    <string name="title_new_event">புதிய நிகழ்வு</string>
+    <string name="msg_no_events">நிகழ்வுகள் இல்லை</string>
+    <string name="label_no_title">(தலைப்பு இல்லை)</string>
+    <string name="msg_remove_event_prompt">உங்கள் நாள்காட்டியிலிருந்து "%1$s" ஐ அகற்றுவதா?</string>
+    <string name="label_time">நேரம்:</string>
+    <string name="label_today">இன்று</string>
+    <string name="label_tomorrow">நாளை</string>
+    <string name="label_yesterday">நேற்று</string>
+    <string name="label_next_month">அடுத்த மாதம்</string>
+    <string name="label_previous_month">முந்தைய மாதம்</string>
 </resources>

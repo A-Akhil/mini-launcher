@@ -256,4 +256,44 @@
     <string name="language_english">English</string>
     <string name="language_german">Deutsch (German)</string>
     <string name="language_spanish">Español (Spanish)</string>
+
+    <!-- Calendar Sync -->
+    <string name="title_calendar">Calendario</string>
+    <string name="title_calendar_accounts">Cuentas</string>
+    <string name="desc_calendar_accounts">Elige qué calendario usar para crear eventos</string>
+    <string name="title_calendar_sync">Sincronizar</string>
+    <string name="desc_calendar_sync">Configura cómo se sincronizan las tareas y recordatorios con tu calendario</string>
+    <string name="title_default_calendar">Calendario predeterminado</string>
+    <string name="desc_default_calendar">Los eventos que crees desde el lanzador se añadirán a este calendario.</string>
+    <string name="msg_calendar_permission_not_granted">Permiso de calendario no concedido. Abre primero la página de Calendario para conceder el permiso.</string>
+    <string name="msg_no_writable_calendars">No se encontraron calendarios escribibles en este dispositivo.</string>
+    <string name="title_auto_detect">Autodetectar</string>
+    <string name="desc_auto_detect">Deja que el lanzador elija el mejor calendario</string>
+    <string name="title_sync_settings">Ajustes de sincronización</string>
+    <string name="title_show_tasks_in_calendar">Mostrar tareas en el calendario</string>
+    <string name="desc_show_tasks_in_calendar">Mira tus tareas directamente en la vista de calendario del lanzador</string>
+    <string name="title_add_tasks_to_device_calendar">Añadir tareas al calendario del dispositivo</string>
+    <string name="desc_add_tasks_to_device_calendar">Sincroniza tus tareas para que aparezcan en Google Calendar y en todos tus dispositivos</string>
+    <string name="title_sync_one_time_tasks">Sincronizar tareas únicas</string>
+    <string name="desc_sync_one_time_tasks">Incluye tareas que tienen una fecha específica establecida</string>
+    <string name="title_sync_repeating_tasks">Sincronizar tareas repetitivas</string>
+    <string name="desc_sync_repeating_tasks">Incluye tareas que se repiten diariamente o en días específicos</string>
+    <string name="title_permission_required">Permiso requerido</string>
+    <string name="title_grant_permission">Conceder permiso</string>
+    <string name="desc_grant_permission">Necesitamos acceso al calendario para mostrar tus eventos junto a tus tareas.</string>
+    <string name="action_add_event">Añadir evento</string>
+    <string name="label_all_day">Todo el día</string>
+    <string name="action_delete_event">Eliminar evento</string>
+    <string name="label_duration">Duración:</string>
+    <string name="label_event_title">Título del evento</string>
+    <string name="title_new_event">Nuevo evento</string>
+    <string name="msg_no_events">Sin eventos</string>
+    <string name="label_no_title">(Sin título)</string>
+    <string name="msg_remove_event_prompt">¿Eliminar "%1$s" de tu calendario?</string>
+    <string name="label_time">Hora:</string>
+    <string name="label_today">Hoy</string>
+    <string name="label_tomorrow">Mañana</string>
+    <string name="label_yesterday">Ayer</string>
+    <string name="label_next_month">Mes siguiente</string>
+    <string name="label_previous_month">Mes anterior</string>
 </resources>
