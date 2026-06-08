@@ -93,4 +93,11 @@ class DailyTasksManager(
             dailyTaskDao.update(entity.copy(lastCompletedEpochDay = null))
         }
     }
+
+    suspend fun updateCalendarEventId(taskId: Long, eventId: Long?) {
+        withContext(Dispatchers.IO) {
+            val existing = dailyTaskDao.get(taskId) ?: return@withContext
+            dailyTaskDao.update(existing.copy(calendarEventId = eventId))
+        }
+    }
 }

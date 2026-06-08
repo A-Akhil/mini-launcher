@@ -239,6 +239,10 @@ fun LauncherApp(
     onAppTimeReminderSettingsVisibilityChange: (Boolean) -> Unit,
     onCalendarSettingsVisibilityChange: (Boolean) -> Unit,
     onSelectCalendar: (Long, String) -> Unit,
+    onToggleShowTasksInCalendar: (Boolean) -> Unit,
+    onToggleSyncTasksWithCalendar: (Boolean) -> Unit,
+    onToggleSyncTasksWithDate: (Boolean) -> Unit,
+    onToggleSyncDailyReminders: (Boolean) -> Unit,
     onAddTrackedReminderApp: (String, String) -> Unit,
     onRemoveTrackedReminderApp: (String) -> Unit,
     onSetPendingTimeIntention: (AppEntry?) -> Unit,
@@ -512,7 +516,10 @@ fun LauncherApp(
             state.isAboutVisible -> onAboutVisibilityChange(false)
             state.isEmergencyUnlockVisible -> onEmergencyUnlockVisibilityChange(false)
             state.isHiddenAppsVisible -> closeHiddenApps()
-            state.isCalendarSettingsVisible -> onCalendarSettingsVisibilityChange(false)
+            state.isCalendarSettingsVisible -> {
+                onCalendarSettingsVisibilityChange(false)
+                onSettingsVisibilityChange(true)
+            }
             searchVisible -> onSearchVisibilityChange(false)
             pagerState.currentPage != 2 -> {
                 coroutineScope.launch { pagerState.scrollToPage(2) }
@@ -614,8 +621,19 @@ fun LauncherApp(
                 state.isCalendarSettingsVisible -> {
                     CalendarSettingsScreen(
                         selectedCalendarId = state.selectedCalendarId,
+                        showTasksInCalendar = state.showTasksInCalendar,
+                        syncTasksWithCalendar = state.syncTasksWithCalendar,
+                        syncTasksWithDate = state.syncTasksWithDate,
+                        syncDailyReminders = state.syncDailyReminders,
                         onSelectCalendar = onSelectCalendar,
-                        onBack = { onCalendarSettingsVisibilityChange(false) }
+                        onToggleShowTasksInCalendar = onToggleShowTasksInCalendar,
+                        onToggleSyncTasksWithCalendar = onToggleSyncTasksWithCalendar,
+                        onToggleSyncTasksWithDate = onToggleSyncTasksWithDate,
+                        onToggleSyncDailyReminders = onToggleSyncDailyReminders,
+                        onBack = { 
+                            onCalendarSettingsVisibilityChange(false)
+                            onSettingsVisibilityChange(true)
+                        }
                     )
                 }
                 state.isAppTimeReminderSettingsVisible -> {

@@ -25,5 +25,6 @@ data class TaskItem(
     val createdAt: Long,
     val completedAt: Long? = null,
     val scheduledFor: Long? = null,
-    val notificationId: Int? = null
+    val notificationId: Int? = null,
+    val calendarEventId: Long? = null
 )

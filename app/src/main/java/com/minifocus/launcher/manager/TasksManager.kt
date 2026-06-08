@@ -42,14 +42,15 @@ class TasksManager(
                 createdAt = entity.createdAt,
                 completedAt = entity.completedAt,
                 scheduledFor = entity.scheduledFor,
-                notificationId = entity.notificationId
+                notificationId = entity.notificationId,
+                calendarEventId = entity.calendarEventId
             )
         }
     }
 
-    suspend fun addTask(title: String, scheduledFor: Long? = null): Boolean {
+    suspend fun addTask(title: String, scheduledFor: Long? = null): Long {
         val trimmed = title.trim()
-        if (trimmed.isEmpty()) return false
+        if (trimmed.isEmpty()) return -1L
         return withContext(Dispatchers.IO) {
             val taskId = taskDao.insert(
                 TaskEntity(
@@ -63,7 +64,7 @@ class TasksManager(
                 notificationScheduler.scheduleNotification(taskId, trimmed, scheduledFor)
             }
             
-            taskId > 0
+            taskId
         }
     }
 
@@ -96,9 +97,32 @@ class TasksManager(
                     createdAt = task.createdAt,
                     completedAt = task.completedAt,
                     scheduledFor = task.scheduledFor,
-                    notificationId = task.notificationId
+                    notificationId = task.notificationId,
+                    calendarEventId = task.calendarEventId
                 )
             )
+        }
+    }
+
+    suspend fun getTaskItem(taskId: Long): TaskItem? = withContext(Dispatchers.IO) {
+        taskDao.getTask(taskId)?.let { entity ->
+            TaskItem(
+                id = entity.id,
+                title = entity.title,
+                isCompleted = entity.isCompleted,
+                createdAt = entity.createdAt,
+                completedAt = entity.completedAt,
+                scheduledFor = entity.scheduledFor,
+                notificationId = entity.notificationId,
+                calendarEventId = entity.calendarEventId
+            )
+        }
+    }
+
+    suspend fun updateCalendarEventId(taskId: Long, eventId: Long?) {
+        withContext(Dispatchers.IO) {
+            val existing = taskDao.getTask(taskId) ?: return@withContext
+            taskDao.update(existing.copy(calendarEventId = eventId))
         }
     }
 

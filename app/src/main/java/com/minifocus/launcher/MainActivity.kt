@@ -163,7 +163,8 @@ class MainActivity : ComponentActivity() {
             settingsBackupManager = app.container.settingsBackupManager,
             searchManager = app.container.searchManager,
             appUsageStatsManager = app.container.appUsageStatsManager,
-            appTimeReminderManager = app.container.appTimeReminderManager
+            appTimeReminderManager = app.container.appTimeReminderManager,
+            calendarManager = app.container.calendarManager
         )
     }
 
@@ -316,6 +317,10 @@ class MainActivity : ComponentActivity() {
                         onLanguageSettingsVisibilityChange = viewModel::setLanguageSettingsVisibility,
                         onCalendarSettingsVisibilityChange = viewModel::setCalendarSettingsVisibility,
                         onSelectCalendar = viewModel::setSelectedCalendar,
+                        onToggleShowTasksInCalendar = viewModel::setShowTasksInCalendar,
+                        onToggleSyncTasksWithCalendar = viewModel::setSyncTasksWithCalendar,
+                        onToggleSyncTasksWithDate = viewModel::setSyncTasksWithDate,
+                        onToggleSyncDailyReminders = viewModel::setSyncDailyReminders,
                     )
                 } else {
                     PermissionScreen(

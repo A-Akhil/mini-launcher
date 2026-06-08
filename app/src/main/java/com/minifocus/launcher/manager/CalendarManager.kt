@@ -158,7 +158,8 @@ class CalendarManager(private val context: Context) {
         calendarId: Long,
         description: String = "",
         allDay: Boolean = false,
-        location: String = ""
+        location: String = "",
+        rrule: String? = null
     ): Long {
         val values = ContentValues().apply {
             put(CalendarContract.Events.CALENDAR_ID, calendarId)
@@ -169,6 +170,9 @@ class CalendarManager(private val context: Context) {
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.ALL_DAY, if (allDay) 1 else 0)
             put(CalendarContract.Events.EVENT_LOCATION, location)
+            if (rrule != null) {
+                put(CalendarContract.Events.RRULE, rrule)
+            }
         }
         return try {
             val uri = resolver.insert(CalendarContract.Events.CONTENT_URI, values)
@@ -187,7 +191,8 @@ class CalendarManager(private val context: Context) {
         startMillis: Long,
         endMillis: Long,
         description: String = "",
-        location: String = ""
+        location: String = "",
+        rrule: String? = null
     ): Boolean {
         val values = ContentValues().apply {
             put(CalendarContract.Events.TITLE, title)
@@ -195,6 +200,12 @@ class CalendarManager(private val context: Context) {
             put(CalendarContract.Events.DTSTART, startMillis)
             put(CalendarContract.Events.DTEND, endMillis)
             put(CalendarContract.Events.EVENT_LOCATION, location)
+            put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+            if (rrule != null) {
+                put(CalendarContract.Events.RRULE, rrule)
+            } else {
+                putNull(CalendarContract.Events.RRULE)
+            }
         }
         return try {
             val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)

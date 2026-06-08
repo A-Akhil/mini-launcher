@@ -53,6 +53,10 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         val smartSuggestionsEnabled = intPreferencesKey("smart_suggestions_enabled")
         val selectedCalendarId = longPreferencesKey("selected_calendar_id")
         val selectedCalendarAccountName = stringPreferencesKey("selected_calendar_account_name")
+        val syncTasksWithCalendar = intPreferencesKey("sync_tasks_with_calendar")
+        val syncTasksWithDate = intPreferencesKey("sync_tasks_with_date")
+        val syncDailyReminders = intPreferencesKey("sync_daily_reminders")
+        val showTasksInCalendar = intPreferencesKey("show_tasks_in_calendar")
     }
 
     fun observeTheme(): Flow<LauncherTheme> = dataStore.data.map { prefs ->
@@ -210,6 +214,46 @@ class SettingsManager(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { prefs ->
             prefs[Keys.selectedCalendarId] = calendarId
             prefs[Keys.selectedCalendarAccountName] = accountName
+        }
+    }
+
+    fun observeShowTasksInCalendar(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.showTasksInCalendar] ?: 1 == 1 // default true
+    }
+
+    suspend fun setShowTasksInCalendar(show: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.showTasksInCalendar] = if (show) 1 else 0
+        }
+    }
+
+    fun observeSyncTasksWithCalendar(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.syncTasksWithCalendar] ?: 1 == 1 // default true
+    }
+
+    suspend fun setSyncTasksWithCalendar(sync: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.syncTasksWithCalendar] = if (sync) 1 else 0
+        }
+    }
+
+    fun observeSyncTasksWithDate(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.syncTasksWithDate] ?: 1 == 1 // default true
+    }
+
+    suspend fun setSyncTasksWithDate(sync: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.syncTasksWithDate] = if (sync) 1 else 0
+        }
+    }
+
+    fun observeSyncDailyReminders(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.syncDailyReminders] == 1 // default false
+    }
+
+    suspend fun setSyncDailyReminders(sync: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.syncDailyReminders] = if (sync) 1 else 0
         }
     }
 

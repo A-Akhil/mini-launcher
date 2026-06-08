@@ -39,7 +39,8 @@ data class DailyTaskEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "repeat_mode") val repeatMode: String = DailyTaskRepeatMode.EVERY_DAY.name,
     @ColumnInfo(name = "interval_days") val intervalDays: Int = 1,
-    @ColumnInfo(name = "days_of_week_mask") val daysOfWeekMask: Int = 0
+    @ColumnInfo(name = "days_of_week_mask") val daysOfWeekMask: Int = 0,
+    @ColumnInfo(name = "calendar_event_id") val calendarEventId: Long? = null
 )
 
 fun DailyTaskEntity.toItem(todayEpochDay: Long): DailyTaskItem {
@@ -80,6 +81,7 @@ fun DailyTaskEntity.toItem(todayEpochDay: Long): DailyTaskItem {
         intervalDays = effectiveInterval,
         daysOfWeekMask = effectiveMask,
         isActiveToday = isActiveToday,
-        isCompletedToday = isActiveToday && isCompletedToday
+        isCompletedToday = isActiveToday && isCompletedToday,
+        calendarEventId = calendarEventId
     )
 }

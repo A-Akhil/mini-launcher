@@ -30,6 +30,7 @@ import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
 import com.minifocus.launcher.manager.AppTimeReminderManager
+import com.minifocus.launcher.manager.CalendarManager
 
 class LauncherViewModelFactory(
     private val appsManager: AppsManager,
@@ -41,7 +42,8 @@ class LauncherViewModelFactory(
     private val settingsBackupManager: SettingsBackupManager,
     private val searchManager: SearchManager,
     private val appUsageStatsManager: AppUsageStatsManager,
-    private val appTimeReminderManager: AppTimeReminderManager
+    private val appTimeReminderManager: AppTimeReminderManager,
+    private val calendarManager: CalendarManager
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -57,7 +59,8 @@ class LauncherViewModelFactory(
                 settingsBackupManager = settingsBackupManager,
                 searchManager = searchManager,
                 appUsageStatsManager = appUsageStatsManager,
-                appTimeReminderManager = appTimeReminderManager
+                appTimeReminderManager = appTimeReminderManager,
+                calendarManager = calendarManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")

@@ -33,6 +33,7 @@ import com.minifocus.launcher.manager.SettingsManager
 import com.minifocus.launcher.manager.TasksManager
 import com.minifocus.launcher.manager.AppUsageStatsManager
 import com.minifocus.launcher.manager.AppTimeReminderManager
+import com.minifocus.launcher.manager.CalendarManager
 import com.minifocus.launcher.service.AppLockMonitorService
 import com.minifocus.launcher.worker.NotificationMaintenanceWorker
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +62,7 @@ class LauncherApplication : Application() {
         val dailyTasksManager = DailyTasksManager(database.dailyTaskDao())
         val appUsageStatsManager = AppUsageStatsManager(database.appUsageStatsDao(), appScope)
         val appTimeReminderManager = AppTimeReminderManager(database.appTimeReminderDao())
+        val calendarManager = CalendarManager(this)
         val hiddenManager = HiddenAppsManager(database.hiddenAppDao())
         val lockManager = LockManager(database.appLockDao())
         val appsManager = AppsManager(
@@ -91,7 +93,8 @@ class LauncherApplication : Application() {
             inboxLogger = inboxLogger,
             applicationScope = appScope,
             appUsageStatsManager = appUsageStatsManager,
-            appTimeReminderManager = appTimeReminderManager
+            appTimeReminderManager = appTimeReminderManager,
+            calendarManager = calendarManager
         )
 
         appScope.launch {
@@ -159,5 +162,6 @@ class AppContainer(
     val inboxLogger: InboxLogger,
     val applicationScope: CoroutineScope,
     val appUsageStatsManager: AppUsageStatsManager,
-    val appTimeReminderManager: AppTimeReminderManager
+    val appTimeReminderManager: AppTimeReminderManager,
+    val calendarManager: CalendarManager
 )

@@ -55,7 +55,7 @@ import com.minifocus.launcher.data.entity.AppTimeReminderEntity
         AppUsageStatsEntity::class,
         AppTimeReminderEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -76,7 +76,7 @@ abstract class AppDatabase : RoomDatabase() {
             AppDatabase::class.java,
             "minimalist_focus_launcher.db"
         )
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+            .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -202,6 +202,13 @@ abstract class AppDatabase : RoomDatabase() {
                     WHERE expiry_action NOT IN ('NOTIFICATION', 'PROMPT')
                     """.trimIndent()
                 )
+            }
+        }
+
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `tasks` ADD COLUMN `calendar_event_id` INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE `daily_tasks` ADD COLUMN `calendar_event_id` INTEGER DEFAULT NULL")
             }
         }
     }

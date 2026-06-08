@@ -30,5 +30,6 @@ data class TaskEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "completed_at") val completedAt: Long? = null,
     @ColumnInfo(name = "scheduled_for") val scheduledFor: Long? = null,
-    @ColumnInfo(name = "notification_id") val notificationId: Int? = null
+    @ColumnInfo(name = "notification_id") val notificationId: Int? = null,
+    @ColumnInfo(name = "calendar_event_id") val calendarEventId: Long? = null
 )

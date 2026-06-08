@@ -61,7 +61,8 @@ data class DailyTaskItem(
     val intervalDays: Int,
     val daysOfWeekMask: Int,
     val isActiveToday: Boolean,
-    val isCompletedToday: Boolean
+    val isCompletedToday: Boolean,
+    val calendarEventId: Long? = null
 ) {
     val selectedWeekdays: List<DayOfWeek>
         get() = if (repeatMode == DailyTaskRepeatMode.SPECIFIC_DAYS) {

@@ -94,7 +94,8 @@ class LauncherViewModel(
     private val settingsBackupManager: SettingsBackupManager,
     private val searchManager: SearchManager,
     private val appUsageStatsManager: AppUsageStatsManager,
-    private val appTimeReminderManager: AppTimeReminderManager
+    private val appTimeReminderManager: AppTimeReminderManager,
+    private val calendarManager: com.minifocus.launcher.manager.CalendarManager
 ) : ViewModel() {
 
     private val zoneId = ZoneId.systemDefault()
@@ -419,6 +420,18 @@ class LauncherViewModel(
         .combine(homeResetTick) { state, resetTick ->
             state.copy(homeResetTick = resetTick)
         }
+        .combine(settingsManager.observeShowTasksInCalendar()) { state, show ->
+            state.copy(showTasksInCalendar = show)
+        }
+        .combine(settingsManager.observeSyncTasksWithCalendar()) { state, sync ->
+            state.copy(syncTasksWithCalendar = sync)
+        }
+        .combine(settingsManager.observeSyncTasksWithDate()) { state, sync ->
+            state.copy(syncTasksWithDate = sync)
+        }
+        .combine(settingsManager.observeSyncDailyReminders()) { state, sync ->
+            state.copy(syncDailyReminders = sync)
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
@@ -427,23 +440,75 @@ class LauncherViewModel(
 
     fun addTask(title: String, scheduledFor: Long? = null) {
         viewModelScope.launch {
-            val added = tasksManager.addTask(title, scheduledFor)
-            if (added) {
+            val addedId = tasksManager.addTask(title, scheduledFor)
+            if (addedId > 0) {
                 snackbarMessage.update { "Task added" }
+                val state = uiState.value
+                if (state.syncTasksWithCalendar && state.syncTasksWithDate && scheduledFor != null) {
+                    val cal = calendarManager.getWritableCalendar(state.selectedCalendarId)
+                    if (cal != null) {
+                        val eventId = calendarManager.createEvent(
+                            title = title,
+                            startMillis = scheduledFor,
+                            endMillis = scheduledFor + 3600_000, // 1 hour duration
+                            calendarId = cal.id
+                        )
+                        if (eventId > 0) {
+                            tasksManager.updateCalendarEventId(addedId, eventId)
+                        }
+                    }
+                }
             }
         }
     }
 
     fun toggleTask(taskId: Long) {
         viewModelScope.launch {
+            val oldTask = tasksManager.getTaskItem(taskId)
+            
             tasksManager.toggleTask(taskId)
+            
+            val newTask = tasksManager.getTaskItem(taskId)
+            if (oldTask != null && newTask != null) {
+                val state = uiState.value
+                if (newTask.isCompleted) {
+                    if (newTask.calendarEventId != null) {
+                        calendarManager.deleteEvent(newTask.calendarEventId)
+                        tasksManager.updateCalendarEventId(taskId, null)
+                    }
+                } else {
+                    if (state.syncTasksWithCalendar && state.syncTasksWithDate && newTask.scheduledFor != null) {
+                        if (newTask.calendarEventId == null) {
+                            val cal = calendarManager.getWritableCalendar(state.selectedCalendarId)
+                            if (cal != null) {
+                                val eventId = calendarManager.createEvent(
+                                    title = newTask.title,
+                                    startMillis = newTask.scheduledFor,
+                                    endMillis = newTask.scheduledFor + 3600_000,
+                                    calendarId = cal.id
+                                )
+                                if (eventId > 0) {
+                                    tasksManager.updateCalendarEventId(taskId, eventId)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             delay(TASK_HISTORY_GRACE_MS + 100L)
             tasksRefreshTrigger.value++
         }
     }
 
     fun deleteTask(taskId: Long) {
-        viewModelScope.launch { tasksManager.delete(taskId) }
+        viewModelScope.launch {
+            val task = tasksManager.getTaskItem(taskId)
+            if (task?.calendarEventId != null) {
+                calendarManager.deleteEvent(task.calendarEventId)
+            }
+            tasksManager.delete(taskId)
+        }
     }
 
     fun addDailyTask(
@@ -470,6 +535,55 @@ class LauncherViewModel(
             )
             if (id > 0) {
                 snackbarMessage.update { "Daily task added" }
+                val state = uiState.value
+                if (state.syncTasksWithCalendar && state.syncDailyReminders) {
+                    val cal = calendarManager.getWritableCalendar(state.selectedCalendarId)
+                    if (cal != null) {
+                        val startMillis = if (normalizedStart != null) {
+                            java.time.LocalDate.ofEpochDay(normalizedStart)
+                                .atStartOfDay(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                        } else {
+                            System.currentTimeMillis()
+                        }
+                        
+                        val eventId = calendarManager.createEvent(
+                            title = trimmed,
+                            startMillis = startMillis,
+                            endMillis = startMillis + 3600_000,
+                            calendarId = cal.id,
+                            allDay = true,
+                            rrule = buildRRule(repeatMode, intervalDays, daysOfWeekMask)
+                        )
+                        if (eventId > 0) {
+                            dailyTasksManager.updateCalendarEventId(id, eventId)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun buildRRule(
+        repeatMode: DailyTaskRepeatMode,
+        intervalDays: Int,
+        daysOfWeekMask: Int
+    ): String? {
+        return when (repeatMode) {
+            DailyTaskRepeatMode.EVERY_DAY -> "FREQ=DAILY;INTERVAL=$intervalDays"
+            DailyTaskRepeatMode.EVERY_OTHER_DAY -> "FREQ=DAILY;INTERVAL=2"
+            DailyTaskRepeatMode.SPECIFIC_DAYS -> {
+                if (daysOfWeekMask == 0) return null
+                val days = mutableListOf<String>()
+                if ((daysOfWeekMask and 1) != 0) days.add("MO")
+                if ((daysOfWeekMask and 2) != 0) days.add("TU")
+                if ((daysOfWeekMask and 4) != 0) days.add("WE")
+                if ((daysOfWeekMask and 8) != 0) days.add("TH")
+                if ((daysOfWeekMask and 16) != 0) days.add("FR")
+                if ((daysOfWeekMask and 32) != 0) days.add("SA")
+                if ((daysOfWeekMask and 64) != 0) days.add("SU")
+                if (days.isEmpty()) null else "FREQ=WEEKLY;BYDAY=${days.joinToString(",")}"
             }
         }
     }
@@ -501,11 +615,65 @@ class LauncherViewModel(
                 )
             )
             snackbarMessage.update { "Daily task updated" }
+            
+            val state = uiState.value
+            if (entity.calendarEventId != null) {
+                if (state.syncTasksWithCalendar && state.syncDailyReminders) {
+                    val startMillis = if (normalizedStart != null) {
+                        java.time.LocalDate.ofEpochDay(normalizedStart)
+                            .atStartOfDay(java.time.ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                    } else {
+                        System.currentTimeMillis()
+                    }
+                    calendarManager.updateEvent(
+                        eventId = entity.calendarEventId,
+                        title = trimmed,
+                        startMillis = startMillis,
+                        endMillis = startMillis + 3600_000,
+                        rrule = buildRRule(repeatMode, intervalDays, daysOfWeekMask)
+                    )
+                } else {
+                    calendarManager.deleteEvent(entity.calendarEventId)
+                    dailyTasksManager.updateCalendarEventId(taskId, null)
+                }
+            } else {
+                if (state.syncTasksWithCalendar && state.syncDailyReminders) {
+                    val cal = calendarManager.getWritableCalendar(state.selectedCalendarId)
+                    if (cal != null) {
+                        val startMillis = if (normalizedStart != null) {
+                            java.time.LocalDate.ofEpochDay(normalizedStart)
+                                .atStartOfDay(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                        } else {
+                            System.currentTimeMillis()
+                        }
+                        
+                        val eventId = calendarManager.createEvent(
+                            title = trimmed,
+                            startMillis = startMillis,
+                            endMillis = startMillis + 3600_000,
+                            calendarId = cal.id,
+                            allDay = true,
+                            rrule = buildRRule(repeatMode, intervalDays, daysOfWeekMask)
+                        )
+                        if (eventId > 0) {
+                            dailyTasksManager.updateCalendarEventId(taskId, eventId)
+                        }
+                    }
+                }
+            }
         }
     }
 
     fun deleteDailyTask(taskId: Long) {
         viewModelScope.launch {
+            val entity = dailyTasksManager.getDailyTask(taskId)
+            if (entity?.calendarEventId != null) {
+                calendarManager.deleteEvent(entity.calendarEventId)
+            }
             dailyTasksManager.deleteDailyTask(taskId)
             snackbarMessage.update { "Daily task removed" }
             clearDailyTaskHold(taskId)
@@ -960,6 +1128,22 @@ class LauncherViewModel(
         }
     }
 
+    fun setShowTasksInCalendar(show: Boolean) {
+        viewModelScope.launch { settingsManager.setShowTasksInCalendar(show) }
+    }
+
+    fun setSyncTasksWithCalendar(sync: Boolean) {
+        viewModelScope.launch { settingsManager.setSyncTasksWithCalendar(sync) }
+    }
+
+    fun setSyncTasksWithDate(sync: Boolean) {
+        viewModelScope.launch { settingsManager.setSyncTasksWithDate(sync) }
+    }
+
+    fun setSyncDailyReminders(sync: Boolean) {
+        viewModelScope.launch { settingsManager.setSyncDailyReminders(sync) }
+    }
+
     fun resetToHome() {
         isSettingsVisible.value = false
         isHomeSettingsVisible.value = false
@@ -1322,6 +1506,10 @@ data class LauncherUiState(
     val isCalendarSettingsVisible: Boolean = false,
     val selectedCalendarId: Long = -1L,
     val selectedCalendarAccountName: String = "",
+    val showTasksInCalendar: Boolean = true,
+    val syncTasksWithCalendar: Boolean = true,
+    val syncTasksWithDate: Boolean = true,
+    val syncDailyReminders: Boolean = false,
     val trackedReminderApps: List<AppTimeReminderEntity> = emptyList(),
     val pendingTimeIntention: AppEntry? = null,
     val showSeconds: Boolean = false,
