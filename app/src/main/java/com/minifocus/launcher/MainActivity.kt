@@ -192,6 +192,9 @@ class MainActivity : ComponentActivity() {
         val initialPermissionsAcknowledged = runBlocking {
             settingsManager.getPermissionOnboardingAcknowledged()
         }
+        val initialOnboardingComplete = runBlocking {
+            settingsManager.getOnboardingComplete()
+        }
 
         // Enforce default launcher requirement - app cannot be used otherwise
         if (!isDefaultLauncher()) {
@@ -219,6 +222,9 @@ class MainActivity : ComponentActivity() {
                 val permissionsAcknowledged by settingsManager
                     .observePermissionOnboardingAcknowledged()
                     .collectAsStateWithLifecycle(initialPermissionsAcknowledged)
+                val onboardingComplete by settingsManager
+                    .observeOnboardingComplete()
+                    .collectAsStateWithLifecycle(initialOnboardingComplete)
                 val restrictedHint by notificationRestrictionHint.collectAsStateWithLifecycle()
                 val showPermissionScreen = manualPermissionManagerVisible || !permissions.requiredGranted || !permissionsAcknowledged
 
@@ -235,7 +241,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (!showPermissionScreen) {
+                if (!onboardingComplete) {
+                    // First-launch: render real LauncherApp with onboarding overlay
                     LauncherApp(
                         state = state,
                         notificationInboxState = inboxState,
@@ -321,6 +328,105 @@ class MainActivity : ComponentActivity() {
                         onToggleSyncTasksWithCalendar = viewModel::setSyncTasksWithCalendar,
                         onToggleSyncTasksWithDate = viewModel::setSyncTasksWithDate,
                         onToggleSyncDailyReminders = viewModel::setSyncDailyReminders,
+                        isOnboarding = true,
+                        onOnboardingComplete = {
+                            lifecycleScope.launch {
+                                settingsManager.setOnboardingComplete(true)
+                            }
+                        },
+                    )
+                } else if (!showPermissionScreen) {
+                    LauncherApp(
+                        state = state,
+                        notificationInboxState = inboxState,
+                        notificationFilterState = filterState,
+                        permissionsState = permissions,
+                        onToggleTask = viewModel::toggleTask,
+                        onAddTask = viewModel::addTask,
+                        onDeleteTask = viewModel::deleteTask,
+                        onAddDailyTask = viewModel::addDailyTask,
+                        onUpdateDailyTask = viewModel::updateDailyTask,
+                        onDeleteDailyTask = viewModel::deleteDailyTask,
+                        onDailyTaskEnabledChange = viewModel::setDailyTaskEnabled,
+                        onDailyTaskCompleted = viewModel::markDailyTaskCompleted,
+                        onDailyTaskReset = viewModel::resetDailyTaskForToday,
+                        onPinApp = viewModel::pinApp,
+                        onUnpinApp = viewModel::unpinApp,
+                        onHideApp = viewModel::hideApp,
+                        onUnhideApp = viewModel::unhideApp,
+                        onLockApp = ::handleLockRequest,
+                        onSearchQueryChange = viewModel::updateSearchQuery,
+                        onSearchVisibilityChange = viewModel::setSearchVisibility,
+                        onBottomIconChange = viewModel::setBottomIcon,
+                        onSettingsVisibilityChange = viewModel::setSettingsVisibility,
+                        onHomeSettingsVisibilityChange = viewModel::setHomeSettingsVisibility,
+                        onClockSettingsVisibilityChange = viewModel::setClockSettingsVisibility,
+                        onAppDrawerSettingsVisibilityChange = viewModel::setAppDrawerSettingsVisibility,
+                        onAppearanceSettingsVisibilityChange = viewModel::setAppearanceSettingsVisibility,
+                        onTextSizeSettingsVisibilityChange = viewModel::setTextSizeSettingsVisibility,
+                        onHiddenAppsVisibilityChange = viewModel::setHiddenAppsVisibility,
+                        onHistoryVisibilityChange = viewModel::setHistoryVisibility,
+                        onAboutVisibilityChange = viewModel::setAboutVisibility,
+                        onEmergencyUnlockVisibilityChange = viewModel::setEmergencyUnlockVisibility,
+                        onClockFormatChange = viewModel::setClockFormat,
+                        onTextSizeChange = viewModel::setTextSize,
+                        onKeyboardSearchOnSwipeChange = viewModel::setKeyboardSearchOnSwipe,
+                        onSmartSuggestionsToggle = viewModel::setSmartSuggestionsEnabled,
+                        onResetSmartSuggestions = viewModel::resetSmartSuggestions,
+                        onShowSecondsChange = viewModel::setShowSeconds,
+                        onShowDailyTasksOnHomeChange = viewModel::setShowDailyTasksOnHome,
+                        onDoubleTapLockScreenChange = viewModel::setDoubleTapLockScreen,
+                        onNotificationInboxEnabledChange = ::handleNotificationInboxToggle,
+                        onNotificationInboxVisibilityChange = viewModel::setNotificationInboxVisibility,
+                        onNotificationSettingsVisibilityChange = viewModel::setNotificationSettingsVisibility,
+                        onLogViewerVisibilityChange = viewModel::setLogViewerVisibility,
+                        onNotificationFilterVisibilityChange = viewModel::setNotificationFilterVisibility,
+                        onNotificationRetentionSelected = notificationInboxViewModel::setNotificationRetentionDays,
+                        onLogRetentionSelected = notificationInboxViewModel::setLogRetentionDays,
+                        onNotificationDelete = notificationInboxViewModel::deleteNotification,
+                        onNotificationMarkAllRead = notificationInboxViewModel::markAllAsRead,
+                        onNotificationFilterQueryChange = notificationFilterViewModel::updateSearchQuery,
+                        onNotificationFilterToggle = notificationFilterViewModel::toggle,
+                        onNotificationFilterToggleAll = notificationFilterViewModel::setAll,
+                        onOpenPermissionManager = {
+                            updatePermissionsState()
+                            permissionManagerVisible.value = true
+                        },
+                        onOpenDeviceSettings = ::openDeviceSettings,
+                        onRequestLockAccessibility = ::requestLockAccessibility,
+                        onLockDevice = ::lockDevice,
+                        onRecordAppUsage = viewModel::recordAppUsage,
+                        canLaunch = viewModel::canLaunch,
+                        onLaunchApp = { packageName -> launchPackage(packageName) },
+                        onOpenClock = { openClockApp() },
+                        lockManager = (application as LauncherApplication).container.lockManager,
+                        onBackupSettingsVisibilityChange = viewModel::setBackupSettingsVisibility,
+                        onBackupSettings = {
+                            val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+                            exportBackupLauncher.launch("minilauncher_backup_$timestamp.json")
+                        },
+                        onRestoreSettings = {
+                            importBackupLauncher.launch(arrayOf("application/json", "*/*"))
+                        },
+                        onAppTimeReminderSettingsVisibilityChange = viewModel::setAppTimeReminderSettingsVisibility,
+                        onAddTrackedReminderApp = viewModel::addTrackedReminderApp,
+                        onRemoveTrackedReminderApp = viewModel::removeTrackedReminderApp,
+                        onSetPendingTimeIntention = viewModel::setPendingTimeIntention,
+                        onUpdateExpiryAction = viewModel::updateExpiryAction,
+                        onThemeChange = viewModel::setTheme,
+                        onLanguageSettingsVisibilityChange = viewModel::setLanguageSettingsVisibility,
+                        onCalendarSettingsVisibilityChange = viewModel::setCalendarSettingsVisibility,
+                        onSelectCalendar = viewModel::setSelectedCalendar,
+                        onToggleShowTasksInCalendar = viewModel::setShowTasksInCalendar,
+                        onToggleSyncTasksWithCalendar = viewModel::setSyncTasksWithCalendar,
+                        onToggleSyncTasksWithDate = viewModel::setSyncTasksWithDate,
+                        onToggleSyncDailyReminders = viewModel::setSyncDailyReminders,
+                        onResetOnboarding = {
+                            lifecycleScope.launch {
+                                settingsManager.setOnboardingComplete(false)
+                                settingsManager.setPermissionOnboardingAcknowledged(false)
+                            }
+                        },
                     )
                 } else {
                     PermissionScreen(
