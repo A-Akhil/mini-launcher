@@ -288,6 +288,23 @@ fun LauncherApp(
             }
         }
     }
+
+    // Intercept Android back button during onboarding
+    if (isOnboarding) {
+        BackHandler {
+            when (onboardingStep.value) {
+                OnboardingSteps.WELCOME -> onOnboardingComplete()
+                OnboardingSteps.SWIPE_TO_TASKS -> onboardingStep.value = OnboardingSteps.WELCOME
+                OnboardingSteps.SWIPE_TO_CALENDAR -> onboardingStep.value = OnboardingSteps.SWIPE_TO_TASKS
+                OnboardingSteps.SWIPE_BACK_HOME -> onboardingStep.value = OnboardingSteps.SWIPE_TO_CALENDAR
+                OnboardingSteps.SWIPE_TO_DRAWER -> onboardingStep.value = OnboardingSteps.SWIPE_BACK_HOME
+                OnboardingSteps.LONG_PRESS_TO_PIN -> onboardingStep.value = OnboardingSteps.SWIPE_TO_DRAWER
+                OnboardingSteps.TAP_PIN -> onboardingStep.value = OnboardingSteps.LONG_PRESS_TO_PIN
+                OnboardingSteps.COMPLETE -> onboardingStep.value = OnboardingSteps.TAP_PIN
+            }
+        }
+    }
+
     val coroutineScope = rememberCoroutineScope()
     val bottomIconPickerSlot = remember { mutableStateOf<BottomIconSlot?>(null) }
     val searchVisible = state.isSearchVisible
@@ -899,7 +916,8 @@ fun LauncherApp(
                             onFinish = onOnboardingComplete,
                             onWelcomeDismiss = {
                                 onboardingStep.value = OnboardingSteps.SWIPE_TO_TASKS
-                            }
+                            },
+                            onSkip = onOnboardingComplete
                         )
                     }
                     } // end Box
@@ -2250,34 +2268,20 @@ private fun AllAppsScreen(
             }
 
             val isTracked = pkgName in trackedPackages
-            if (onboardingPinOnly) {
-                // During onboarding, only show Pin option
-                AppContextMenu(
-                    app = app,
-                    onDismiss = { expandedApp.value = null },
-                    onPin = if (!app.isPinned) ({ onPinApp(app.packageName) }) else null,
-                    onUnpin = null,
-                    onHide = null,
-                    onLock = null,
-                    onAddTimeReminder = null,
-                    onRemoveTimeReminder = null
-                )
-            } else {
-                AppContextMenu(
-                    app = app,
-                    onDismiss = { expandedApp.value = null },
-                    onPin = if (!app.isPinned) ({ onPinApp(app.packageName) }) else null,
-                    onUnpin = if (app.isPinned) ({ onUnpinApp(app.packageName) }) else null,
-                    onHide = { onHideApp(app.packageName) },
-                    onLock = { lockDialogApp.value = app },
-                    onAddTimeReminder = if (!isTracked) ({
-                        onAddTrackedReminderApp(app.packageName, app.label)
-                    }) else null,
-                    onRemoveTimeReminder = if (isTracked) ({
-                        onRemoveTrackedReminderApp(app.packageName)
-                    }) else null
-                )
-            }
+            AppContextMenu(
+                app = app,
+                onDismiss = { expandedApp.value = null },
+                onPin = if (!app.isPinned) ({ onPinApp(app.packageName) }) else null,
+                onUnpin = if (!onboardingPinOnly && app.isPinned) ({ onUnpinApp(app.packageName) }) else null,
+                onHide = if (!onboardingPinOnly) ({ onHideApp(app.packageName) }) else null,
+                onLock = if (!onboardingPinOnly) ({ lockDialogApp.value = app }) else null,
+                onAddTimeReminder = if (!onboardingPinOnly && !isTracked) ({
+                    onAddTrackedReminderApp(app.packageName, app.label)
+                }) else null,
+                onRemoveTimeReminder = if (!onboardingPinOnly && isTracked) ({
+                    onRemoveTrackedReminderApp(app.packageName)
+                }) else null
+            )
         }
     }
         
@@ -2751,8 +2755,8 @@ private fun SettingsScreen(
 
         // Dev/debug: replay onboarding
         SettingsRow(
-            title = "Replay Onboarding",
-            subtitle = "Reset the startup walkthrough",
+            title = stringResource(R.string.onboarding_replay),
+            subtitle = null,
             onClick = onResetOnboarding
         )
     }

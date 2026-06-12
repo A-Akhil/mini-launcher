@@ -49,8 +49,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -61,11 +61,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minifocus.launcher.R
 
 /**
  * Onboarding step definitions.
@@ -82,24 +86,40 @@ import androidx.compose.ui.unit.sp
  * Home(2)->Drawer(3): swipe LEFT
  */
 object OnboardingSteps {
-    /** Welcome / intro -- full overlay, user taps to begin. */
     const val WELCOME = 0
-    /** Home visible, swipe RIGHT to reach Tasks (page 2->1). */
     const val SWIPE_TO_TASKS = 1
-    /** Tasks visible, swipe RIGHT to reach Calendar (page 1->0). */
     const val SWIPE_TO_CALENDAR = 2
-    /** Calendar visible, swipe LEFT to go back home (page 0->2). */
     const val SWIPE_BACK_HOME = 3
-    /** Home visible, swipe LEFT to open App Drawer (page 2->3). */
     const val SWIPE_TO_DRAWER = 4
-    /** App Drawer visible, long-press an app. */
     const val LONG_PRESS_TO_PIN = 5
-    /** Context menu showing, tap Pin to Home. */
     const val TAP_PIN = 6
-    /** Done. */
     const val COMPLETE = 7
-
     const val TOTAL = 8
+}
+
+// ---- Animation constants ----
+
+private object OnboardingAnim {
+    const val SWIPE_SLIDE_DISTANCE = 80f
+    const val SWIPE_DURATION_MS = 1100
+    const val PULSE_DURATION_MS = 1200
+    const val HINT_PULSE_DURATION_MS = 800
+
+    const val SCRIM_ALPHA_WELCOME = 0.82f
+    const val SCRIM_ALPHA_COMPLETE = 0.78f
+    const val SCRIM_ALPHA_SWIPE = 0.35f
+
+    const val FINGER_DOT_SIZE_DP = 44
+    const val FINGER_DOT_ALPHA = 0.85f
+    const val FINGER_DOT_FADE_MIN = 0.2f
+
+    const val ARROW_SIZE = 12f
+    const val ARROW_SPACING = 26f
+    const val ARROW_STROKE_WIDTH = 2.5f
+    const val ARROW_OFFSET = 30f
+
+    const val DOT_ACTIVE_SIZE_DP = 8
+    const val DOT_INACTIVE_SIZE_DP = 5
 }
 
 // ---- Main overlay ----
@@ -108,16 +128,17 @@ object OnboardingSteps {
 fun OnboardingOverlay(
     step: Int,
     onFinish: () -> Unit,
-    onWelcomeDismiss: () -> Unit = {}
+    onWelcomeDismiss: () -> Unit = {},
+    onSkip: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Scrim layer
         val scrimAlpha = when (step) {
-            OnboardingSteps.WELCOME -> 0.82f
-            OnboardingSteps.COMPLETE -> 0.78f
+            OnboardingSteps.WELCOME -> OnboardingAnim.SCRIM_ALPHA_WELCOME
+            OnboardingSteps.COMPLETE -> OnboardingAnim.SCRIM_ALPHA_COMPLETE
             OnboardingSteps.LONG_PRESS_TO_PIN,
             OnboardingSteps.TAP_PIN -> 0f
-            else -> 0.35f
+            else -> OnboardingAnim.SCRIM_ALPHA_SWIPE
         }
 
         Box(
@@ -126,12 +147,10 @@ fun OnboardingOverlay(
                 .background(Color.Black.copy(alpha = scrimAlpha))
                 .then(
                     when (step) {
-                        // Welcome: tap anywhere to advance
                         OnboardingSteps.WELCOME -> Modifier.clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) { onWelcomeDismiss() }
-                        // Complete: block all touches behind
                         OnboardingSteps.COMPLETE -> Modifier.pointerInput(Unit) {
                             awaitEachGesture { awaitFirstDown(requireUnconsumed = false) }
                         }
@@ -143,27 +162,51 @@ fun OnboardingOverlay(
         // Step-specific content
         when (step) {
             OnboardingSteps.WELCOME ->
-                WelcomeScreen()
+                WelcomeScreen(onSkip = onSkip)
 
-            // Directions fixed: Home->Tasks = RIGHT, Tasks->Calendar = RIGHT
             OnboardingSteps.SWIPE_TO_TASKS ->
-                SwipeGuide(direction = SwipeDirection.RIGHT, label = "Swipe to see your tasks", step = step)
+                SwipeGuide(
+                    direction = SwipeDirection.RIGHT,
+                    label = stringResource(R.string.onboarding_swipe_to_tasks),
+                    step = step,
+                    onSkip = onSkip
+                )
 
             OnboardingSteps.SWIPE_TO_CALENDAR ->
-                SwipeGuide(direction = SwipeDirection.RIGHT, label = "Swipe for your calendar", step = step)
+                SwipeGuide(
+                    direction = SwipeDirection.RIGHT,
+                    label = stringResource(R.string.onboarding_swipe_to_calendar),
+                    step = step,
+                    onSkip = onSkip
+                )
 
-            // Calendar->Home = LEFT, Home->Drawer = LEFT
             OnboardingSteps.SWIPE_BACK_HOME ->
-                SwipeGuide(direction = SwipeDirection.LEFT, label = "Swipe back home", step = step)
+                SwipeGuide(
+                    direction = SwipeDirection.LEFT,
+                    label = stringResource(R.string.onboarding_swipe_back_home),
+                    step = step,
+                    onSkip = onSkip
+                )
 
             OnboardingSteps.SWIPE_TO_DRAWER ->
-                SwipeGuide(direction = SwipeDirection.LEFT, label = "Swipe to open apps", step = step)
+                SwipeGuide(
+                    direction = SwipeDirection.LEFT,
+                    label = stringResource(R.string.onboarding_swipe_to_drawer),
+                    step = step,
+                    onSkip = onSkip
+                )
 
             OnboardingSteps.LONG_PRESS_TO_PIN ->
-                FloatingHint(text = "Long-press any app to pin it")
+                FloatingHint(
+                    text = stringResource(R.string.onboarding_long_press_to_pin),
+                    onSkip = onSkip
+                )
 
             OnboardingSteps.TAP_PIN ->
-                FloatingHint(text = "Tap 'Pin to Home'")
+                FloatingHint(
+                    text = stringResource(R.string.onboarding_tap_pin),
+                    onSkip = onSkip
+                )
 
             OnboardingSteps.COMPLETE ->
                 CompletionScreen(onFinish = onFinish)
@@ -174,17 +217,30 @@ fun OnboardingOverlay(
 // ---- Welcome screen ----
 
 @Composable
-private fun WelcomeScreen() {
+private fun WelcomeScreen(onSkip: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics {
+                contentDescription = "Welcome to MiniFocus. Tap anywhere to start the tour."
+            }
     ) {
+        // Skip button top-right
+        SkipButton(
+            onSkip = onSkip,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 48.dp, end = 20.dp)
+        )
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 48.dp)
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 48.dp)
         ) {
             Text(
-                text = "MiniFocus",
+                text = stringResource(R.string.app_name),
                 color = Color.White,
                 fontSize = 38.sp,
                 fontWeight = FontWeight.Bold,
@@ -195,7 +251,7 @@ private fun WelcomeScreen() {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "A minimalist launcher\nfor a focused life",
+                text = stringResource(R.string.onboarding_welcome_subtitle),
                 color = Color.White.copy(alpha = 0.6f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
@@ -204,20 +260,19 @@ private fun WelcomeScreen() {
 
             Spacer(modifier = Modifier.height(56.dp))
 
-            // Pulsing "tap to begin" hint
             val infiniteTransition = rememberInfiniteTransition(label = "tap")
             val tapAlpha by infiniteTransition.animateFloat(
                 initialValue = 0.4f,
                 targetValue = 0.9f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(1200),
+                    animation = tween(OnboardingAnim.PULSE_DURATION_MS),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "tapAlpha"
             )
 
             Text(
-                text = "Tap anywhere to begin",
+                text = stringResource(R.string.onboarding_tap_to_begin),
                 color = Color.White.copy(alpha = tapAlpha),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
@@ -235,18 +290,25 @@ private enum class SwipeDirection { LEFT, RIGHT }
 private fun SwipeGuide(
     direction: SwipeDirection,
     label: String,
-    step: Int
+    step: Int,
+    onSkip: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "swipe")
 
-    // Circle slides in the swipe direction
-    // RIGHT = finger moves left->right = positive offset
-    // LEFT  = finger moves right->left = negative offset
+    val targetOffset = if (direction == SwipeDirection.RIGHT) {
+        OnboardingAnim.SWIPE_SLIDE_DISTANCE
+    } else {
+        -OnboardingAnim.SWIPE_SLIDE_DISTANCE
+    }
+
     val slideOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = if (direction == SwipeDirection.RIGHT) 80f else -80f,
+        targetValue = targetOffset,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            animation = tween(
+                durationMillis = OnboardingAnim.SWIPE_DURATION_MS,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "slide"
@@ -256,18 +318,34 @@ private fun SwipeGuide(
         initialValue = 1f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1100, easing = LinearEasing),
+            animation = tween(
+                durationMillis = OnboardingAnim.SWIPE_DURATION_MS,
+                easing = LinearEasing
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "fade"
     )
 
+    val directionDesc = if (direction == SwipeDirection.RIGHT) "right" else "left"
+
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics { contentDescription = "$label. Swipe $directionDesc to continue." }
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Animated circle + trailing arrows
+        // Skip button top-right
+        SkipButton(
+            onSkip = onSkip,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 48.dp, end = 20.dp)
+        )
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.align(Alignment.Center)
+        ) {
             Box(
                 modifier = Modifier
                     .width(220.dp)
@@ -276,14 +354,13 @@ private fun SwipeGuide(
             ) {
                 SwipeArrows(direction = direction, progress = slideOffset)
 
-                // Finger dot
                 Box(
                     modifier = Modifier
                         .offset { IntOffset(slideOffset.dp.roundToPx(), 0) }
-                        .alpha(circleFade.coerceIn(0.2f, 1f))
-                        .size(44.dp)
+                        .alpha(circleFade.coerceIn(OnboardingAnim.FINGER_DOT_FADE_MIN, 1f))
+                        .size(OnboardingAnim.FINGER_DOT_SIZE_DP.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.85f))
+                        .background(Color.White.copy(alpha = OnboardingAnim.FINGER_DOT_ALPHA))
                 )
             }
 
@@ -310,38 +387,38 @@ private fun SwipeArrows(
     direction: SwipeDirection,
     progress: Float
 ) {
-    val normalizedProgress = (progress / 80f).let {
+    val normalizedProgress = (progress / OnboardingAnim.SWIPE_SLIDE_DISTANCE).let {
         if (direction == SwipeDirection.LEFT) -it else it
     }
 
     Canvas(modifier = Modifier.size(220.dp, 80.dp)) {
         val centerY = size.height / 2f
-        val arrowSize = 12f
-        val spacing = 26f
 
         for (i in 0..2) {
             val baseX = if (direction == SwipeDirection.RIGHT) {
-                size.width / 2f + 30f + (i * spacing)
+                size.width / 2f + OnboardingAnim.ARROW_OFFSET + (i * OnboardingAnim.ARROW_SPACING)
             } else {
-                size.width / 2f - 30f - (i * spacing)
+                size.width / 2f - OnboardingAnim.ARROW_OFFSET - (i * OnboardingAnim.ARROW_SPACING)
             }
             val alpha = (0.1f + normalizedProgress * 0.25f * (3 - i) / 3f).coerceIn(0.06f, 0.35f)
 
             val path = Path().apply {
                 if (direction == SwipeDirection.RIGHT) {
-                    moveTo(baseX - arrowSize, centerY - arrowSize)
+                    moveTo(baseX - OnboardingAnim.ARROW_SIZE, centerY - OnboardingAnim.ARROW_SIZE)
                     lineTo(baseX, centerY)
-                    lineTo(baseX - arrowSize, centerY + arrowSize)
+                    lineTo(baseX - OnboardingAnim.ARROW_SIZE, centerY + OnboardingAnim.ARROW_SIZE)
                 } else {
-                    moveTo(baseX + arrowSize, centerY - arrowSize)
+                    moveTo(baseX + OnboardingAnim.ARROW_SIZE, centerY - OnboardingAnim.ARROW_SIZE)
                     lineTo(baseX, centerY)
-                    lineTo(baseX + arrowSize, centerY + arrowSize)
+                    lineTo(baseX + OnboardingAnim.ARROW_SIZE, centerY + OnboardingAnim.ARROW_SIZE)
                 }
             }
             drawPath(
                 path = path,
                 color = Color.White.copy(alpha = alpha),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f)
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = OnboardingAnim.ARROW_STROKE_WIDTH
+                )
             )
         }
     }
@@ -350,17 +427,24 @@ private fun SwipeArrows(
 // ---- Floating hint ----
 
 @Composable
-private fun FloatingHint(text: String) {
+private fun FloatingHint(text: String, onSkip: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
+        modifier = Modifier.fillMaxSize()
     ) {
+        // Skip button top-right
+        SkipButton(
+            onSkip = onSkip,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 48.dp, end = 20.dp)
+        )
+
         val infiniteTransition = rememberInfiniteTransition(label = "pulse")
         val pulseAlpha by infiniteTransition.animateFloat(
             initialValue = 0.75f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(800),
+                animation = tween(OnboardingAnim.HINT_PULSE_DURATION_MS),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "pulse"
@@ -368,11 +452,13 @@ private fun FloatingHint(text: String) {
 
         Box(
             modifier = Modifier
+                .align(Alignment.TopCenter)
                 .padding(top = 80.dp)
                 .clip(RoundedCornerShape(28.dp))
                 .background(Color.Black.copy(alpha = 0.85f))
                 .padding(horizontal = 24.dp, vertical = 14.dp)
                 .alpha(pulseAlpha)
+                .semantics { contentDescription = text }
         ) {
             Text(
                 text = text,
@@ -389,7 +475,11 @@ private fun FloatingHint(text: String) {
 @Composable
 private fun CompletionScreen(onFinish: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics {
+                contentDescription = "Onboarding complete. Tap Continue to set up permissions."
+            },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -397,7 +487,7 @@ private fun CompletionScreen(onFinish: () -> Unit) {
             modifier = Modifier.padding(horizontal = 48.dp)
         ) {
             Text(
-                text = "You're ready",
+                text = stringResource(R.string.onboarding_complete_title),
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
@@ -407,7 +497,7 @@ private fun CompletionScreen(onFinish: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Let's set up a few permissions next",
+                text = stringResource(R.string.onboarding_complete_subtitle),
                 color = Color.White.copy(alpha = 0.65f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
@@ -428,7 +518,7 @@ private fun CompletionScreen(onFinish: () -> Unit) {
                     .height(52.dp)
             ) {
                 Text(
-                    text = "Continue",
+                    text = stringResource(R.string.onboarding_continue),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
@@ -447,18 +537,41 @@ private fun CompletionScreen(onFinish: () -> Unit) {
     }
 }
 
+// ---- Skip button ----
+
+@Composable
+private fun SkipButton(onSkip: () -> Unit, modifier: Modifier = Modifier) {
+    TextButton(
+        onClick = onSkip,
+        modifier = modifier
+    ) {
+        Text(
+            text = stringResource(R.string.onboarding_skip),
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
 // ---- Step dots ----
 
 @Composable
 private fun StepDots(currentStep: Int) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics {
+            contentDescription = "Step ${currentStep + 1} of ${OnboardingSteps.TOTAL}"
+        }
     ) {
         repeat(OnboardingSteps.TOTAL) { index ->
             Box(
                 modifier = Modifier
-                    .size(if (index == currentStep) 8.dp else 5.dp)
+                    .size(
+                        if (index == currentStep) OnboardingAnim.DOT_ACTIVE_SIZE_DP.dp
+                        else OnboardingAnim.DOT_INACTIVE_SIZE_DP.dp
+                    )
                     .clip(CircleShape)
                     .background(
                         if (index <= currentStep) Color.White
