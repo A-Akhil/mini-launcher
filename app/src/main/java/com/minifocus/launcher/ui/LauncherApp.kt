@@ -260,6 +260,22 @@ fun LauncherApp(
     val onboardingStep = remember { mutableStateOf(OnboardingSteps.WELCOME) }
     val onboardingPinDone = remember { mutableStateOf(false) }
 
+    // Reset onboarding step if screen turns off (ON_STOP)
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    if (isOnboarding) {
+        androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                    onboardingStep.value = OnboardingSteps.WELCOME
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+    }
+
     // Advance onboarding steps based on pager page changes
     if (isOnboarding) {
         LaunchedEffect(pagerState.currentPage, onboardingStep.value) {

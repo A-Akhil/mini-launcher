@@ -225,14 +225,6 @@ private fun WelcomeScreen(onSkip: () -> Unit) {
                 contentDescription = "Welcome to MiniFocus. Tap anywhere to start the tour."
             }
     ) {
-        // Skip button top-right
-        SkipButton(
-            onSkip = onSkip,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 48.dp, end = 20.dp)
-        )
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -339,7 +331,7 @@ private fun SwipeGuide(
             onSkip = onSkip,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 48.dp, end = 20.dp)
+                .padding(top = 32.dp, end = 16.dp)
         )
 
         Column(
@@ -436,7 +428,7 @@ private fun FloatingHint(text: String, onSkip: () -> Unit) {
             onSkip = onSkip,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 48.dp, end = 20.dp)
+                .padding(top = 32.dp, end = 16.dp)
         )
 
         val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -541,15 +533,19 @@ private fun CompletionScreen(onFinish: () -> Unit) {
 
 @Composable
 private fun SkipButton(onSkip: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(
+    Button(
         onClick = onSkip,
-        modifier = modifier
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White.copy(alpha = 0.2f),
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Text(
             text = stringResource(R.string.onboarding_skip),
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
